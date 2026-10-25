@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khu vực Kanji - Project Nihon</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-surface: #1e293b;
+            --bg-card: #1e293b;
+            --bg-card-hover: #24344d;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #38bdf8;
+            --accent-hover: #0284c7;
+            --accent-glow: rgba(56, 189, 248, 0.15);
+            --crimson: #ef4444;
+            --gold: #f59e0b;
+            --purple: #a855f7;
+            --emerald: #10b981;
+            --border-color: #334155;
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-xl: 18px;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Meiryo", Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 700;
+            font-size: 1.15rem;
+        }
+
+        .brand-badge {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+
+        nav {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            overflow-x: auto;
+            padding: 0.25rem 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 0.45rem 0.85rem;
+            border-radius: var(--radius-sm);
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+        nav a:hover, nav a.active {
+            color: var(--text-primary);
+            background-color: var(--border-color);
+        }
+
+        main {
+            flex: 1;
+            max-width: 1280px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .page-title h1 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .page-title p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        .flash-alert {
+            padding: 0.9rem 1.25rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .flash-error {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .filter-panel {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            margin-bottom: 1.75rem;
+            box-shadow: var(--shadow);
+        }
+
+        .filter-form {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            flex: 1;
+            min-width: 220px;
+        }
+
+        .input-group label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        .form-control {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.6rem 0.9rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s ease;
+            width: 100%;
+        }
+
+        .form-control:focus {
+            border-color: var(--accent);
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-end;
+            padding-top: 1.25rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.1rem;
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: #0f172a;
+        }
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background-color: var(--border-color);
+            color: var(--text-primary);
+        }
+        .btn-secondary:hover {
+            background-color: #475569;
+        }
+
+        .stats-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .stats-count strong {
+            color: var(--text-primary);
+        }
+
+        /* Kanji Grid */
+        .kanji-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .kanji-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .kanji-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent);
+            box-shadow: 0 12px 25px -8px var(--accent-glow);
+            background-color: var(--bg-card-hover);
+        }
+
+        .kanji-card-top {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .kanji-box {
+            width: 4.25rem;
+            height: 4.25rem;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(245, 158, 11, 0.08));
+            border: 2px solid rgba(239, 68, 68, 0.3);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+            box-shadow: inset 0 0 12px rgba(239, 68, 68, 0.15);
+        }
+
+        .kanji-main-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .kanji-hanviet {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--gold);
+            letter-spacing: 0.03em;
+            margin-bottom: 0.25rem;
+        }
+
+        .kanji-meaning {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .kanji-topic-badge {
+            display: inline-block;
+            margin-top: 0.4rem;
+            font-size: 0.75rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            background-color: rgba(56, 189, 248, 0.12);
+            color: var(--accent);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .kanji-readings {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+            margin-bottom: 1rem;
+            flex: 1;
+            background-color: rgba(15, 23, 42, 0.4);
+            padding: 0.75rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            font-size: 0.85rem;
+        }
+
+        .reading-row {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+
+        .reading-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            width: 2.25rem;
+            flex-shrink: 0;
+        }
+
+        .reading-label-on { color: var(--purple); }
+        .reading-label-kun { color: var(--emerald); }
+
+        .reading-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+            align-items: center;
+        }
+
+        .tag-on {
+            background-color: rgba(168, 85, 247, 0.15);
+            color: #d8b4fe;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .tag-kun {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .tag-missing {
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 0.75rem;
+        }
+
+        .kanji-card-footer {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+            padding-top: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 1.5rem;
+            background-color: var(--bg-surface);
+            border: 1px dashed var(--border-color);
+            border-radius: var(--radius-lg);
+            color: var(--text-secondary);
+        }
+        .empty-state h3 {
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .page-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 2.25rem;
+            height: 2.25rem;
+            padding: 0 0.5rem;
+            border-radius: var(--radius-sm);
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .page-link:hover:not(.disabled) {
+            color: var(--text-primary);
+            border-color: var(--accent);
+            background-color: var(--border-color);
+        }
+
+        .page-link.active {
+            background-color: var(--accent);
+            color: #0f172a;
+            border-color: var(--accent);
+            font-weight: 700;
+        }
+
+        .page-link.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        footer {
+            background-color: var(--bg-surface);
+            border-top: 1px solid var(--border-color);
+            padding: 1.5rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-top: auto;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 0.75rem 1rem;
+                gap: 0.75rem;
+            }
+            .brand {
+                justify-content: center;
+            }
+            nav {
+                justify-content: flex-start;
+                padding-bottom: 0.5rem;
+            }
+            main {
+                padding: 1.25rem 0.75rem;
+            }
+            .filter-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-actions {
+                padding-top: 0;
+                width: 100%;
+            }
+            .btn {
+                flex: 1;
+                justify-content: center;
+            }
+            .kanji-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/" class="brand">
+            <span class="brand-badge">日</span>
+            <span>Project Nihon</span>
+        </a>
+        <nav>
+            <a href="/">Trang chủ</a>
+            <a href="/vocabulary">Từ vựng</a>
+            <a href="/topics">Chủ đề</a>
+            <a href="/kanji" class="active">Kanji</a>
+            <a href="/practice">Luyện tập</a>
+            <a href="/stats">Thống kê</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="page-header">
+            <div class="page-title">
+                <h1><span>漢</span> Khu Vực Tra Cứu Kanji</h1>
+                <p>Khu vực chuyên biệt quản lý và tra cứu chữ Hán, âm Hán Việt, âm On/Kun và ngữ cảnh sử dụng thực tế.</p>
+            </div>
+        </div>
+
+        <div th:if="${errorMessage}" class="flash-alert flash-error">
+            <span>⚠️</span>
+            <span th:text="${errorMessage}">Thông báo lỗi</span>
+        </div>
+
+        <!-- Filter Panel -->
+        <section class="filter-panel">
+            <form th:action="@{/kanji}" method="get" class="filter-form">
+                <div class="input-group" style="flex: 2;">
+                    <label for="keyword">Từ khóa tìm kiếm</label>
+                    <input type="text" id="keyword" name="keyword" th:value="${keyword}"
+                           class="form-control"
+                           placeholder="Ký tự Kanji (魚), Hán Việt (NGƯ), On (ギョ), Kun (さかな) hoặc nghĩa...">
+                </div>
+
+                <div class="input-group">
+                    <label for="topicId">Bài học Kanji</label>
+                    <select id="topicId" name="topicId" class="form-control">
+                        <option value="">-- Tất cả bài học Kanji --</option>
+                        <option th:each="t : ${topics}"
+                                th:value="${t.id}"
+                                th:text="${t.name}"
+                                th:selected="${selectedTopicId != null and selectedTopicId == t.id}">
+                            Kanji Lesson 5
+                        </option>
+                    </select>
+                </div>
+
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+                    <a th:href="@{/kanji}" class="btn btn-secondary">Đặt lại</a>
+                </div>
+            </form>
+        </section>
+
+        <!-- Stats Summary -->
+        <div class="stats-summary">
+            <div class="stats-count">
+                Hiển thị <strong th:text="${kanjiPage.numberOfElements}">0</strong> /
+                <strong th:text="${kanjiPage.totalElements}">0</strong> ký tự Kanji
+                <span th:if="${keyword != null and !keyword.isEmpty() or selectedTopicId != null}">
+                    (đang lọc kết quả)
+                </span>
+            </div>
+            <div>
+                Tổng số trong hệ thống: <strong th:text="${totalCount}">126</strong> Kanji
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div th:if="${kanjiPage.empty}" class="empty-state">
+            <h3>Không tìm thấy ký tự Kanji phù hợp</h3>
+            <p>Hãy thử tìm bằng từ khóa khác hoặc bỏ chọn bộ lọc bài học.</p>
+        </div>
+
+        <!-- Kanji Grid -->
+        <section th:unless="${kanjiPage.empty}" class="kanji-grid">
+            <a th:each="k : ${kanjiPage.content}"
+               th:href="@{/kanji/{id}(id=${k.id})}"
+               class="kanji-card"
+               th:title="${'Xem chi tiết chữ ' + k.character}">
+                <div class="kanji-card-top">
+                    <div class="kanji-box" th:text="${k.character}">魚</div>
+                    <div class="kanji-main-info">
+                        <div class="kanji-hanviet" th:text="${k.hanViet}">NGƯ</div>
+                        <div class="kanji-meaning" th:text="${k.meaningVi}">Cá</div>
+                        <span class="kanji-topic-badge" th:text="${k.topicName}">Kanji Lesson 5</span>
+                    </div>
+                </div>
+
+                <div class="kanji-readings">
+                    <!-- Âm On -->
+                    <div class="reading-row">
+                        <span class="reading-label reading-label-on">On:</span>
+                        <div class="reading-tags">
+                            <span th:if="${!k.onyomiMissing}"
+                                  th:each="on : ${k.onyomiList}"
+                                  class="tag-on"
+                                  th:text="${on}">ギョ</span>
+                            <span th:if="${k.onyomiMissing}" class="tag-missing">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Âm Kun -->
+                    <div class="reading-row">
+                        <span class="reading-label reading-label-kun">Kun:</span>
+                        <div class="reading-tags">
+                            <span th:if="${!k.kunyomiMissing}"
+                                  th:each="kun : ${k.kunyomiList}"
+                                  class="tag-kun"
+                                  th:text="${kun}">さかな</span>
+                            <span th:if="${k.kunyomiMissing}" class="tag-missing" title="Nguồn ghi không có âm Kun">- (Không có)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="kanji-card-footer">
+                    <span>Xem chi tiết →</span>
+                </div>
+            </a>
+        </section>
+
+        <!-- Pagination -->
+        <nav th:if="${kanjiPage.totalPages > 1}" class="pagination">
+            <a th:href="@{/kanji(page=${kanjiPage.number - 1}, size=${kanjiPage.size}, keyword=${keyword}, topicId=${selectedTopicId})}"
+               class="page-link"
+               th:classappend="${kanjiPage.first} ? 'disabled'">« Trước</a>
+
+            <span th:each="i : ${#numbers.sequence(0, kanjiPage.totalPages - 1)}">
+                <a th:href="@{/kanji(page=${i}, size=${kanjiPage.size}, keyword=${keyword}, topicId=${selectedTopicId})}"
+                   class="page-link"
+                   th:classappend="${i == kanjiPage.number} ? 'active'"
+                   th:text="${i + 1}">1</a>
+            </span>
+
+            <a th:href="@{/kanji(page=${kanjiPage.number + 1}, size=${kanjiPage.size}, keyword=${keyword}, topicId=${selectedTopicId})}"
+               class="page-link"
+               th:classappend="${kanjiPage.last} ? 'disabled'">Sau »</a>
+        </nav>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Khu vực Kanji chuyên biệt.</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thống kê & Tiến độ học tập - Project Nihon</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-surface: #1e293b;
+            --bg-card: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #38bdf8;
+            --accent-hover: #0284c7;
+            --accent-glow: rgba(56, 189, 248, 0.15);
+            --border-color: #334155;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --gold: #f59e0b;
+            --purple: #a855f7;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Meiryo", Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 700;
+            font-size: 1.15rem;
+        }
+
+        .brand-badge {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+
+        nav {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            overflow-x: auto;
+            padding: 0.25rem 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 0.45rem 0.85rem;
+            border-radius: 6px;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+        nav a:hover, nav a.active {
+            color: var(--text-primary);
+            background-color: var(--border-color);
+        }
+
+        main {
+            flex: 1;
+            max-width: 1140px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            font-size: 1.85rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .page-header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-top: 0.35rem;
+        }
+
+        /* Notice banner */
+        .session-scope-notice {
+            background-color: rgba(56, 189, 248, 0.08);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.25rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.85rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        .notice-icon {
+            font-size: 1.35rem;
+            line-height: 1;
+        }
+
+        .notice-content strong {
+            color: var(--accent);
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .notice-content p {
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .alert-success {
+            background-color: rgba(34, 197, 94, 0.15);
+            color: #86efac;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            padding: 0.85rem 1.25rem;
+            border-radius: var(--radius-md);
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-title span.sub {
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: var(--text-muted);
+        }
+
+        /* Filter Panel */
+        .filter-panel {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            margin-bottom: 1.75rem;
+            box-shadow: var(--shadow);
+        }
+
+        .filter-form {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .form-group label {
+            font-size: 0.775rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .form-control {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.6rem 0.9rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            outline: none;
+            width: 100%;
+        }
+
+        .form-control:focus {
+            border-color: var(--accent);
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            padding: 0.6rem 1.1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: #0f172a;
+        }
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+        .btn-secondary:hover {
+            color: var(--text-primary);
+            border-color: var(--text-muted);
+        }
+
+        .btn-danger {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        .btn-danger:hover {
+            background-color: rgba(239, 68, 68, 0.25);
+            color: #fff;
+        }
+
+        /* KPI Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .kpi-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent);
+        }
+
+        .kpi-card-success { border-color: rgba(34, 197, 94, 0.3); }
+        .kpi-card-danger { border-color: rgba(239, 68, 68, 0.3); }
+
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .kpi-title {
+            font-size: 0.825rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: var(--text-secondary);
+            letter-spacing: 0.04em;
+        }
+
+        .kpi-icon {
+            font-size: 1.5rem;
+        }
+
+        .kpi-value {
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1.1;
+        }
+
+        .kpi-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.4rem;
+        }
+
+        /* Empty state */
+        .empty-card {
+            background-color: var(--bg-surface);
+            border: 1px dashed var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 3rem 1.5rem;
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .empty-card h3 {
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-card p {
+            max-width: 500px;
+            margin: 0 auto 1.5rem auto;
+            font-size: 0.9rem;
+        }
+
+        /* Table Card */
+        .table-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            margin-bottom: 2.5rem;
+        }
+
+        .table-card-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .table-card-header h2 {
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+
+        th {
+            background-color: rgba(15, 23, 42, 0.6);
+            color: var(--text-secondary);
+            padding: 0.85rem 1rem;
+            font-size: 0.775rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
+
+        .btn-sm {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+        .btn-sm:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .badge-count {
+            display: inline-block;
+            background-color: rgba(56, 189, 248, 0.15);
+            color: var(--accent);
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 0.825rem;
+        }
+
+        .badge-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 0.775rem;
+        }
+
+        .badge-correct {
+            background-color: rgba(34, 197, 94, 0.15);
+            color: #86efac;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .badge-wrong {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .badge-mode {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-mode-ja-vi {
+            background-color: rgba(56, 189, 248, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+        .badge-mode-vi-ja {
+            background-color: rgba(168, 85, 247, 0.15);
+            color: #d8b4fe;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        /* Proportion Card */
+        .proportion-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .proportion-card h2 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .bar-container {
+            height: 24px;
+            width: 100%;
+            background-color: var(--bg-primary);
+            border-radius: 9999px;
+            overflow: hidden;
+            display: flex;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .bar-segment-kanji {
+            background: linear-gradient(90deg, #f59e0b, #ef4444);
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+
+        .bar-segment-kana {
+            background: linear-gradient(90deg, #38bdf8, #0284c7);
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+
+        .bar-legend {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        footer {
+            background-color: var(--bg-surface);
+            border-top: 1px solid var(--border-color);
+            padding: 1.5rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-top: auto;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 0.75rem 1rem;
+                gap: 0.75rem;
+            }
+            nav {
+                justify-content: flex-start;
+                padding-bottom: 0.5rem;
+            }
+            main {
+                padding: 1.25rem 0.75rem;
+            }
+            .kpi-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .filter-form {
+                flex-direction: column;
+            }
+            .filter-actions {
+                width: 100%;
+            }
+            .btn {
+                flex: 1;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/" class="brand">
+            <span class="brand-badge">日</span>
+            <span>Project Nihon</span>
+        </a>
+        <nav>
+            <a href="/">Trang chủ</a>
+            <a href="/vocabulary">Từ vựng</a>
+            <a href="/topics">Chủ đề</a>
+            <a href="/kanji">Kanji</a>
+            <a href="/practice">Luyện tập</a>
+            <a href="/stats" class="active">Thống kê</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="page-header">
+            <h1><span>📊</span> Thống Kê & Tiến Độ Học Tập</h1>
+            <p>Theo dõi quá trình ghi nhớ từ vựng trong phiên làm việc và tổng quan kho học liệu hệ thống.</p>
+        </div>
+
+        <div th:if="${successMessage}" class="alert-success">
+            <span>✓</span>
+            <span th:text="${successMessage}">Thao tác thành công.</span>
+        </div>
+
+        <!-- 1. Phạm vi lưu trữ thông báo -->
+        <div class="session-scope-notice">
+            <span class="notice-icon">ℹ️</span>
+            <div class="notice-content">
+                <strong>Phạm vi lưu trữ: Phiên làm việc (Session Scope)</strong>
+                <p>Hệ thống hiện tại chưa yêu cầu đăng nhập tài khoản cá nhân. Toàn bộ tiến độ học tập và lịch sử làm bài được lưu trữ tạm thời trong phiên duyệt web hiện tại trên máy chủ (chấm điểm 100% tại server). Tiến độ này không liên kết với thông tin cá nhân hay mật khẩu, không đồng bộ sang thiết bị khác và sẽ được làm mới khi kết thúc phiên duyệt web.</p>
+            </div>
+        </div>
+
+        <!-- 2. Phần Tiến độ luyện tập cá nhân -->
+        <div class="section-title">
+            <span>🎯 Tiến Độ Luyện Tập (Phiên Hiện Tại)</span>
+            <span class="sub" th:if="${progress.totalAnswered > 0}" th:text="${'Đã ghi nhận ' + progress.totalAnswered + ' lượt làm bài'}">0 câu</span>
+        </div>
+
+        <!-- Filter Panel for Study Progress -->
+        <div class="filter-panel">
+            <form th:action="@{/stats}" method="get" class="filter-form">
+                <div class="form-group">
+                    <label for="mode">Chế độ kiểm tra</label>
+                    <select id="mode" name="mode" class="form-control">
+                        <option value="ALL" th:selected="${selectedMode == null or selectedMode == 'ALL'}">-- Tất cả chế độ --</option>
+                        <option value="JA_VI" th:selected="${selectedMode == 'JA_VI'}">🇯🇵 → 🇻🇳 Nhật → Việt</option>
+                        <option value="VI_JA" th:selected="${selectedMode == 'VI_JA'}">🇻🇳 → 🇯🇵 Việt → Nhật</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="topicId">Lọc theo chủ đề bài học</label>
+                    <select id="topicId" name="topicId" class="form-control">
+                        <option value="" th:selected="${selectedTopicId == null}">-- Tất cả chủ đề --</option>
+                        <option th:each="t : ${topics}"
+                                th:value="${t.id}"
+                                th:text="${t.parent != null ? '↳ ' + t.name : t.name}"
+                                th:selected="${selectedTopicId != null and selectedTopicId == t.id}">
+                            Chủ đề 1
+                        </option>
+                    </select>
+                </div>
+
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary">Lọc lịch sử</button>
+                    <a th:href="@{/stats}" class="btn btn-secondary">Đặt lại</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- KPI Grid for User Study Progress -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Tổng câu đã trả lời</span>
+                    <span class="kpi-icon">📝</span>
+                </div>
+                <div class="kpi-value" th:text="${progress.totalAnswered}">0</div>
+                <div class="kpi-desc">Tổng lượt nộp bài đã chấm</div>
+            </div>
+
+            <div class="kpi-card kpi-card-success">
+                <div class="kpi-header">
+                    <span class="kpi-title">Số câu đúng</span>
+                    <span class="kpi-icon">✅</span>
+                </div>
+                <div class="kpi-value" style="color: #4ade80;" th:text="${progress.correctCount}">0</div>
+                <div class="kpi-desc">Đáp án chính xác hoàn toàn</div>
+            </div>
+
+            <div class="kpi-card kpi-card-danger">
+                <div class="kpi-header">
+                    <span class="kpi-title">Số câu sai</span>
+                    <span class="kpi-icon">❌</span>
+                </div>
+                <div class="kpi-value" style="color: #f87171;" th:text="${progress.incorrectCount}">0</div>
+                <div class="kpi-desc">Cần ôn tập và củng cố lại</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Tỷ lệ chính xác</span>
+                    <span class="kpi-icon">🎯</span>
+                </div>
+                <div class="kpi-value" style="color: var(--gold);" th:text="${progress.accuracyPercentage + '%'}">0%</div>
+                <div class="kpi-desc" th:text="${progress.totalAnswered > 0 ? (progress.correctCount + '/' + progress.totalAnswered + ' câu đúng') : 'Chưa có dữ liệu'}">0/0 câu đúng</div>
+            </div>
+        </div>
+
+        <!-- Empty state when no answers recorded yet -->
+        <div th:if="${progress.totalAnswered == 0}" class="empty-card">
+            <h3>Chưa có dữ liệu làm bài trong phạm vi đã chọn</h3>
+            <p>Hệ thống không tạo dữ liệu thống kê giả. Hãy bắt đầu làm bài kiểm tra để tích lũy tiến độ học tập và theo dõi tỷ lệ chính xác!</p>
+            <a href="/practice" class="btn btn-primary">Bắt đầu luyện tập ngay →</a>
+        </div>
+
+        <!-- Incorrect Answers Section for Revision -->
+        <div th:if="${progress.totalAnswered > 0}" class="table-card">
+            <div class="table-card-header">
+                <h2>
+                    <span>⚠️</span> Danh Sách Câu Trả Lời Sai Cần Ôn Tập
+                    <span style="font-size: 0.85rem; color: #f87171; font-weight: 600;" th:text="${'(' + progress.incorrectRecords.size() + ' câu)'}">(0 câu)</span>
+                </h2>
+                <span th:if="${progress.incorrectRecords.isEmpty()}" style="font-size: 0.85rem; color: #4ade80;">
+                    🎉 Không có câu trả lời sai nào!
+                </span>
+            </div>
+
+            <div th:if="${!progress.incorrectRecords.isEmpty()}" class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 12%;">Chế độ</th>
+                            <th style="width: 20%;">Từ vựng / Đề bài</th>
+                            <th style="width: 25%;">Câu trả lời của bạn</th>
+                            <th style="width: 25%;">Đáp án chuẩn</th>
+                            <th style="width: 18%; text-align: right;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="item : ${progress.incorrectRecords}">
+                            <td>
+                                <span th:if="${item.mode == 'JA_VI'}" class="badge-mode badge-mode-ja-vi">Nhật → Việt</span>
+                                <span th:if="${item.mode == 'VI_JA'}" class="badge-mode badge-mode-vi-ja">Việt → Nhật</span>
+                            </td>
+                            <td>
+                                <strong style="font-size: 1.05rem;" th:text="${item.questionPrompt}">Từ vựng</strong>
+                                <div style="font-size: 0.775rem; color: var(--text-muted);" th:text="${item.topicName}">Chủ đề</div>
+                            </td>
+                            <td>
+                                <span style="color: #fca5a5; font-weight: 600;" th:text="${item.userAnswer.isEmpty() ? '(Để trống)' : item.userAnswer}">watashi</span>
+                            </td>
+                            <td>
+                                <span style="color: #86efac; font-weight: 600;" th:text="${item.expectedAnswer}">わたし - Tôi</span>
+                            </td>
+                            <td style="text-align: right;">
+                                <a th:if="${item.mode == 'JA_VI'}" th:href="@{/practice/question(topicId=${item.topicId})}" class="btn-sm" style="color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Ôn tập chủ đề này">Ôn tập ↺</a>
+                                <a th:if="${item.mode == 'VI_JA'}" th:href="@{/practice/vi-ja/question(topicId=${item.topicId})}" class="btn-sm" style="color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Ôn tập chủ đề này">Ôn tập ↺</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Full Attempts History Table -->
+        <div th:if="${progress.totalAnswered > 0}" class="table-card">
+            <div class="table-card-header">
+                <h2><span>📜</span> Toàn Bộ Lịch Sử Bài Làm Gần Đây</h2>
+                <form th:action="@{/stats/reset}" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử luyện tập trong phiên này?');">
+                    <input type="hidden" name="_csrf" th:value="${_csrf}">
+                    <button type="submit" class="btn btn-danger btn-sm">Xóa lịch sử phiên này</button>
+                </form>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 10%;">Kết quả</th>
+                            <th style="width: 12%;">Chế độ</th>
+                            <th style="width: 20%;">Từ vựng / Đề bài</th>
+                            <th style="width: 25%;">Câu trả lời của bạn</th>
+                            <th style="width: 23%;">Đáp án chuẩn</th>
+                            <th style="width: 10%; text-align: right;">Thời gian</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="r : ${progress.records}">
+                            <td>
+                                <span th:if="${r.correct}" class="badge-status badge-correct">✓ Đúng</span>
+                                <span th:unless="${r.correct}" class="badge-status badge-wrong">✗ Sai</span>
+                            </td>
+                            <td>
+                                <span th:if="${r.mode == 'JA_VI'}" class="badge-mode badge-mode-ja-vi">Nhật → Việt</span>
+                                <span th:if="${r.mode == 'VI_JA'}" class="badge-mode badge-mode-vi-ja">Việt → Nhật</span>
+                            </td>
+                            <td>
+                                <strong th:text="${r.questionPrompt}">Từ vựng</strong>
+                                <div style="font-size: 0.775rem; color: var(--text-muted);" th:text="${r.topicName}">Chủ đề</div>
+                            </td>
+                            <td>
+                                <span th:text="${r.userAnswer.isEmpty() ? '(Để trống)' : r.userAnswer}"
+                                      th:style="${r.correct ? 'color: #86efac;' : 'color: #fca5a5;'}">Câu trả lời</span>
+                            </td>
+                            <td>
+                                <span style="color: var(--text-secondary);" th:text="${r.expectedAnswer}">Đáp án chuẩn</span>
+                            </td>
+                            <td style="text-align: right; font-size: 0.8rem; color: var(--text-muted);"
+                                th:text="${#temporals.format(r.timestamp, 'HH:mm')}">14:30</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 3. Phần Thống Kê Kho Học Liệu Chung -->
+        <div class="section-title" style="margin-top: 3rem;">
+            <span>📚 Thống Kê Kho Học Liệu Hệ Thống</span>
+            <span class="sub" th:text="${'Dữ liệu nguồn: ' + totalVocab + ' từ vựng'}">Kho dữ liệu</span>
+        </div>
+
+        <!-- System KPI Grid -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Tổng từ vựng</span>
+                    <span class="kpi-icon">📚</span>
+                </div>
+                <div class="kpi-value" th:text="${totalVocab}">1547</div>
+                <div class="kpi-desc">Từ vựng đã được chuẩn hóa</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Ký tự Kanji</span>
+                    <span class="kpi-icon">漢</span>
+                </div>
+                <div class="kpi-value" th:text="${totalKanji}">126</div>
+                <div class="kpi-desc">Chữ Hán có đầy đủ âm On/Kun</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Chủ đề bài học</span>
+                    <span class="kpi-icon">🗂️</span>
+                </div>
+                <div class="kpi-value" th:text="${totalTopics}">24</div>
+                <div class="kpi-desc">Chủ đề chính và các bài học con</div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Tỷ lệ từ có Kanji</span>
+                    <span class="kpi-icon">📈</span>
+                </div>
+                <div class="kpi-value" th:text="${kanjiPercentage + '%'}">65%</div>
+                <div class="kpi-desc" th:text="${vocabWithKanjiCount + ' từ chứa chữ Hán'}">1000 từ chứa chữ Hán</div>
+            </div>
+        </div>
+
+        <!-- Proportion Card -->
+        <div class="proportion-card">
+            <h2><span>⚖️</span> Tỷ lệ phân bố cấu trúc từ vựng</h2>
+            <div class="bar-container">
+                <div class="bar-segment-kanji" th:style="'width: ' + ${kanjiPercentage} + '%'" th:title="${'Từ có Kanji: ' + kanjiPercentage + '%'}"></div>
+                <div class="bar-segment-kana" th:style="'width: ' + ${kanaPercentage} + '%'" th:title="${'Thuần Kana: ' + kanaPercentage + '%'}"></div>
+            </div>
+            <div class="bar-legend">
+                <div class="legend-item">
+                    <div class="legend-dot" style="background-color: #f59e0b;"></div>
+                    <span>Từ có chữ Hán (Kanji): <strong th:text="${vocabWithKanjiCount}">1000</strong> (<span th:text="${kanjiPercentage}">65</span>%)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background-color: #38bdf8;"></div>
+                    <span>Từ thuần Kana / ngoại lai: <strong th:text="${vocabKanaOnlyCount}">547</strong> (<span th:text="${kanaPercentage}">35</span>%)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table Card for Topic Stats -->
+        <div class="table-card">
+            <div class="table-card-header">
+                <h2>Danh sách chủ đề và số lượng từ vựng</h2>
+                <span style="font-size: 0.85rem; color: var(--text-secondary);" th:text="${'Tổng cộng: ' + totalTopics + ' chủ đề'}">24 chủ đề</span>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 8%;">ID</th>
+                            <th style="width: 44%;">Tên chủ đề</th>
+                            <th style="width: 20%;">Chủ đề cha</th>
+                            <th style="width: 14%; text-align: center;">Số lượng từ</th>
+                            <th style="width: 14%; text-align: right;">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="t : ${topicStats}">
+                            <td th:text="${t.id}" style="color: var(--text-muted); font-size: 0.8rem;">1</td>
+                            <td>
+                                <strong th:if="${t.parentName == null}" th:text="${t.name}">Chủ đề gốc</strong>
+                                <span th:if="${t.parentName != null}" style="color: var(--accent); padding-left: 0.8rem;">↳ <span th:text="${t.name}">Chủ đề con</span></span>
+                            </td>
+                            <td>
+                                <span th:if="${t.parentName != null}" th:text="${t.parentName}" style="color: var(--text-secondary); font-size: 0.85rem;">Cha</span>
+                                <span th:if="${t.parentName == null}" style="color: var(--text-muted); font-size: 0.8rem;">(Gốc)</span>
+                            </td>
+                            <td style="text-align: center;">
+                                <span class="badge-count" th:text="${t.vocabCount}">25</span>
+                            </td>
+                            <td style="text-align: right;">
+                                <a th:href="@{/vocabulary(topicId=${t.id})}" class="btn-sm" title="Xem từ vựng">Xem</a>
+                                <a th:if="${t.vocabCount > 0}" th:href="@{/practice(topicId=${t.id})}" class="btn-sm" style="color: var(--accent); border-color: rgba(56, 189, 248, 0.4);" title="Luyện tập chủ đề này">Học</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Hệ thống ghi nhớ từ vựng tiếng Nhật.</p>
+    </footer>
+</body>
+</html>
