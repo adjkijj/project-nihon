@@ -68,7 +68,9 @@ public class CsrfInterceptor implements HandlerInterceptor {
             }
 
             if (!isValid) {
-                log.warn("CSRF token validation failed for method [{}] path [{}]", request.getMethod(), request.getRequestURI());
+                String safeMethod = com.nihon.service.excel.ExcelCellUtils.sanitizeForLog(request.getMethod());
+                String safeUri = com.nihon.service.excel.ExcelCellUtils.sanitizeForLog(request.getRequestURI());
+                log.warn("CSRF token validation failed for method [{}] path [{}]", safeMethod, safeUri);
                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid or missing CSRF token");
                 return false;
             }

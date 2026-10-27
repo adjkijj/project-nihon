@@ -16,6 +16,10 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
 
     Optional<Vocabulary> findBySourceLine(Integer sourceLine);
 
+    Optional<Vocabulary> findByTopicIdAndJapaneseText(Long topicId, String japaneseText);
+
+    boolean existsByTopicIdAndJapaneseText(Long topicId, String japaneseText);
+
     boolean existsByTopicId(Long topicId);
 
     long countByTopicId(Long topicId);

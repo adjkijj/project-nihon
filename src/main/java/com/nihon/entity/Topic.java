@@ -57,4 +57,14 @@ public class Topic {
     /** Đánh dấu chủ đề thuộc khu vực Kanji (mục "13. Kanji" và các bài con). */
     @Column(name = "kanji_section", nullable = false)
     private boolean kanjiSection;
+
+    @Column(name = "created_at", updatable = false)
+    private java.time.LocalDateTime createdAt;
+
+    @jakarta.persistence.PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = java.time.LocalDateTime.now();
+        }
+    }
 }

@@ -49,4 +49,7 @@ build/
 !.env.example
 secrets/
 *.secret
+application-secret*.properties
+application-secret*.yml
+
 

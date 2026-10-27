@@ -19,4 +19,9 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     List<Topic> findAllByOrderBySortOrderAsc();
 
     boolean existsByParentId(Long parentId);
+
+    Optional<Topic> findByNameIgnoreCase(String name);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COALESCE(MAX(t.sortOrder), 0) FROM Topic t")
+    Integer findMaxSortOrder();
 }

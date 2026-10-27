@@ -23,7 +23,10 @@ import lombok.Setter;
  */
 @Entity
 @Table(name = "vocabulary",
-        uniqueConstraints = @UniqueConstraint(name = "uk_vocabulary_source_line", columnNames = "source_line"),
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_vocabulary_source_line", columnNames = "source_line"),
+                @UniqueConstraint(name = "uk_vocabulary_topic_japanese", columnNames = {"topic_id", "japanese_text"})
+        },
         indexes = {
                 @Index(name = "idx_vocabulary_topic", columnList = "topic_id"),
                 @Index(name = "idx_vocabulary_japanese", columnList = "japanese_text")
@@ -64,4 +67,25 @@ public class Vocabulary {
 
     @Column(name = "source_line")
     private Integer sourceLine;
+
+    @Column(name = "created_at", updatable = false)
+    private java.time.LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private java.time.LocalDateTime updatedAt;
+
+    @jakarta.persistence.PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = java.time.LocalDateTime.now();
+        }
+        if (updatedAt == null) {
+            updatedAt = createdAt;
+        }
+    }
+
+    @jakarta.persistence.PreUpdate
+    protected void onUpdate() {
+        updatedAt = java.time.LocalDateTime.now();
+    }
 }

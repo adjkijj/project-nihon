@@ -39,4 +39,7 @@ public interface KanjiEntryRepository extends JpaRepository<KanjiEntry, Long> {
         @Param("keyword") String keyword,
         Pageable pageable
     );
+
+    @Query("SELECT COALESCE(MAX(k.sourceLine), 0) FROM KanjiEntry k")
+    Integer findMaxSourceLine();
 }
