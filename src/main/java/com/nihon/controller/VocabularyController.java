@@ -1,6 +1,7 @@
 package com.nihon.controller;
 
 import com.nihon.dto.VocabularyForm;
+import com.nihon.dto.VocabularyRowDto;
 import com.nihon.entity.Topic;
 import com.nihon.entity.Vocabulary;
 import com.nihon.service.TopicService;
@@ -46,7 +47,7 @@ public class VocabularyController {
         int safeSize = Math.max(1, Math.min(100, size));
         Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by("id").descending());
 
-        Page<Vocabulary> vocabPage = vocabularyService.search(topicId, keyword, pageable);
+        Page<VocabularyRowDto> vocabPage = vocabularyService.search(topicId, keyword, pageable);
         List<Topic> topics = topicService.findAllOrdered();
 
         model.addAttribute("vocabPage", vocabPage);

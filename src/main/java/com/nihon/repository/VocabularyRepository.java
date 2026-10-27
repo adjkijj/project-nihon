@@ -33,6 +33,9 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
     @Query("SELECT v.id FROM Vocabulary v WHERE (:topicId IS NULL OR v.topic.id = :topicId)")
     List<Long> findIdsByTopicId(@Param("topicId") Long topicId);
 
+    @Query("SELECT v FROM Vocabulary v JOIN FETCH v.topic t ORDER BY v.id DESC")
+    List<Vocabulary> findAllWithTopic();
+
     long countByHasKanjiTrue();
 
     long countByHasKanjiFalse();

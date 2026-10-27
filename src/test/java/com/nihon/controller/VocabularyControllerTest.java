@@ -3,6 +3,7 @@ package com.nihon.controller;
 import com.nihon.config.CsrfInterceptor;
 import com.nihon.config.WebConfig;
 import com.nihon.dto.VocabularyForm;
+import com.nihon.dto.VocabularyRowDto;
 import com.nihon.entity.Topic;
 import com.nihon.entity.Vocabulary;
 import com.nihon.service.TopicService;
@@ -53,6 +54,7 @@ class VocabularyControllerTest {
 
     private Topic testTopic;
     private Vocabulary testVocab;
+    private VocabularyRowDto testRowDto;
 
     @BeforeEach
     void setUp() {
@@ -68,13 +70,23 @@ class VocabularyControllerTest {
         testVocab.setRomaji("watashi");
         testVocab.setMeaningVi("Tôi");
 
+        testRowDto = VocabularyRowDto.builder()
+                .id(10L)
+                .japaneseText("私（わたし）")
+                .reading("わたし")
+                .romaji("watashi")
+                .meaningVi("Tôi")
+                .topics(List.of(testTopic))
+                .allIds(List.of(10L))
+                .build();
+
         when(topicService.findAllOrdered()).thenReturn(List.of(testTopic));
     }
 
     @Test
     void listVocabulary_returnsOkAndView() throws Exception {
         when(vocabularyService.search(any(), any(), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(testVocab)));
+                .thenReturn(new PageImpl<>(List.of(testRowDto)));
 
         mockMvc.perform(get("/vocabulary"))
                 .andExpect(status().isOk())
@@ -82,6 +94,30 @@ class VocabularyControllerTest {
                 .andExpect(model().attributeExists("vocabPage"))
                 .andExpect(model().attributeExists("topics"))
                 .andExpect(content().string(containsString("私（わたし）")));
+    }
+
+    @Test
+    void listVocabulary_rendersMergedVocabularyWithMultipleTopics() throws Exception {
+        Topic secondTopic = new Topic();
+        secondTopic.setId(2L);
+        secondTopic.setName("Kanji Bài 11 - Lặp lại thành phần");
+
+        VocabularyRowDto mergedRow = VocabularyRowDto.builder()
+                .id(10L)
+                .japaneseText("新聞（しんぶん）")
+                .reading("しんぶん")
+                .romaji("shinbun")
+                .meaningVi("Báo")
+                .topics(List.of(testTopic, secondTopic))
+                .allIds(List.of(10L, 11L))
+                .build();
+
+        when(vocabularyService.search(any(), any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(mergedRow)));
+
+        mockMvc.perform(get("/vocabulary").param("keyword", "báo"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Kanji Bài 11 - Lặp lại thành phần")));
     }
 
     @Test
