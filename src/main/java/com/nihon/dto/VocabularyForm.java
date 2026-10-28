@@ -28,11 +28,9 @@ public class VocabularyForm {
     @Size(max = 255, message = "Cách đọc Hiragana không được vượt quá 255 ký tự.")
     private String reading;
 
-    @NotBlank(message = "Romaji không được để trống.")
     @Size(max = 255, message = "Romaji không được vượt quá 255 ký tự.")
     private String romaji;
 
-    @NotBlank(message = "Nghĩa tiếng Việt không được để trống.")
     @Size(max = 500, message = "Nghĩa tiếng Việt không được vượt quá 500 ký tự.")
     private String meaningVi;
 }

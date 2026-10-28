@@ -370,8 +370,12 @@ public class ImportService {
                 if (existingOpt.isPresent()) {
                     if (effectiveMode == ImportMode.UPDATE_EXISTING) {
                         Vocabulary existing = existingOpt.get();
-                        existing.setRomaji(row.romaji());
-                        existing.setMeaningVi(row.meaningVi());
+                        if (row.romaji() != null) {
+                            existing.setRomaji(row.romaji());
+                        }
+                        if (row.meaningVi() != null) {
+                            existing.setMeaningVi(row.meaningVi());
+                        }
                         existing.setReading(extractReading(row.japanese()));
                         existing.setHasKanji(containsKanji(row.japanese()));
                         vocabBatch.add(existing);
@@ -429,11 +433,21 @@ public class ImportService {
                 if (existingKanjiOpt.isPresent()) {
                     if (effectiveMode == ImportMode.UPDATE_EXISTING) {
                         kanjiTarget = existingKanjiOpt.get();
-                        kanjiTarget.setTopic(topic);
-                        kanjiTarget.setHanViet(row.hanViet());
-                        kanjiTarget.setMeaningVi(row.meaningVi());
-                        kanjiTarget.setOnyomi(row.onReading());
-                        kanjiTarget.setKunyomi(row.kunReading());
+                        if (topic != null) {
+                            kanjiTarget.setTopic(topic);
+                        }
+                        if (row.hanViet() != null) {
+                            kanjiTarget.setHanViet(row.hanViet());
+                        }
+                        if (row.meaningVi() != null) {
+                            kanjiTarget.setMeaningVi(row.meaningVi());
+                        }
+                        if (row.onReading() != null) {
+                            kanjiTarget.setOnyomi(row.onReading());
+                        }
+                        if (row.kunReading() != null) {
+                            kanjiTarget.setKunyomi(row.kunReading());
+                        }
                         kanjiTarget = kanjiEntryRepository.save(kanjiTarget);
                         kanjiUpdated++;
                     } else {
@@ -460,8 +474,12 @@ public class ImportService {
                     if (existingKwOpt.isPresent()) {
                         if (effectiveMode == ImportMode.UPDATE_EXISTING) {
                             KanjiWord existingKw = existingKwOpt.get();
-                            existingKw.setRomaji(kwRow.romaji());
-                            existingKw.setMeaningVi(kwRow.meaningVi());
+                            if (kwRow.romaji() != null) {
+                                existingKw.setRomaji(kwRow.romaji());
+                            }
+                            if (kwRow.meaningVi() != null) {
+                                existingKw.setMeaningVi(kwRow.meaningVi());
+                            }
                             existingKw.setSortOrder(kwRow.rowNumber());
                             kanjiWordRepository.save(existingKw);
                             kanjiWordsUpdated++;

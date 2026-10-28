@@ -86,6 +86,7 @@ public class KanjiSheetParser {
             // Đọc dữ liệu từ hàng 3 trở đi (index 2 đến sheet.getLastRowNum())
             String currentTopic = null;
             KanjiRowBuilder currentKanjiBuilder = null;
+            Integer lastInvalidKanjiRow = null;
             Set<String> seenKanjiInFile = new HashSet<>();
             int lastRowNum = sheet.getLastRowNum();
 
@@ -118,192 +119,203 @@ public class KanjiSheetParser {
                 boolean formulaH = ExcelCellUtils.isFormula(cellH);
                 boolean formulaI = ExcelCellUtils.isFormula(cellI);
 
-                String valA = formulaA ? "" : ExcelCellUtils.normalizeTopic(dataFormatter, cellA);
-                String valB = formulaB ? "" : ExcelCellUtils.normalizeCell(dataFormatter, cellB);
-                String valC = formulaC ? "" : ExcelCellUtils.normalizeCell(dataFormatter, cellC);
-                String valD = formulaD ? "" : ExcelCellUtils.normalizeCell(dataFormatter, cellD);
-                String valE = formulaE ? "" : ExcelCellUtils.normalizeCell(dataFormatter, cellE);
-                String valF = formulaF ? "" : ExcelCellUtils.normalizeCell(dataFormatter, cellF);
-                String valG = formulaG ? "" : ExcelCellUtils.normalizeCell(dataFormatter, cellG);
-                String valH = formulaH ? "" : ExcelCellUtils.normalizeCell(dataFormatter, cellH);
-                String valI = formulaI ? "" : ExcelCellUtils.normalizeCell(dataFormatter, cellI);
+                String valA = formulaA ? null : ExcelCellUtils.normalizeTopic(dataFormatter, cellA);
+                String valB = formulaB ? null : ExcelCellUtils.normalizeCellOrNull(dataFormatter, cellB);
+                String valC = formulaC ? null : ExcelCellUtils.normalizeCellOrNull(dataFormatter, cellC);
+                String valD = formulaD ? null : ExcelCellUtils.normalizeCellOrNull(dataFormatter, cellD);
+                String valE = formulaE ? null : ExcelCellUtils.normalizeCellOrNull(dataFormatter, cellE);
+                String valF = formulaF ? null : ExcelCellUtils.normalizeCellOrNull(dataFormatter, cellF);
+                String valG = formulaG ? null : ExcelCellUtils.normalizeCellOrNull(dataFormatter, cellG);
+                String valH = formulaH ? null : ExcelCellUtils.normalizeCellOrNull(dataFormatter, cellH);
+                String valI = formulaI ? null : ExcelCellUtils.normalizeCellOrNull(dataFormatter, cellI);
 
                 // Quy tắc 3h: Hàng trống hoàn toàn thì bỏ qua
                 boolean hasAnyFormula = formulaA || formulaB || formulaC || formulaD || formulaE
                         || formulaF || formulaG || formulaH || formulaI;
-                if (!hasAnyFormula && valA.isEmpty() && valB.isEmpty() && valC.isEmpty() && valD.isEmpty()
-                        && valE.isEmpty() && valF.isEmpty() && valG.isEmpty() && valH.isEmpty() && valI.isEmpty()) {
+                if (!hasAnyFormula && valA == null && valB == null && valC == null && valD == null
+                        && valE == null && valF == null && valG == null && valH == null && valI == null) {
                     continue;
                 }
 
-                // Quy tắc 5: Ô có công thức bị từ chối
-                if (formulaA) errors.add(new RowError(rowNumber, HEADER_TOPIC, "Ô chứa công thức không được phép"));
-                if (formulaB) errors.add(new RowError(rowNumber, HEADER_KANJI, "Ô chứa công thức không được phép"));
-                if (formulaC) errors.add(new RowError(rowNumber, HEADER_HAN_VIET, "Ô chứa công thức không được phép"));
-                if (formulaD) errors.add(new RowError(rowNumber, HEADER_MEANING, "Ô chứa công thức không được phép"));
-                if (formulaE) errors.add(new RowError(rowNumber, HEADER_ON, "Ô chứa công thức không được phép"));
-                if (formulaF) errors.add(new RowError(rowNumber, HEADER_KUN, "Ô chứa công thức không được phép"));
-                if (formulaG) errors.add(new RowError(rowNumber, HEADER_WORD_JAPANESE, "Ô chứa công thức không được phép"));
-                if (formulaH) errors.add(new RowError(rowNumber, HEADER_WORD_ROMAJI, "Ô chứa công thức không được phép"));
-                if (formulaI) errors.add(new RowError(rowNumber, HEADER_WORD_MEANING, "Ô chứa công thức không được phép"));
+                // Mỗi hàng chỉ ghi một lỗi chính (không để một lỗi sinh ra nhiều lỗi dây chuyền)
+                RowError primaryError = null;
 
                 // Kiểm soát PCI-DSS: Tuyệt đối không nhập số thẻ thanh toán (PAN) vào hệ thống
-                // Không ghi giá trị số thẻ vào log hay thông điệp lỗi
-                boolean hasCardData = false;
                 if (ExcelCellUtils.containsPotentialPaymentCard(valA)) {
-                    errors.add(new RowError(rowNumber, HEADER_TOPIC, "Dữ liệu giống số thẻ thanh toán, không được nhập"));
-                    hasCardData = true;
-                }
-                if (ExcelCellUtils.containsPotentialPaymentCard(valB)) {
-                    errors.add(new RowError(rowNumber, HEADER_KANJI, "Dữ liệu giống số thẻ thanh toán, không được nhập"));
-                    hasCardData = true;
-                }
-                if (ExcelCellUtils.containsPotentialPaymentCard(valC)) {
-                    errors.add(new RowError(rowNumber, HEADER_HAN_VIET, "Dữ liệu giống số thẻ thanh toán, không được nhập"));
-                    hasCardData = true;
-                }
-                if (ExcelCellUtils.containsPotentialPaymentCard(valD)) {
-                    errors.add(new RowError(rowNumber, HEADER_MEANING, "Dữ liệu giống số thẻ thanh toán, không được nhập"));
-                    hasCardData = true;
-                }
-                if (ExcelCellUtils.containsPotentialPaymentCard(valE)) {
-                    errors.add(new RowError(rowNumber, HEADER_ON, "Dữ liệu giống số thẻ thanh toán, không được nhập"));
-                    hasCardData = true;
-                }
-                if (ExcelCellUtils.containsPotentialPaymentCard(valF)) {
-                    errors.add(new RowError(rowNumber, HEADER_KUN, "Dữ liệu giống số thẻ thanh toán, không được nhập"));
-                    hasCardData = true;
-                }
-                if (ExcelCellUtils.containsPotentialPaymentCard(valG)) {
-                    errors.add(new RowError(rowNumber, HEADER_WORD_JAPANESE, "Dữ liệu giống số thẻ thanh toán, không được nhập"));
-                    hasCardData = true;
-                }
-                if (ExcelCellUtils.containsPotentialPaymentCard(valH)) {
-                    errors.add(new RowError(rowNumber, HEADER_WORD_ROMAJI, "Dữ liệu giống số thẻ thanh toán, không được nhập"));
-                    hasCardData = true;
-                }
-                if (ExcelCellUtils.containsPotentialPaymentCard(valI)) {
-                    errors.add(new RowError(rowNumber, HEADER_WORD_MEANING, "Dữ liệu giống số thẻ thanh toán, không được nhập"));
-                    hasCardData = true;
+                    primaryError = new RowError(rowNumber, HEADER_TOPIC, "Dữ liệu giống số thẻ thanh toán, không được nhập");
+                } else if (ExcelCellUtils.containsPotentialPaymentCard(valB)) {
+                    primaryError = new RowError(rowNumber, HEADER_KANJI, "Dữ liệu giống số thẻ thanh toán, không được nhập");
+                } else if (ExcelCellUtils.containsPotentialPaymentCard(valC)) {
+                    primaryError = new RowError(rowNumber, HEADER_HAN_VIET, "Dữ liệu giống số thẻ thanh toán, không được nhập");
+                } else if (ExcelCellUtils.containsPotentialPaymentCard(valD)) {
+                    primaryError = new RowError(rowNumber, HEADER_MEANING, "Dữ liệu giống số thẻ thanh toán, không được nhập");
+                } else if (ExcelCellUtils.containsPotentialPaymentCard(valE)) {
+                    primaryError = new RowError(rowNumber, HEADER_ON, "Dữ liệu giống số thẻ thanh toán, không được nhập");
+                } else if (ExcelCellUtils.containsPotentialPaymentCard(valF)) {
+                    primaryError = new RowError(rowNumber, HEADER_KUN, "Dữ liệu giống số thẻ thanh toán, không được nhập");
+                } else if (ExcelCellUtils.containsPotentialPaymentCard(valG)) {
+                    primaryError = new RowError(rowNumber, HEADER_WORD_JAPANESE, "Dữ liệu giống số thẻ thanh toán, không được nhập");
+                } else if (ExcelCellUtils.containsPotentialPaymentCard(valH)) {
+                    primaryError = new RowError(rowNumber, HEADER_WORD_ROMAJI, "Dữ liệu giống số thẻ thanh toán, không được nhập");
+                } else if (ExcelCellUtils.containsPotentialPaymentCard(valI)) {
+                    primaryError = new RowError(rowNumber, HEADER_WORD_MEANING, "Dữ liệu giống số thẻ thanh toán, không được nhập");
                 }
 
-                // Quy tắc 3g: Xử lý chủ đề
-                boolean topicHasError = false;
-                if (!valA.isEmpty()) {
+                // Quy tắc 5: Ô có công thức bị từ chối
+                if (primaryError == null) {
+                    if (formulaA) primaryError = new RowError(rowNumber, HEADER_TOPIC, "Ô chứa công thức không được phép");
+                    else if (formulaB) primaryError = new RowError(rowNumber, HEADER_KANJI, "Ô chứa công thức không được phép");
+                    else if (formulaC) primaryError = new RowError(rowNumber, HEADER_HAN_VIET, "Ô chứa công thức không được phép");
+                    else if (formulaD) primaryError = new RowError(rowNumber, HEADER_MEANING, "Ô chứa công thức không được phép");
+                    else if (formulaE) primaryError = new RowError(rowNumber, HEADER_ON, "Ô chứa công thức không được phép");
+                    else if (formulaF) primaryError = new RowError(rowNumber, HEADER_KUN, "Ô chứa công thức không được phép");
+                    else if (formulaG) primaryError = new RowError(rowNumber, HEADER_WORD_JAPANESE, "Ô chứa công thức không được phép");
+                    else if (formulaH) primaryError = new RowError(rowNumber, HEADER_WORD_ROMAJI, "Ô chứa công thức không được phép");
+                    else if (formulaI) primaryError = new RowError(rowNumber, HEADER_WORD_MEANING, "Ô chứa công thức không được phép");
+                }
+
+                // Quy tắc chủ đề: Cột A trống thì dùng chủ đề hàng trên. Nếu chưa có chủ đề nào và cột A trống thì lỗi
+                boolean topicError = false;
+                if (valA != null) {
                     currentTopic = valA;
                     if (currentTopic.length() > MAX_TOPIC_LENGTH) {
-                        errors.add(new RowError(rowNumber, HEADER_TOPIC,
-                                "Chủ đề vượt quá độ dài tối đa " + MAX_TOPIC_LENGTH + " ký tự (hiện tại: " + currentTopic.length() + ")"));
-                        topicHasError = true;
+                        if (primaryError == null) {
+                            primaryError = new RowError(rowNumber, HEADER_TOPIC,
+                                    "Chủ đề vượt quá độ dài tối đa " + MAX_TOPIC_LENGTH + " ký tự (hiện tại: " + currentTopic.length() + ")");
+                        }
+                        topicError = true;
                     }
                 } else if (!formulaA) {
                     if (currentTopic == null || currentTopic.isEmpty()) {
-                        errors.add(new RowError(rowNumber, HEADER_TOPIC, "Hàng có dữ liệu nhưng chưa có chủ đề (chủ đề trống)"));
-                        topicHasError = true;
+                        if (primaryError == null) {
+                            primaryError = new RowError(rowNumber, HEADER_TOPIC, "Hàng có dữ liệu nhưng chưa có chủ đề (chủ đề trống)");
+                        }
+                        topicError = true;
                     }
                 }
 
-                // Kiểm tra xem hàng có định nghĩa Kanji mới hay không (cột B có giá trị)
-                boolean hasKanjiValue = !valB.isEmpty() || formulaB;
-                boolean hasWordValue = !valG.isEmpty() || !valH.isEmpty() || !valI.isEmpty()
+                boolean hasKanjiCell = (valB != null) || formulaB;
+                boolean hasWordCell = (valG != null) || (valH != null) || (valI != null)
                         || formulaG || formulaH || formulaI;
 
-                if (hasKanjiValue) {
-                    // Quy tắc 3d: Tạo Kanji mới
-                    boolean kanjiError = formulaB || formulaC || formulaD || formulaE || formulaF || topicHasError || hasCardData;
-
-                    // Kiểm tra đúng 1 ký tự Kanji thuộc Han script theo code point
-                    if (!formulaB) {
+                if (hasKanjiCell) {
+                    // Kiểm tra tính hợp lệ của cột B (Kanji: đúng 1 ký tự Han)
+                    boolean kanjiColBValid = false;
+                    if (!formulaB && valB != null && (primaryError == null || !HEADER_KANJI.equals(primaryError.column()))) {
                         int codePointCount = valB.codePointCount(0, valB.length());
                         if (codePointCount != 1) {
-                            errors.add(new RowError(rowNumber, HEADER_KANJI,
-                                    "Cột Kanji phải là đúng 1 ký tự (hiện tại có " + codePointCount + " ký tự: '" + valB + "')"));
-                            kanjiError = true;
+                            if (primaryError == null) {
+                                primaryError = new RowError(rowNumber, HEADER_KANJI,
+                                        "Cột Kanji phải là đúng 1 ký tự (hiện tại có " + codePointCount + " ký tự: '" + valB + "')");
+                            }
                         } else {
                             int codePoint = valB.codePointAt(0);
                             if (Character.UnicodeScript.of(codePoint) != Character.UnicodeScript.HAN) {
-                                errors.add(new RowError(rowNumber, HEADER_KANJI,
-                                        "Cột Kanji phải là ký tự chữ Hán (Han script), hiện tại: '" + valB + "'"));
-                                kanjiError = true;
+                                if (primaryError == null) {
+                                    primaryError = new RowError(rowNumber, HEADER_KANJI,
+                                            "Cột Kanji phải là ký tự chữ Hán (Han script), hiện tại: '" + valB + "'");
+                                }
+                            } else if (!seenKanjiInFile.add(valB)) {
+                                if (primaryError == null) {
+                                    primaryError = new RowError(rowNumber, HEADER_KANJI,
+                                            "Ký tự Kanji '" + valB + "' bị trùng lặp trong file (đã xuất hiện ở hàng trước)");
+                                }
+                            } else {
+                                kanjiColBValid = true;
                             }
                         }
+                    }
 
-                        // Quy tắc 3j: Trùng Kanji trong file
-                        if (!kanjiError) {
-                            if (!seenKanjiInFile.add(valB)) {
-                                errors.add(new RowError(rowNumber, HEADER_KANJI,
-                                        "Ký tự Kanji '" + valB + "' bị trùng lặp trong file (đã xuất hiện ở hàng trước)"));
-                                kanjiError = true;
+                    if (kanjiColBValid) {
+                        // Đóng gói Kanji trước đó nếu có
+                        if (currentKanjiBuilder != null) {
+                            if (!currentKanjiBuilder.hasError()) {
+                                validKanjiList.add(currentKanjiBuilder.build());
                             }
+                            currentKanjiBuilder = null;
                         }
-                    }
 
-                    // Kiểm tra các cột bắt buộc C, D, E, F
-                    if (!formulaC) {
-                        if (valC.isEmpty()) {
-                            errors.add(new RowError(rowNumber, HEADER_HAN_VIET, "Thiếu dữ liệu cột Hán Việt"));
-                            kanjiError = true;
-                        } else if (valC.length() > MAX_HAN_VIET_LENGTH) {
-                            errors.add(new RowError(rowNumber, HEADER_HAN_VIET, "Hán Việt vượt quá " + MAX_HAN_VIET_LENGTH + " ký tự"));
-                            kanjiError = true;
-                        }
-                    }
-                    if (!formulaD) {
-                        if (valD.isEmpty()) {
-                            errors.add(new RowError(rowNumber, HEADER_MEANING, "Thiếu dữ liệu cột Ý nghĩa"));
-                            kanjiError = true;
-                        } else if (valD.length() > MAX_MEANING_LENGTH) {
-                            errors.add(new RowError(rowNumber, HEADER_MEANING, "Ý nghĩa vượt quá " + MAX_MEANING_LENGTH + " ký tự"));
-                            kanjiError = true;
-                        }
-                    }
-                    if (!formulaE) {
-                        if (valE.isEmpty()) {
-                            errors.add(new RowError(rowNumber, HEADER_ON, "Thiếu dữ liệu cột On"));
-                            kanjiError = true;
-                        } else if (valE.length() > MAX_ON_KUN_LENGTH) {
-                            errors.add(new RowError(rowNumber, HEADER_ON, "Âm On vượt quá " + MAX_ON_KUN_LENGTH + " ký tự"));
-                            kanjiError = true;
-                        }
-                    }
-                    if (!formulaF) {
-                        if (valF.isEmpty()) {
-                            errors.add(new RowError(rowNumber, HEADER_KUN, "Thiếu dữ liệu cột Kun"));
-                            kanjiError = true;
-                        } else if (valF.length() > MAX_ON_KUN_LENGTH) {
-                            errors.add(new RowError(rowNumber, HEADER_KUN, "Âm Kun vượt quá " + MAX_ON_KUN_LENGTH + " ký tự"));
-                            kanjiError = true;
-                        }
-                    }
-
-                    // Đóng gói Kanji trước đó nếu hợp lệ
-                    if (currentKanjiBuilder != null) {
-                        validKanjiList.add(currentKanjiBuilder.build());
-                        currentKanjiBuilder = null;
-                    }
-
-                    if (!kanjiError && currentTopic != null && !currentTopic.isEmpty()) {
+                        // Quy tắc: ngay khi hàng có cột B hợp lệ, đặt nó làm Kanji hiện tại
+                        lastInvalidKanjiRow = null;
                         currentKanjiBuilder = new KanjiRowBuilder(rowNumber, currentTopic, valB, valC, valD, valE, valF);
+
+                        // Kiểm tra độ dài tối đa của các cột không bắt buộc C, D, E, F nếu có
+                        if (valC != null && valC.length() > MAX_HAN_VIET_LENGTH && primaryError == null) {
+                            primaryError = new RowError(rowNumber, HEADER_HAN_VIET, "Hán Việt vượt quá " + MAX_HAN_VIET_LENGTH + " ký tự");
+                        }
+                        if (valD != null && valD.length() > MAX_MEANING_LENGTH && primaryError == null) {
+                            primaryError = new RowError(rowNumber, HEADER_MEANING, "Ý nghĩa vượt quá " + MAX_MEANING_LENGTH + " ký tự");
+                        }
+                        if (valE != null && valE.length() > MAX_ON_KUN_LENGTH && primaryError == null) {
+                            primaryError = new RowError(rowNumber, HEADER_ON, "Âm On vượt quá " + MAX_ON_KUN_LENGTH + " ký tự");
+                        }
+                        if (valF != null && valF.length() > MAX_ON_KUN_LENGTH && primaryError == null) {
+                            primaryError = new RowError(rowNumber, HEADER_KUN, "Âm Kun vượt quá " + MAX_ON_KUN_LENGTH + " ký tự");
+                        }
+
+                        if (primaryError != null || topicError) {
+                            currentKanjiBuilder.setHasError(true);
+                        }
+
+                        // Nếu hàng có kèm từ cần nhớ
+                        if (hasWordCell) {
+                            RowError wordErr = validateWordRow(rowNumber, valG, valH, valI, formulaG, formulaH, formulaI);
+                            if (wordErr != null) {
+                                if (primaryError == null) {
+                                    primaryError = wordErr;
+                                }
+                            } else {
+                                currentKanjiBuilder.addWord(new KanjiWordRow(rowNumber, valG, valH, valI));
+                            }
+                        }
+                    } else {
+                        // Cột B không hợp lệ: đóng gói Kanji trước đó, đặt Kanji hiện tại là null và lưu hàng lỗi
+                        if (currentKanjiBuilder != null) {
+                            if (!currentKanjiBuilder.hasError()) {
+                                validKanjiList.add(currentKanjiBuilder.build());
+                            }
+                            currentKanjiBuilder = null;
+                        }
+                        lastInvalidKanjiRow = rowNumber;
                     }
 
-                    // Nếu hàng này có kèm từ cần nhớ đầu tiên (cột G hoặc H/I có giá trị)
-                    if (hasWordValue) {
-                        validateAndAddWord(rowNumber, valG, valH, valI, formulaG, formulaH, formulaI, currentKanjiBuilder, errors);
-                    }
-
-                } else if (hasWordValue) {
-                    // Quy tắc 3e: Hàng có cột B trống và có từ cần nhớ
+                } else if (hasWordCell) {
+                    // Hàng từ cần nhớ độc lập (cột B trống)
                     if (currentKanjiBuilder == null) {
-                        errors.add(new RowError(rowNumber, "Word", "Hàng chứa từ cần nhớ nhưng chưa có Kanji nào phía trên (hàng mồ côi)"));
+                        if (lastInvalidKanjiRow != null) {
+                            if (primaryError == null) {
+                                primaryError = new RowError(rowNumber, "Word",
+                                        "Hàng chứa từ cần nhớ nhưng chưa có Kanji nào phía trên (hàng mồ côi): Kanji ở hàng " + lastInvalidKanjiRow + " không hợp lệ");
+                            }
+                        } else {
+                            if (primaryError == null) {
+                                primaryError = new RowError(rowNumber, "Word",
+                                        "Hàng chứa từ cần nhớ nhưng chưa có Kanji nào phía trên (hàng mồ côi)");
+                            }
+                        }
                     }
-                    validateAndAddWord(rowNumber, valG, valH, valI, formulaG, formulaH, formulaI, currentKanjiBuilder, errors);
-                } else if (!valC.isEmpty() || !valD.isEmpty() || !valE.isEmpty() || !valF.isEmpty()) {
-                    errors.add(new RowError(rowNumber, HEADER_KANJI, "Hàng có thông tin Hán Việt/âm đọc nhưng thiếu ký tự Kanji"));
+
+                    RowError wordErr = validateWordRow(rowNumber, valG, valH, valI, formulaG, formulaH, formulaI);
+                    if (wordErr != null) {
+                        if (primaryError == null) {
+                            primaryError = wordErr;
+                        }
+                    } else if (currentKanjiBuilder != null && primaryError == null) {
+                        currentKanjiBuilder.addWord(new KanjiWordRow(rowNumber, valG, valH, valI));
+                    }
+                } else if (valC != null || valD != null || valE != null || valF != null) {
+                    if (primaryError == null) {
+                        primaryError = new RowError(rowNumber, HEADER_KANJI, "Hàng có thông tin Hán Việt/âm đọc nhưng thiếu ký tự Kanji");
+                    }
+                }
+
+                if (primaryError != null) {
+                    errors.add(primaryError);
                 }
             }
 
             // Đóng gói Kanji cuối cùng nếu có
-            if (currentKanjiBuilder != null) {
+            if (currentKanjiBuilder != null && !currentKanjiBuilder.hasError()) {
                 validKanjiList.add(currentKanjiBuilder.build());
             }
 
@@ -315,53 +327,43 @@ public class KanjiSheetParser {
     }
 
     /**
-     * Xác thực và thêm từ cần nhớ vào Kanji hiện tại nếu hợp lệ.
+     * Xác thực các trường của từ cần nhớ: Cột bắt buộc duy nhất là cột G (Tiếng Nhật). Cột H và I cho phép null.
      */
-    private void validateAndAddWord(int rowNumber, String valG, String valH, String valI,
-                                    boolean formulaG, boolean formulaH, boolean formulaI,
-                                    KanjiRowBuilder currentKanji, List<RowError> errors) {
-        boolean wordError = formulaG || formulaH || formulaI
-                || ExcelCellUtils.containsPotentialPaymentCard(valG)
-                || ExcelCellUtils.containsPotentialPaymentCard(valH)
-                || ExcelCellUtils.containsPotentialPaymentCard(valI);
+    private RowError validateWordRow(int rowNumber, String valG, String valH, String valI,
+                                     boolean formulaG, boolean formulaH, boolean formulaI) {
+        if (formulaG) return new RowError(rowNumber, HEADER_WORD_JAPANESE, "Ô chứa công thức không được phép");
+        if (formulaH) return new RowError(rowNumber, HEADER_WORD_ROMAJI, "Ô chứa công thức không được phép");
+        if (formulaI) return new RowError(rowNumber, HEADER_WORD_MEANING, "Ô chứa công thức không được phép");
 
-        // Quy tắc 3f: Từ cần nhớ phải có đủ G, H, I
-        if (!formulaG) {
-            if (valG.isEmpty()) {
-                errors.add(new RowError(rowNumber, HEADER_WORD_JAPANESE, "Từ cần nhớ thiếu cột Tiếng Nhật"));
-                wordError = true;
-            } else if (valG.length() > MAX_WORD_JAPANESE_LENGTH) {
-                errors.add(new RowError(rowNumber, HEADER_WORD_JAPANESE,
-                        "Từ tiếng Nhật vượt quá độ dài tối đa " + MAX_WORD_JAPANESE_LENGTH + " ký tự"));
-                wordError = true;
-            }
+        if (ExcelCellUtils.containsPotentialPaymentCard(valG)) {
+            return new RowError(rowNumber, HEADER_WORD_JAPANESE, "Dữ liệu giống số thẻ thanh toán, không được nhập");
+        }
+        if (ExcelCellUtils.containsPotentialPaymentCard(valH)) {
+            return new RowError(rowNumber, HEADER_WORD_ROMAJI, "Dữ liệu giống số thẻ thanh toán, không được nhập");
+        }
+        if (ExcelCellUtils.containsPotentialPaymentCard(valI)) {
+            return new RowError(rowNumber, HEADER_WORD_MEANING, "Dữ liệu giống số thẻ thanh toán, không được nhập");
         }
 
-        if (!formulaH) {
-            if (valH.isEmpty()) {
-                errors.add(new RowError(rowNumber, HEADER_WORD_ROMAJI, "Từ cần nhớ thiếu cột Romaji"));
-                wordError = true;
-            } else if (valH.length() > MAX_WORD_ROMAJI_LENGTH) {
-                errors.add(new RowError(rowNumber, HEADER_WORD_ROMAJI,
-                        "Romaji vượt quá độ dài tối đa " + MAX_WORD_ROMAJI_LENGTH + " ký tự"));
-                wordError = true;
-            }
+        if (valG == null) {
+            return new RowError(rowNumber, HEADER_WORD_JAPANESE, "Từ cần nhớ thiếu cột Tiếng Nhật");
+        }
+        if (valG.length() > MAX_WORD_JAPANESE_LENGTH) {
+            return new RowError(rowNumber, HEADER_WORD_JAPANESE,
+                    "Từ tiếng Nhật vượt quá độ dài tối đa " + MAX_WORD_JAPANESE_LENGTH + " ký tự");
         }
 
-        if (!formulaI) {
-            if (valI.isEmpty()) {
-                errors.add(new RowError(rowNumber, HEADER_WORD_MEANING, "Từ cần nhớ thiếu cột Nghĩa tiếng Việt"));
-                wordError = true;
-            } else if (valI.length() > MAX_WORD_MEANING_LENGTH) {
-                errors.add(new RowError(rowNumber, HEADER_WORD_MEANING,
-                        "Nghĩa tiếng Việt vượt quá độ dài tối đa " + MAX_WORD_MEANING_LENGTH + " ký tự"));
-                wordError = true;
-            }
+        if (valH != null && valH.length() > MAX_WORD_ROMAJI_LENGTH) {
+            return new RowError(rowNumber, HEADER_WORD_ROMAJI,
+                    "Romaji vượt quá độ dài tối đa " + MAX_WORD_ROMAJI_LENGTH + " ký tự");
         }
 
-        if (!wordError && currentKanji != null) {
-            currentKanji.addWord(new KanjiWordRow(rowNumber, valG, valH, valI));
+        if (valI != null && valI.length() > MAX_WORD_MEANING_LENGTH) {
+            return new RowError(rowNumber, HEADER_WORD_MEANING,
+                    "Nghĩa tiếng Việt vượt quá độ dài tối đa " + MAX_WORD_MEANING_LENGTH + " ký tự");
         }
+
+        return null;
     }
 
     /**
@@ -431,6 +433,7 @@ public class KanjiSheetParser {
         private final String onReading;
         private final String kunReading;
         private final List<KanjiWordRow> words = new ArrayList<>();
+        private boolean hasError = false;
 
         public KanjiRowBuilder(int rowNumber, String topic, String kanji, String hanViet,
                                String meaningVi, String onReading, String kunReading) {
@@ -441,6 +444,14 @@ public class KanjiSheetParser {
             this.meaningVi = meaningVi;
             this.onReading = onReading;
             this.kunReading = kunReading;
+        }
+
+        public boolean hasError() {
+            return hasError;
+        }
+
+        public void setHasError(boolean hasError) {
+            this.hasError = hasError;
         }
 
         public void addWord(KanjiWordRow word) {

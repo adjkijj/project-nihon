@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
  * Dịch vụ ghi nhật ký kiểm toán (audit log) cho hoạt động import tệp tin.
  * Sử dụng {@link Propagation#REQUIRES_NEW} để bảo đảm nhật ký luôn được lưu trữ độc lập
  * kể cả khi giao dịch nghiệp vụ chính bị hoàn tác (rollback).
+ * Do hệ thống không có tài khoản và vai trò, trường định danh lưu trữ địa chỉ IP của client (hoặc "anonymous").
  */
 @Service
 @RequiredArgsConstructor
@@ -26,7 +27,7 @@ public class ImportAuditService {
      * Ghi nhận một bản ghi kiểm toán vào cơ sở dữ liệu.
      * Tuyệt đối không ghi nội dung ô vào log hay database audit log.
      *
-     * @param userId         mã định danh người dùng thực hiện
+     * @param clientIp       địa chỉ IP của client (hoặc "anonymous")
      * @param cleanFileName  tên tệp tin đã được chuẩn hóa (chống path traversal)
      * @param fileHashSha256 mã băm SHA-256 của tệp tin tải lên
      * @param added          số bản ghi thêm mới
@@ -37,10 +38,10 @@ public class ImportAuditService {
      * @return bản ghi {@link ImportAuditLog} đã được lưu
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public ImportAuditLog log(String userId, String cleanFileName, String fileHashSha256,
+    public ImportAuditLog log(String clientIp, String cleanFileName, String fileHashSha256,
                               int added, int updated, int skipped, String result, String errorMessage) {
         ImportAuditLog auditLog = new ImportAuditLog();
-        auditLog.setUserId(userId != null && !userId.isBlank() ? userId : "anonymous");
+        auditLog.setUserId(clientIp != null && !clientIp.isBlank() ? clientIp.trim() : "anonymous");
         auditLog.setImportedAt(LocalDateTime.now());
         auditLog.setFileName(cleanFileName);
         auditLog.setFileHashSha256(fileHashSha256);
@@ -55,7 +56,7 @@ public class ImportAuditService {
 
         ImportAuditLog saved = auditLogRepository.save(auditLog);
 
-        log.info("Audit log recorded: id={}, user={}, file={}, hash={}, added={}, updated={}, skipped={}, result={}",
+        log.info("Audit log recorded: id={}, ip/client={}, file={}, hash={}, added={}, updated={}, skipped={}, result={}",
                 saved.getId(),
                 ExcelCellUtils.sanitizeForLog(saved.getUserId()),
                 ExcelCellUtils.sanitizeForLog(saved.getFileName()),

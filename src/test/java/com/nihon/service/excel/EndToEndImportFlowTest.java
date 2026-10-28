@@ -97,14 +97,12 @@ class EndToEndImportFlowTest {
         // --- BƯỚC 1: PREVIEW ---
         ImportPreviewReport preview = importService.preview(multipartFile);
         assertThat(preview.errors()).isEmpty();
-        // File Update.xlsx mẫu có 2 chủ đề New Word + 2 chủ đề Kanji = 4 chủ đề
-        assertThat(preview.newTopicsCount()).isGreaterThanOrEqualTo(2);
-        // Có 6 từ vựng New Word
-        assertThat(preview.newWordsCount()).isGreaterThanOrEqualTo(6);
-        // Có 3 Kanji
-        assertThat(preview.newKanjiCount()).isGreaterThanOrEqualTo(3);
-        // Có 4 từ cần nhớ của Kanji (3 từ của '日', 1 từ của '月')
-        assertThat(preview.newKanjiWordsCount()).isGreaterThanOrEqualTo(4);
+        // File Update.xlsx có 2 chủ đề Kanji
+        assertThat(preview.newTopicsCount()).isGreaterThanOrEqualTo(1);
+        // Có 14 Kanji
+        assertThat(preview.newKanjiCount()).isGreaterThanOrEqualTo(14);
+        // Có 34 từ cần nhớ của Kanji
+        assertThat(preview.newKanjiWordsCount()).isGreaterThanOrEqualTo(34);
 
         long topicCountBefore = topicRepository.count();
         long vocabCountBefore = vocabularyRepository.count();
@@ -114,65 +112,37 @@ class EndToEndImportFlowTest {
         // --- BƯỚC 2: COMMIT LẦN 1 ---
         ImportCommitResult commitResult = importService.commit(multipartFile, ImportMode.SKIP_DUPLICATES, "e2e_tester");
         assertThat(commitResult.success()).isTrue();
-        assertThat(commitResult.wordsAdded()).isGreaterThanOrEqualTo(6);
-        assertThat(commitResult.kanjiAdded()).isGreaterThanOrEqualTo(3);
-        assertThat(commitResult.kanjiWordsAdded()).isGreaterThanOrEqualTo(4);
+        assertThat(commitResult.kanjiAdded()).isGreaterThanOrEqualTo(14);
+        assertThat(commitResult.kanjiWordsAdded()).isGreaterThanOrEqualTo(34);
 
         // --- BƯỚC 3: KIỂM TRA DỮ LIỆU TRONG DATABASE ---
-        // 1. Kiểm tra chủ đề và từ vựng tiếng Việt có dấu
-        Optional<Topic> topic1Opt = topicRepository.findByNameIgnoreCase("Chủ đề 1: Giao tiếp thường ngày");
-        assertThat(topic1Opt).isPresent();
-        Topic topic1 = topic1Opt.get();
+        // 1. Kiểm tra Kanji '茶' (hàng 11, kun_reading là NULL) và các từ con
+        Optional<KanjiEntry> chaOpt = kanjiEntryRepository.findByCharacter("茶");
+        assertThat(chaOpt).isPresent();
+        KanjiEntry cha = chaOpt.get();
+        assertThat(cha.getHanViet()).isEqualTo("TRÀ");
+        assertThat(cha.getKunyomi()).isNull();
+        List<KanjiWord> chaWords = kanjiWordRepository.findByKanjiIdOrderBySortOrderAsc(cha.getId());
+        assertThat(chaWords).hasSizeGreaterThanOrEqualTo(2);
+        assertThat(chaWords.stream().anyMatch(w -> w.getJapanese().contains("お茶"))).isTrue();
+        assertThat(chaWords.stream().anyMatch(w -> w.getJapanese().contains("喫茶店"))).isTrue();
 
-        Optional<Vocabulary> v1 = vocabularyRepository.findByTopicIdAndJapaneseText(topic1.getId(), "おはよう（ございます）");
-        assertThat(v1).isPresent();
-        assertThat(v1.get().getRomaji()).isEqualTo("ohayou");
-        assertThat(v1.get().getMeaningVi()).isEqualTo("Chào buổi sáng tốt lành");
+        // 2. Kiểm tra Kanji '料' (hàng 18, kun_reading là NULL) và các từ con
+        Optional<KanjiEntry> ryoOpt = kanjiEntryRepository.findByCharacter("料");
+        assertThat(ryoOpt).isPresent();
+        KanjiEntry ryo = ryoOpt.get();
+        assertThat(ryo.getHanViet()).isEqualTo("LIÊU, LIỆU");
+        assertThat(ryo.getKunyomi()).isNull();
+        List<KanjiWord> ryoWords = kanjiWordRepository.findByKanjiIdOrderBySortOrderAsc(ryo.getId());
+        assertThat(ryoWords).hasSizeGreaterThanOrEqualTo(2);
+        assertThat(ryoWords.stream().anyMatch(w -> w.getJapanese().contains("資料"))).isTrue();
+        assertThat(ryoWords.stream().anyMatch(w -> w.getJapanese().contains("料金"))).isTrue();
 
-        Optional<Vocabulary> v2 = vocabularyRepository.findByTopicIdAndJapaneseText(topic1.getId(), "こんにちは");
-        assertThat(v2).isPresent();
-        assertThat(v2.get().getMeaningVi()).isEqualTo("Chào buổi trưa và chiều");
-
-        Optional<Topic> topic2Opt = topicRepository.findByNameIgnoreCase("Chủ đề 2: Thời tiết bốn mùa");
-        assertThat(topic2Opt).isPresent();
-        Topic topic2 = topic2Opt.get();
-
-        Optional<Vocabulary> v3 = vocabularyRepository.findByTopicIdAndJapaneseText(topic2.getId(), "雨（あめ）");
-        assertThat(v3).isPresent();
-        assertThat(v3.get().getMeaningVi()).isEqualTo("Cơn mưa rào mùa hạ");
-
-        // 2. Kiểm tra Kanji:
-        // Kanji 1: '波' có 3 từ cần nhớ
-        Optional<KanjiEntry> kanji1Opt = kanjiEntryRepository.findByCharacter("波");
-        assertThat(kanji1Opt).isPresent();
-        KanjiEntry kanji1 = kanji1Opt.get();
-        assertThat(kanji1.getHanViet()).isEqualTo("BA");
-        assertThat(kanji1.getMeaningVi()).isEqualTo("Sóng biển, làn sóng");
-        List<KanjiWord> kanji1Words = kanjiWordRepository.findByKanjiIdOrderBySortOrderAsc(kanji1.getId());
-        assertThat(kanji1Words).hasSizeGreaterThanOrEqualTo(3);
-        assertThat(kanji1Words.stream().anyMatch(w -> "波（なみ）".equals(w.getJapanese()) && "Sóng biển nhấp nhô".equals(w.getMeaningVi()))).isTrue();
-        assertThat(kanji1Words.stream().anyMatch(w -> "津波（つなみ）".equals(w.getJapanese()) && "Sóng thần dữ dội".equals(w.getMeaningVi()))).isTrue();
-        assertThat(kanji1Words.stream().anyMatch(w -> "電波（でんぱ）".equals(w.getJapanese()) && "Sóng điện từ viễn thông".equals(w.getMeaningVi()))).isTrue();
-
-        // Kanji 2: '橋' có 1 từ cần nhớ
-        Optional<KanjiEntry> kanji2Opt = kanjiEntryRepository.findByCharacter("橋");
-        assertThat(kanji2Opt).isPresent();
-        KanjiEntry kanji2 = kanji2Opt.get();
-        assertThat(kanji2.getHanViet()).isEqualTo("KIỀU");
-        assertThat(kanji2.getMeaningVi()).isEqualTo("Cây cầu bắc qua sông");
-        List<KanjiWord> kanji2Words = kanjiWordRepository.findByKanjiIdOrderBySortOrderAsc(kanji2.getId());
-        assertThat(kanji2Words).hasSize(1);
-        assertThat(kanji2Words.get(0).getJapanese()).isEqualTo("橋（はし）");
-        assertThat(kanji2Words.get(0).getMeaningVi()).isEqualTo("Cây cầu bắc qua sông");
-
-        // Kanji 3: '嵐' KHÔNG có từ cần nhớ
-        Optional<KanjiEntry> kanji3Opt = kanjiEntryRepository.findByCharacter("嵐");
-        assertThat(kanji3Opt).isPresent();
-        KanjiEntry kanji3 = kanji3Opt.get();
-        assertThat(kanji3.getHanViet()).isEqualTo("LAM");
-        assertThat(kanji3.getMeaningVi()).isEqualTo("Cơn bão tố cuồng phong");
-        List<KanjiWord> kanji3Words = kanjiWordRepository.findByKanjiIdOrderBySortOrderAsc(kanji3.getId());
-        assertThat(kanji3Words).isEmpty();
+        // 3. Kiểm tra Kanji '野' (hàng 27, không có từ nào)
+        Optional<KanjiEntry> noOpt = kanjiEntryRepository.findByCharacter("野");
+        assertThat(noOpt).isPresent();
+        List<KanjiWord> noWords = kanjiWordRepository.findByKanjiIdOrderBySortOrderAsc(noOpt.get().getId());
+        assertThat(noWords).isEmpty();
 
         // --- BƯỚC 4: IMPORT LẠI CÙNG FILE VỚI SKIP_DUPLICATES ---
         long topicCountAfterFirst = topicRepository.count();
@@ -188,9 +158,9 @@ class EndToEndImportFlowTest {
         assertThat(secondCommit.kanjiAdded()).isEqualTo(0);
         assertThat(secondCommit.kanjiWordsAdded()).isEqualTo(0);
         // Toàn bộ bản ghi cũ được đánh dấu skipped
-        assertThat(secondCommit.wordsSkipped()).isGreaterThanOrEqualTo(6);
-        assertThat(secondCommit.kanjiSkipped()).isGreaterThanOrEqualTo(3);
-        assertThat(secondCommit.kanjiWordsSkipped()).isGreaterThanOrEqualTo(4);
+        assertThat(secondCommit.wordsSkipped()).isEqualTo(0);
+        assertThat(secondCommit.kanjiSkipped()).isGreaterThanOrEqualTo(14);
+        assertThat(secondCommit.kanjiWordsSkipped()).isGreaterThanOrEqualTo(34);
 
         // Xác nhận số lượng bản ghi trong Database giữ nguyên tuyệt đối
         assertThat(topicRepository.count()).isEqualTo(topicCountAfterFirst);

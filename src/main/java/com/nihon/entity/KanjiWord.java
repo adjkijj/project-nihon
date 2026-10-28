@@ -47,11 +47,11 @@ public class KanjiWord {
     private String japanese;
 
     /** Phiên âm Romaji tương ứng. */
-    @Column(name = "romaji", nullable = false, length = 255)
+    @Column(name = "romaji", length = 255)
     private String romaji;
 
     /** Ý nghĩa tiếng Việt của từ. */
-    @Column(name = "meaning_vi", nullable = false, length = 500)
+    @Column(name = "meaning_vi", length = 500)
     private String meaningVi;
 
     /** Thứ tự hiển thị ưu tiên của từ trong danh sách từ cần nhớ của Kanji. */

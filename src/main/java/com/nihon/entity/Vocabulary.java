@@ -55,10 +55,10 @@ public class Vocabulary {
     @Column(name = "reading", length = 255)
     private String reading;
 
-    @Column(name = "romaji", nullable = false, length = 255)
+    @Column(name = "romaji", length = 255)
     private String romaji;
 
-    @Column(name = "meaning_vi", nullable = false, length = 500)
+    @Column(name = "meaning_vi", length = 500)
     private String meaningVi;
 
     /** Từ có chứa ký tự Kanji hay không (quyết định quy tắc kiểm tra Nhật → Việt). */

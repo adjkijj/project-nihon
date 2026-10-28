@@ -43,10 +43,10 @@ public class KanjiEntry {
     @Column(name = "kanji_character", nullable = false, length = 8)
     private String character;
 
-    @Column(name = "han_viet", nullable = false, length = 100)
+    @Column(name = "han_viet", length = 100)
     private String hanViet;
 
-    @Column(name = "meaning_vi", nullable = false, length = 255)
+    @Column(name = "meaning_vi", length = 255)
     private String meaningVi;
 
     @Column(name = "onyomi", length = 100)

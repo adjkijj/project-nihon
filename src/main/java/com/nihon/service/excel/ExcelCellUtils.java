@@ -43,6 +43,13 @@ public final class ExcelCellUtils {
      * @param cell ô cần đọc
      * @return chuỗi đã chuẩn hóa, hoặc rỗng nếu ô null hoặc rỗng
      */
+    /**
+     * Chuẩn hóa giá trị ô thông thường: đọc qua DataFormatter, trim, NFC, nén nhiều khoảng trắng thành 1.
+     *
+     * @param formatter đối tượng DataFormatter
+     * @param cell ô cần đọc
+     * @return chuỗi đã chuẩn hóa, hoặc rỗng nếu ô null hoặc rỗng
+     */
     public static String normalizeCell(DataFormatter formatter, Cell cell) {
         if (cell == null) {
             return "";
@@ -52,41 +59,69 @@ public final class ExcelCellUtils {
     }
 
     /**
+     * Chuẩn hóa giá trị ô: nếu ô trống, null hoặc chỉ chứa khoảng trắng thì trả về null (không lưu chuỗi rỗng).
+     *
+     * @param formatter đối tượng DataFormatter
+     * @param cell ô cần đọc
+     * @return chuỗi đã chuẩn hóa, hoặc null nếu ô trống/khoảng trắng
+     */
+    public static String normalizeCellOrNull(DataFormatter formatter, Cell cell) {
+        if (cell == null) {
+            return null;
+        }
+        String text = formatter.formatCellValue(cell);
+        return normalizeTextOrNull(text);
+    }
+
+    /**
      * Chuẩn hóa chuỗi văn bản thông thường: trim, chuẩn hóa Unicode NFC và thay thế chuỗi khoảng trắng bằng 1 khoảng trắng.
      *
      * @param raw chuỗi nguồn
-     * @return chuỗi sau khi chuẩn hóa
+     * @return chuỗi sau khi chuẩn hóa, hoặc chuỗi rỗng nếu raw là null hoặc rỗng
      */
     public static String normalizeText(String raw) {
+        String result = normalizeTextOrNull(raw);
+        return result != null ? result : "";
+    }
+
+    /**
+     * Chuẩn hóa chuỗi văn bản: trim, Unicode NFC, nén khoảng trắng. Trả về null nếu null hoặc chỉ chứa khoảng trắng.
+     *
+     * @param raw chuỗi nguồn
+     * @return chuỗi đã chuẩn hóa, hoặc null nếu chuỗi rỗng/chỉ chứa khoảng trắng
+     */
+    public static String normalizeTextOrNull(String raw) {
         if (raw == null) {
-            return "";
+            return null;
         }
         String trimmed = raw.trim();
         if (trimmed.isEmpty()) {
-            return "";
+            return null;
         }
         String nfc = Normalizer.normalize(trimmed, Normalizer.Form.NFC);
-        return MULTI_SPACE_PATTERN.matcher(nfc).replaceAll(" ").trim();
+        String singleSpaced = MULTI_SPACE_PATTERN.matcher(nfc).replaceAll(" ").trim();
+        return singleSpaced.isEmpty() ? null : singleSpaced;
     }
 
     /**
      * Chuẩn hóa tên chủ đề: Giữ nguyên ký tự xuống dòng nhưng chuẩn hóa thành một dấu xuống dòng duy nhất (\n).
+     * Trả về null nếu ô trống hoặc chỉ chứa khoảng trắng.
      *
      * @param formatter đối tượng DataFormatter
      * @param cell ô chứa chủ đề
-     * @return chuỗi chủ đề đã chuẩn hóa ký tự xuống dòng và khoảng trắng
+     * @return chuỗi chủ đề đã chuẩn hóa ký tự xuống dòng và khoảng trắng, hoặc null nếu ô trống
      */
     public static String normalizeTopic(DataFormatter formatter, Cell cell) {
         if (cell == null) {
-            return "";
+            return null;
         }
         String raw = formatter.formatCellValue(cell);
         if (raw == null) {
-            return "";
+            return null;
         }
         String trimmed = raw.trim();
         if (trimmed.isEmpty()) {
-            return "";
+            return null;
         }
         // Chuẩn hóa mọi ký tự xuống dòng CRLF và CR thành LF
         String unifiedNewlines = trimmed.replace("\r\n", "\n").replace("\r", "\n");
@@ -99,7 +134,8 @@ public final class ExcelCellUtils {
                 .map(line -> MULTI_SPACE_PATTERN.matcher(line).replaceAll(" ").trim())
                 .collect(Collectors.joining("\n"));
 
-        return Normalizer.normalize(normalized.trim(), Normalizer.Form.NFC);
+        String res = Normalizer.normalize(normalized.trim(), Normalizer.Form.NFC);
+        return res.isEmpty() ? null : res;
     }
 
     /**

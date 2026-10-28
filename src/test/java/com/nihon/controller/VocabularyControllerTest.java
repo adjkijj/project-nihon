@@ -172,7 +172,7 @@ class VocabularyControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("vocabulary/form"))
                 .andExpect(model().hasErrors())
-                .andExpect(model().attributeHasFieldErrors("form", "topicId", "japaneseText", "romaji", "meaningVi"));
+                .andExpect(model().attributeHasFieldErrors("form", "topicId", "japaneseText"));
     }
 
     @Test

@@ -18,7 +18,8 @@ import java.io.IOException;
 /**
  * Filter bảo vệ ứng dụng với các tiêu chuẩn bảo mật HTTP Security Headers (OWASP & W3C):
  * <ul>
- *   <li>Content-Security-Policy: default-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'</li>
+ *   <li>Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+ *       (CSS/JS nằm trong /css và /js, không dùng 'unsafe-inline' — template không được chứa style/script/onclick nhúng)</li>
  *   <li>X-Content-Type-Options: nosniff</li>
  *   <li>Referrer-Policy: strict-origin-when-cross-origin</li>
  *   <li>Permissions-Policy: camera=(), microphone=(), geolocation=() (tắt camera, micro, vị trí)</li>
@@ -34,7 +35,7 @@ public class SecurityHeadersFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(SecurityHeadersFilter.class);
 
-    public static final String CSP_VALUE = "default-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+    public static final String CSP_VALUE = "default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
     public static final String HSTS_VALUE = "max-age=31536000; includeSubDomains";
     public static final String PERMISSIONS_POLICY_VALUE = "camera=(), microphone=(), geolocation=()";
 

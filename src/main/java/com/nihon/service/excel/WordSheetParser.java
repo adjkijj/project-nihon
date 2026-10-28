@@ -93,111 +93,85 @@ public class WordSheetParser {
                 boolean formulaC = ExcelCellUtils.isFormula(cellC);
                 boolean formulaD = ExcelCellUtils.isFormula(cellD);
 
-                String valA = formulaA ? "" : ExcelCellUtils.normalizeCell(dataFormatter, cellA);
-                String valB = formulaB ? "" : ExcelCellUtils.normalizeCell(dataFormatter, cellB);
-                String valC = formulaC ? "" : ExcelCellUtils.normalizeCell(dataFormatter, cellC);
-                String valD = formulaD ? "" : ExcelCellUtils.normalizeCell(dataFormatter, cellD);
+                String valA = formulaA ? null : ExcelCellUtils.normalizeTopic(dataFormatter, cellA);
+                String valB = formulaB ? null : ExcelCellUtils.normalizeCellOrNull(dataFormatter, cellB);
+                String valC = formulaC ? null : ExcelCellUtils.normalizeCellOrNull(dataFormatter, cellC);
+                String valD = formulaD ? null : ExcelCellUtils.normalizeCellOrNull(dataFormatter, cellD);
 
-                // Quy tắc 4e: Hàng trống hoàn toàn thì bỏ qua
-                if (!formulaA && !formulaB && !formulaC && !formulaD
-                        && valA.isEmpty() && valB.isEmpty() && valC.isEmpty() && valD.isEmpty()) {
+                // Hàng trống hoàn toàn thì bỏ qua
+                boolean hasAnyFormula = formulaA || formulaB || formulaC || formulaD;
+                if (!hasAnyFormula && valA == null && valB == null && valC == null && valD == null) {
                     continue;
                 }
 
-                boolean rowHasError = false;
+                // Mỗi hàng chỉ ghi một lỗi chính
+                RowError primaryError = null;
 
                 // Kiểm soát PCI-DSS: Tuyệt đối không nhập số thẻ thanh toán (PAN) vào hệ thống
-                // Không ghi giá trị số thẻ vào log hay thông điệp lỗi
                 if (ExcelCellUtils.containsPotentialPaymentCard(valA)) {
-                    errors.add(new RowError(rowNumber, HEADER_TOPIC, "Dữ liệu giống số thẻ thanh toán, không được nhập"));
-                    rowHasError = true;
-                }
-                if (ExcelCellUtils.containsPotentialPaymentCard(valB)) {
-                    errors.add(new RowError(rowNumber, HEADER_JAPANESE, "Dữ liệu giống số thẻ thanh toán, không được nhập"));
-                    rowHasError = true;
-                }
-                if (ExcelCellUtils.containsPotentialPaymentCard(valC)) {
-                    errors.add(new RowError(rowNumber, HEADER_ROMAJI, "Dữ liệu giống số thẻ thanh toán, không được nhập"));
-                    rowHasError = true;
-                }
-                if (ExcelCellUtils.containsPotentialPaymentCard(valD)) {
-                    errors.add(new RowError(rowNumber, HEADER_MEANING, "Dữ liệu giống số thẻ thanh toán, không được nhập"));
-                    rowHasError = true;
+                    primaryError = new RowError(rowNumber, HEADER_TOPIC, "Dữ liệu giống số thẻ thanh toán, không được nhập");
+                } else if (ExcelCellUtils.containsPotentialPaymentCard(valB)) {
+                    primaryError = new RowError(rowNumber, HEADER_JAPANESE, "Dữ liệu giống số thẻ thanh toán, không được nhập");
+                } else if (ExcelCellUtils.containsPotentialPaymentCard(valC)) {
+                    primaryError = new RowError(rowNumber, HEADER_ROMAJI, "Dữ liệu giống số thẻ thanh toán, không được nhập");
+                } else if (ExcelCellUtils.containsPotentialPaymentCard(valD)) {
+                    primaryError = new RowError(rowNumber, HEADER_MEANING, "Dữ liệu giống số thẻ thanh toán, không được nhập");
                 }
 
-                // Quy tắc 7: Không thực thi công thức. Ô có công thức bị từ chối và ghi RowError
-                if (formulaA) {
-                    errors.add(new RowError(rowNumber, HEADER_TOPIC, "Ô chứa công thức không được phép"));
-                    rowHasError = true;
-                }
-                if (formulaB) {
-                    errors.add(new RowError(rowNumber, HEADER_JAPANESE, "Ô chứa công thức không được phép"));
-                    rowHasError = true;
-                }
-                if (formulaC) {
-                    errors.add(new RowError(rowNumber, HEADER_ROMAJI, "Ô chứa công thức không được phép"));
-                    rowHasError = true;
-                }
-                if (formulaD) {
-                    errors.add(new RowError(rowNumber, HEADER_MEANING, "Ô chứa công thức không được phép"));
-                    rowHasError = true;
+                // Quy tắc 7: Không thực thi công thức. Ô có công thức bị từ chối
+                if (primaryError == null) {
+                    if (formulaA) primaryError = new RowError(rowNumber, HEADER_TOPIC, "Ô chứa công thức không được phép");
+                    else if (formulaB) primaryError = new RowError(rowNumber, HEADER_JAPANESE, "Ô chứa công thức không được phép");
+                    else if (formulaC) primaryError = new RowError(rowNumber, HEADER_ROMAJI, "Ô chứa công thức không được phép");
+                    else if (formulaD) primaryError = new RowError(rowNumber, HEADER_MEANING, "Ô chứa công thức không được phép");
                 }
 
-                // Quy tắc 4d: Cột A có giá trị thì đặt chủ đề hiện tại. Cột A trống thì dùng của hàng trên
-                if (!valA.isEmpty()) {
+                // Quy tắc chủ đề: Cột A có giá trị thì đặt chủ đề hiện tại. Cột A trống thì dùng của hàng trên
+                if (valA != null) {
                     currentTopic = valA;
-                    if (currentTopic.length() > MAX_TOPIC_LENGTH) {
-                        errors.add(new RowError(rowNumber, HEADER_TOPIC,
-                                "Chủ đề vượt quá độ dài tối đa " + MAX_TOPIC_LENGTH + " ký tự (hiện tại: " + currentTopic.length() + ")"));
-                        rowHasError = true;
+                    if (currentTopic.length() > MAX_TOPIC_LENGTH && primaryError == null) {
+                        primaryError = new RowError(rowNumber, HEADER_TOPIC,
+                                "Chủ đề vượt quá độ dài tối đa " + MAX_TOPIC_LENGTH + " ký tự (hiện tại: " + currentTopic.length() + ")");
                     }
                 } else if (!formulaA) {
-                    // Cột A trống: kiểm tra hàng đầu tiên có dữ liệu mà không có chủ đề (Quy tắc 4g)
-                    if (currentTopic == null || currentTopic.isEmpty()) {
-                        errors.add(new RowError(rowNumber, HEADER_TOPIC, "Hàng có dữ liệu nhưng chưa có chủ đề (chủ đề trống)"));
-                        rowHasError = true;
+                    if ((currentTopic == null || currentTopic.isEmpty()) && primaryError == null) {
+                        primaryError = new RowError(rowNumber, HEADER_TOPIC, "Hàng có dữ liệu nhưng chưa có chủ đề (chủ đề trống)");
                     }
                 }
 
-                // Quy tắc 4f & Quy tắc 6: Kiểm tra cột B (Tiếng Nhật)
+                // Cột bắt buộc duy nhất: Cột B (Tiếng Nhật)
                 if (!formulaB) {
-                    if (valB.isEmpty()) {
-                        errors.add(new RowError(rowNumber, HEADER_JAPANESE, "Thiếu dữ liệu cột Tiếng Nhật"));
-                        rowHasError = true;
+                    if (valB == null) {
+                        if (primaryError == null) {
+                            primaryError = new RowError(rowNumber, HEADER_JAPANESE, "Thiếu dữ liệu cột Tiếng Nhật");
+                        }
                     } else if (valB.length() > MAX_JAPANESE_LENGTH) {
-                        errors.add(new RowError(rowNumber, HEADER_JAPANESE,
-                                "Từ tiếng Nhật vượt quá độ dài tối đa " + MAX_JAPANESE_LENGTH + " ký tự (hiện tại: " + valB.length() + ")"));
-                        rowHasError = true;
+                        if (primaryError == null) {
+                            primaryError = new RowError(rowNumber, HEADER_JAPANESE,
+                                    "Từ tiếng Nhật vượt quá độ dài tối đa " + MAX_JAPANESE_LENGTH + " ký tự (hiện tại: " + valB.length() + ")");
+                        }
                     }
                 }
 
-                // Quy tắc 4f & Quy tắc 6: Kiểm tra cột C (Romaji)
-                if (!formulaC) {
-                    if (valC.isEmpty()) {
-                        errors.add(new RowError(rowNumber, HEADER_ROMAJI, "Thiếu dữ liệu cột Romaji"));
-                        rowHasError = true;
-                    } else if (valC.length() > MAX_ROMAJI_LENGTH) {
-                        errors.add(new RowError(rowNumber, HEADER_ROMAJI,
-                                "Romaji vượt quá độ dài tối đa " + MAX_ROMAJI_LENGTH + " ký tự (hiện tại: " + valC.length() + ")"));
-                        rowHasError = true;
-                    }
+                // Cột C (Romaji) cho phép trống và lưu NULL
+                if (!formulaC && valC != null && valC.length() > MAX_ROMAJI_LENGTH && primaryError == null) {
+                    primaryError = new RowError(rowNumber, HEADER_ROMAJI,
+                            "Romaji vượt quá độ dài tối đa " + MAX_ROMAJI_LENGTH + " ký tự (hiện tại: " + valC.length() + ")");
                 }
 
-                // Quy tắc 4f & Quy tắc 6: Kiểm tra cột D (Nghĩa tiếng Việt)
-                if (!formulaD) {
-                    if (valD.isEmpty()) {
-                        errors.add(new RowError(rowNumber, HEADER_MEANING, "Thiếu dữ liệu cột Nghĩa tiếng Việt"));
-                        rowHasError = true;
-                    } else if (valD.length() > MAX_MEANING_LENGTH) {
-                        errors.add(new RowError(rowNumber, HEADER_MEANING,
-                                "Nghĩa tiếng Việt vượt quá độ dài tối đa " + MAX_MEANING_LENGTH + " ký tự (hiện tại: " + valD.length() + ")"));
-                        rowHasError = true;
-                    }
+                // Cột D (Nghĩa tiếng Việt) cho phép trống và lưu NULL
+                if (!formulaD && valD != null && valD.length() > MAX_MEANING_LENGTH && primaryError == null) {
+                    primaryError = new RowError(rowNumber, HEADER_MEANING,
+                            "Nghĩa tiếng Việt vượt quá độ dài tối đa " + MAX_MEANING_LENGTH + " ký tự (hiện tại: " + valD.length() + ")");
                 }
 
-                // Nếu hàng không có bất kỳ lỗi nào -> Thêm vào danh sách hợp lệ
-                if (!rowHasError && currentTopic != null && !currentTopic.isEmpty()) {
+                // Nếu hàng không có lỗi và đã có chủ đề
+                if (primaryError == null && currentTopic != null && !currentTopic.isEmpty()) {
                     validRows.add(new WordRow(rowNumber, currentTopic, valB, valC, valD));
+                }
+
+                if (primaryError != null) {
+                    errors.add(primaryError);
                 }
             }
 

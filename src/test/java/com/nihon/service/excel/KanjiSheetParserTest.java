@@ -151,13 +151,43 @@ class KanjiSheetParserTest {
                 assertThat(result.isSuccess()).isTrue();
                 assertThat(result.errors()).isEmpty();
                 List<KanjiRow> list = result.rows();
-                assertThat(list).hasSize(3);
-                assertThat(list.get(0).kanji()).isEqualTo("波");
-                assertThat(list.get(0).words()).hasSize(3);
-                assertThat(list.get(1).kanji()).isEqualTo("橋");
-                assertThat(list.get(1).words()).hasSize(1);
-                assertThat(list.get(2).kanji()).isEqualTo("嵐");
-                assertThat(list.get(2).words()).isEmpty();
+                assertThat(list).hasSize(14);
+                // Kiểm tra 14 Kanji
+                assertThat(list.get(0).kanji()).isEqualTo("酒");
+                assertThat(list.get(1).kanji()).isEqualTo("作");
+                assertThat(list.get(2).kanji()).isEqualTo("物");
+                // Hàng 11: 茶 (Kun trống)
+                assertThat(list.get(3).kanji()).isEqualTo("茶");
+                assertThat(list.get(3).kunReading()).isNull();
+                assertThat(list.get(3).words()).hasSize(2);
+                assertThat(list.get(3).words().get(0).japanese()).isEqualTo("お茶（おちゃ）");
+                assertThat(list.get(3).words().get(1).japanese()).isEqualTo("喫茶店（きっさてん）");
+
+                assertThat(list.get(4).kanji()).isEqualTo("持");
+                assertThat(list.get(5).kanji()).isEqualTo("願");
+
+                // Hàng 18: 料 (Kun trống)
+                assertThat(list.get(6).kanji()).isEqualTo("料");
+                assertThat(list.get(6).kunReading()).isNull();
+                assertThat(list.get(6).words()).hasSize(2);
+                assertThat(list.get(6).words().get(0).japanese()).isEqualTo("資料（しりょう）");
+                assertThat(list.get(6).words().get(1).japanese()).isEqualTo("料金（りょうきん）");
+
+                assertThat(list.get(7).kanji()).isEqualTo("理");
+                assertThat(list.get(8).kanji()).isEqualTo("味");
+                assertThat(list.get(9).kanji()).isEqualTo("色");
+
+                // Hàng 27: 野 (không có từ)
+                assertThat(list.get(10).kanji()).isEqualTo("野");
+                assertThat(list.get(10).words()).isEmpty();
+
+                assertThat(list.get(11).kanji()).isEqualTo("菜");
+                assertThat(list.get(12).kanji()).isEqualTo("中");
+                assertThat(list.get(13).kanji()).isEqualTo("入");
+
+                // Tổng số từ cần nhớ là 34 khớp số hàng có cột G
+                int totalWords = list.stream().mapToInt(k -> k.words().size()).sum();
+                assertThat(totalWords).isEqualTo(34);
             }
         }
     }
@@ -240,34 +270,111 @@ class KanjiSheetParserTest {
     }
 
     @Test
-    @DisplayName("Ca thiếu cột bắt buộc: Hán Việt, Ý nghĩa, On, Kun, hoặc từ cần nhớ thiếu cột")
-    void testMissingRequiredColumns() throws IOException {
+    @DisplayName("Kanji không có Kun: các hàng từ bên dưới vẫn gắn đúng vào Kanji đó, không có lỗi mồ côi")
+    void testKanjiWithoutKunWordsAttachCorrectly() throws IOException {
         String[][] data = {
                 {"Topic", "Kanji", "Hán Việt", "Ý nghĩa", "On", "Kun", "Word", null, null},
                 {null, null, null, null, null, null, "Tiếng Nhật", "Romaji", "Nghĩa tiếng Việt"},
-                {"Bài 1", "気", "", "Khí", "き", "け", null, null, null},      // Thiếu cột C (Hán Việt)
-                {null, "水", "THỦY", "", "すい", "みず", null, null, null},      // Thiếu cột D (Ý nghĩa)
-                {null, "火", "HỎA", "Lửa", "", "ひ", null, null, null},         // Thiếu cột E (On)
-                {null, "木", "MỘC", "Cây", "もく", "", null, null, null},        // Thiếu cột F (Kun)
-                {null, "金", "KIM", "Vàng", "きん", "かね", "お金", "", "Tiền"}   // Từ cần nhớ thiếu Romaji (cột H)
+                {"Bài 11", "茶", "TRÀ", "Trà", "ちゃ、さ", null, null, null, null},
+                {null, null, null, null, null, null, "お茶", "ocha", "Trà"},
+                {null, null, null, null, null, null, "喫茶店", "kissaten", "Quán giải khát"}
         };
-
         try (InputStream in = createWorkbookStream("Kanji", data)) {
             ParseResult<KanjiRow> result = parser.parse(in);
-
-            assertThat(result.hasErrors()).isTrue();
-            assertThat(result.errors()).hasSize(5);
-
-            assertThat(result.errors().get(0).column()).isEqualTo("Hán Việt");
-            assertThat(result.errors().get(1).column()).isEqualTo("Ý nghĩa");
-            assertThat(result.errors().get(2).column()).isEqualTo("On");
-            assertThat(result.errors().get(3).column()).isEqualTo("Kun");
-            assertThat(result.errors().get(4).column()).isEqualTo("Romaji");
-
-            // Kanji "金" vẫn hợp lệ (không kèm từ bị lỗi)
+            assertThat(result.isSuccess()).isTrue();
+            assertThat(result.errors()).isEmpty();
             assertThat(result.rows()).hasSize(1);
-            assertThat(result.rows().get(0).kanji()).isEqualTo("金");
+            KanjiRow kanji = result.rows().get(0);
+            assertThat(kanji.kanji()).isEqualTo("茶");
+            assertThat(kanji.kunReading()).isNull();
+            assertThat(kanji.words()).hasSize(2);
+            assertThat(kanji.words().get(0).japanese()).isEqualTo("お茶");
+            assertThat(kanji.words().get(1).japanese()).isEqualTo("喫茶店");
+        }
+    }
+
+    @Test
+    @DisplayName("Kanji không có On, không có Hán Việt, không có Ý nghĩa: hợp lệ")
+    void testKanjiWithoutOnHanVietMeaningIsValid() throws IOException {
+        String[][] data = {
+                {"Topic", "Kanji", "Hán Việt", "Ý nghĩa", "On", "Kun", "Word", null, null},
+                {null, null, null, null, null, null, "Tiếng Nhật", "Romaji", "Nghĩa tiếng Việt"},
+                {"Bài 1", "木", null, null, null, "き", null, null, null}
+        };
+        try (InputStream in = createWorkbookStream("Kanji", data)) {
+            ParseResult<KanjiRow> result = parser.parse(in);
+            assertThat(result.isSuccess()).isTrue();
+            assertThat(result.errors()).isEmpty();
+            assertThat(result.rows()).hasSize(1);
+            KanjiRow kanji = result.rows().get(0);
+            assertThat(kanji.kanji()).isEqualTo("木");
+            assertThat(kanji.hanViet()).isNull();
+            assertThat(kanji.meaningVi()).isNull();
+            assertThat(kanji.onReading()).isNull();
+            assertThat(kanji.kunReading()).isEqualTo("き");
+        }
+    }
+
+    @Test
+    @DisplayName("Kanji không có từ cần nhớ (như 野): hợp lệ")
+    void testKanjiWithoutWordsIsValid() throws IOException {
+        String[][] data = {
+                {"Topic", "Kanji", "Hán Việt", "Ý nghĩa", "On", "Kun", "Word", null, null},
+                {null, null, null, null, null, null, "Tiếng Nhật", "Romaji", "Nghĩa tiếng Việt"},
+                {"Bài 12", "野", "DÃ", "Cánh đồng", "や", null, null, null, null}
+        };
+        try (InputStream in = createWorkbookStream("Kanji", data)) {
+            ParseResult<KanjiRow> result = parser.parse(in);
+            assertThat(result.isSuccess()).isTrue();
+            assertThat(result.errors()).isEmpty();
+            assertThat(result.rows()).hasSize(1);
+            assertThat(result.rows().get(0).kanji()).isEqualTo("野");
             assertThat(result.rows().get(0).words()).isEmpty();
+        }
+    }
+
+    @Test
+    @DisplayName("Từ cần nhớ thiếu Romaji hoặc thiếu Nghĩa: hợp lệ. Thiếu cột G: lỗi")
+    void testWordMissingRomajiOrMeaningIsValidMissingGIsError() throws IOException {
+        String[][] data = {
+                {"Topic", "Kanji", "Hán Việt", "Ý nghĩa", "On", "Kun", "Word", null, null},
+                {null, null, null, null, null, null, "Tiếng Nhật", "Romaji", "Nghĩa tiếng Việt"},
+                {"Bài 1", "日", "NHẬT", "Mặt trời", "にち", "ひ", "日", null, "Ngày"},       // thiếu Romaji: hợp lệ
+                {null, null, null, null, null, null, "日光", "nikkō", null},                 // thiếu Nghĩa: hợp lệ
+                {null, null, null, null, null, null, null, "nihon", "Nhật Bản"}              // thiếu cột G: lỗi
+        };
+        try (InputStream in = createWorkbookStream("Kanji", data)) {
+            ParseResult<KanjiRow> result = parser.parse(in);
+            assertThat(result.hasErrors()).isTrue();
+            assertThat(result.errors()).hasSize(1);
+            assertThat(result.errors().get(0).rowNumber()).isEqualTo(5);
+            assertThat(result.errors().get(0).column()).isEqualTo("Tiếng Nhật");
+            assertThat(result.rows()).hasSize(1);
+            assertThat(result.rows().get(0).words()).hasSize(2);
+            assertThat(result.rows().get(0).words().get(0).romaji()).isNull();
+            assertThat(result.rows().get(0).words().get(1).meaningVi()).isNull();
+        }
+    }
+
+    @Test
+    @DisplayName("Cột B nhiều ký tự: lỗi ở hàng đó và lỗi mồ côi ở hàng từ bên dưới kèm giải thích hàng nguyên nhân")
+    void testInvalidKanjiColumnBCausesOrphanWithExplanation() throws IOException {
+        String[][] data = {
+                {"Topic", "Kanji", "Hán Việt", "Ý nghĩa", "On", "Kun", "Word", null, null},
+                {null, null, null, null, null, null, "Tiếng Nhật", "Romaji", "Nghĩa tiếng Việt"},
+                {"Bài 1", "日本", "NHẬT BẢN", "Nhật Bản", "にほん", "-", null, null, null}, // Hàng 3: sai Cột B
+                {null, null, null, null, null, null, "日本", "nihon", "Nước Nhật"}          // Hàng 4: từ mồ côi do hàng 3
+        };
+        try (InputStream in = createWorkbookStream("Kanji", data)) {
+            ParseResult<KanjiRow> result = parser.parse(in);
+            assertThat(result.hasErrors()).isTrue();
+            assertThat(result.errors()).hasSize(2);
+            assertThat(result.errors().get(0).rowNumber()).isEqualTo(3);
+            assertThat(result.errors().get(0).column()).isEqualTo("Kanji");
+            assertThat(result.errors().get(1).rowNumber()).isEqualTo(4);
+            assertThat(result.errors().get(1).column()).isEqualTo("Word");
+            assertThat(result.errors().get(1).message()).contains("Kanji ở hàng 3 không hợp lệ");
+            assertThat(result.rows()).isEmpty();
         }
     }
 

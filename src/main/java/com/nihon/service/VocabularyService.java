@@ -149,8 +149,8 @@ public class VocabularyService {
         v.setTopic(topic);
         v.setJapaneseText(form.getJapaneseText().trim());
         v.setReading(normalizeReading(form.getReading()));
-        v.setRomaji(form.getRomaji().trim());
-        v.setMeaningVi(form.getMeaningVi().trim());
+        v.setRomaji(form.getRomaji() != null ? form.getRomaji().trim() : null);
+        v.setMeaningVi(form.getMeaningVi() != null ? form.getMeaningVi().trim() : null);
         v.setHasKanji(VocabularyFileParser.containsKanji(v.getJapaneseText()));
         v.setSourceLine(null);
 
@@ -167,8 +167,8 @@ public class VocabularyService {
         v.setTopic(topic);
         v.setJapaneseText(form.getJapaneseText().trim());
         v.setReading(normalizeReading(form.getReading()));
-        v.setRomaji(form.getRomaji().trim());
-        v.setMeaningVi(form.getMeaningVi().trim());
+        v.setRomaji(form.getRomaji() != null ? form.getRomaji().trim() : null);
+        v.setMeaningVi(form.getMeaningVi() != null ? form.getMeaningVi().trim() : null);
         v.setHasKanji(VocabularyFileParser.containsKanji(v.getJapaneseText()));
 
         return vocabularyRepository.save(v);

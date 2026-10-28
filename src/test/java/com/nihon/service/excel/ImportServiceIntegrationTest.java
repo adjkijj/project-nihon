@@ -229,16 +229,69 @@ class ImportServiceIntegrationTest {
     }
 
     @Test
+    @DisplayName("3b. UPDATE_EXISTING: Giá trị NULL/ô trống trong file KHÔNG ghi đè dữ liệu cũ trong database")
+    void testUpdateExisting_BlankCellsDoNotOverwriteExistingData() throws IOException {
+        String testTopicName = "Chủ đề kiểm tra không ghi đè NULL";
+
+        // Lần 1: Nhập dữ liệu ban đầu đầy đủ với từ và Kanji chưa có trong DB
+        byte[] initialXlsx = createStandardImportWorkbook(
+                testTopicName,
+                java.util.Collections.singletonList(new String[]{"特製本（とくせいほん）", "tokuseihon", "Quyển sách đặc biệt"}),
+                testTopicName,
+                "雫", "HẠ", "Giọt sương", "しずく", "shizuku",
+                java.util.Collections.singletonList(new String[]{"朝雫（あさしずく）", "asashizuku", "Giọt sương mai"})
+        );
+        MockMultipartFile file1 = new MockMultipartFile("file", "initial.xlsx", "application/octet-stream", initialXlsx);
+        importService.commit(file1, ImportMode.SKIP_DUPLICATES, "user_tester");
+
+        long vocabCount1 = vocabularyRepository.count();
+        long kanjiCount1 = kanjiEntryRepository.count();
+        long kwCount1 = kanjiWordRepository.count();
+
+        // Lần 2: Nhập lại với UPDATE_EXISTING nhưng các ô Romaji, Kun, Nghĩa để trống/NULL
+        byte[] updateXlsx = createStandardImportWorkbook(
+                testTopicName,
+                java.util.Collections.singletonList(new String[]{"特製本（とくせいほん）", "", ""}), // Romaji & MeaningVi trống
+                testTopicName,
+                "雫", "HẠ", "", "しずく", "",                                            // MeaningVi & Kun trống
+                java.util.Collections.singletonList(new String[]{"朝雫（あさしずく）", "", ""})  // Romaji & MeaningVi trống
+        );
+        MockMultipartFile file2 = new MockMultipartFile("file", "update_blank.xlsx", "application/octet-stream", updateXlsx);
+        ImportCommitResult result2 = importService.commit(file2, ImportMode.UPDATE_EXISTING, "user_tester");
+
+        assertThat(result2.success()).isTrue();
+        // Không tạo bản ghi trùng
+        assertThat(vocabularyRepository.count()).isEqualTo(vocabCount1);
+        assertThat(kanjiEntryRepository.count()).isEqualTo(kanjiCount1);
+        assertThat(kanjiWordRepository.count()).isEqualTo(kwCount1);
+
+        // Kiểm tra dữ liệu cũ trong DB KHÔNG bị ghi đè bởi NULL
+        Topic topic = topicRepository.findByNameIgnoreCase(testTopicName).orElseThrow();
+        Vocabulary v = vocabularyRepository.findByTopicIdAndJapaneseText(topic.getId(), "特製本（とくせいほん）").orElseThrow();
+        assertThat(v.getRomaji()).isEqualTo("tokuseihon");
+        assertThat(v.getMeaningVi()).isEqualTo("Quyển sách đặc biệt");
+
+        KanjiEntry k = kanjiEntryRepository.findByCharacter("雫").orElseThrow();
+        assertThat(k.getMeaningVi()).isEqualTo("Giọt sương");
+        assertThat(k.getKunyomi()).isEqualTo("shizuku");
+
+        java.util.List<KanjiWord> kws = kanjiWordRepository.findByKanjiIdOrderBySortOrderAsc(k.getId());
+        assertThat(kws).hasSize(1);
+        assertThat(kws.get(0).getRomaji()).isEqualTo("asashizuku");
+        assertThat(kws.get(0).getMeaningVi()).isEqualTo("Giọt sương mai");
+    }
+
+    @Test
     @DisplayName("4. Rollback toàn bộ khi có một hàng lỗi: Không ghi một phần, DB giữ nguyên và lưu Audit FAILED")
     void testRollbackWhenAnyRowError_RollsBackAllAndReturnsErrors() throws IOException {
         long topicCountBefore = topicRepository.count();
         long vocabCountBefore = vocabularyRepository.count();
 
-        // Tạo file có 2 hàng: hàng 1 hợp lệ, hàng 2 bị lỗi (thiếu Romaji và Nghĩa tiếng Việt)
+        // Tạo file có 2 hàng: hàng 1 hợp lệ, hàng 2 bị lỗi (thiếu cột B Tiếng Nhật)
         byte[] errorXlsx = createWorkbookWithInvalidRow(
                 "Chủ đề lỗi rollback",
                 "魚（さかな）", "sakana", "Con cá",
-                "鳥（とり）", "", "" // Hàng lỗi thiếu trường bắt buộc
+                "", "tori", "Con chim" // Hàng lỗi thiếu cột bắt buộc Tiếng Nhật (cột B)
         );
 
         MockMultipartFile file = new MockMultipartFile("file", "rollback_test.xlsx", "application/octet-stream", errorXlsx);

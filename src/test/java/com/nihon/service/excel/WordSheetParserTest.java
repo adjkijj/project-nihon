@@ -151,36 +151,41 @@ class WordSheetParserTest {
     }
 
     @Test
-    @DisplayName("Ca thiếu cột (B, C, D): ghi RowError nhưng không dừng toàn bộ")
+    @DisplayName("Ca New Word: chỉ cột B bắt buộc, thiếu Romaji hoặc Nghĩa là hợp lệ (lưu null)")
     void testMissingColumnsRecordsErrorAndDoesNotStop() throws IOException {
         String[][] data = {
                 {"Topic", "Tiếng Nhật", "Romaji", "Nghĩa tiếng Việt"},
-                {"Chủ đề 1", "", "tesuto", "Kiểm tra"},            // Thiếu cột B (Tiếng Nhật)
-                {"", "本", "", "Sách"},                             // Thiếu cột C (Romaji)
-                {"", "車", "kuruma", ""},                           // Thiếu cột D (Nghĩa tiếng Việt)
-                {"", "猫", "neko", "Con mèo"}                       // Hàng hợp lệ
+                {"Chủ đề 1", "", "tesuto", "Kiểm tra"},            // Thiếu cột B (Tiếng Nhật) -> Lỗi
+                {"", "本", "", "Sách"},                             // Thiếu cột C (Romaji) -> Hợp lệ (null)
+                {"", "車", "kuruma", ""},                           // Thiếu cột D (Nghĩa tiếng Việt) -> Hợp lệ (null)
+                {"", "猫", "neko", "Con mèo"}                       // Hàng hợp lệ đầy đủ
         };
 
         try (InputStream in = createWorkbookStream("New Word", data)) {
             ParseResult<WordRow> result = parser.parse(in);
 
             assertThat(result.hasErrors()).isTrue();
-            assertThat(result.errors()).hasSize(3);
+            assertThat(result.errors()).hasSize(1);
 
             assertThat(result.errors().get(0).rowNumber()).isEqualTo(2);
             assertThat(result.errors().get(0).column()).isEqualTo("Tiếng Nhật");
 
-            assertThat(result.errors().get(1).rowNumber()).isEqualTo(3);
-            assertThat(result.errors().get(1).column()).isEqualTo("Romaji");
+            // Hàng 3, 4, 5 đều được phân tích thành công
+            assertThat(result.rows()).hasSize(3);
+            assertThat(result.rows().get(0).rowNumber()).isEqualTo(3);
+            assertThat(result.rows().get(0).japanese()).isEqualTo("本");
+            assertThat(result.rows().get(0).romaji()).isNull();
+            assertThat(result.rows().get(0).meaningVi()).isEqualTo("Sách");
 
-            assertThat(result.errors().get(2).rowNumber()).isEqualTo(4);
-            assertThat(result.errors().get(2).column()).isEqualTo("Nghĩa tiếng Việt");
+            assertThat(result.rows().get(1).rowNumber()).isEqualTo(4);
+            assertThat(result.rows().get(1).japanese()).isEqualTo("車");
+            assertThat(result.rows().get(1).romaji()).isEqualTo("kuruma");
+            assertThat(result.rows().get(1).meaningVi()).isNull();
 
-            // Hàng 5 vẫn được phân tích thành công
-            assertThat(result.rows()).hasSize(1);
-            assertThat(result.rows().get(0).rowNumber()).isEqualTo(5);
-            assertThat(result.rows().get(0).topic()).isEqualTo("Chủ đề 1");
-            assertThat(result.rows().get(0).japanese()).isEqualTo("猫");
+            assertThat(result.rows().get(2).rowNumber()).isEqualTo(5);
+            assertThat(result.rows().get(2).japanese()).isEqualTo("猫");
+            assertThat(result.rows().get(2).romaji()).isEqualTo("neko");
+            assertThat(result.rows().get(2).meaningVi()).isEqualTo("Con mèo");
         }
     }
 
@@ -348,9 +353,10 @@ class WordSheetParserTest {
         if (Files.exists(path)) {
             try (InputStream in = new FileInputStream(path.toFile())) {
                 ParseResult<WordRow> result = parser.parse(in);
-                // Sheet "New Word" trong Update.xlsx có 2 chủ đề, mỗi chủ đề 3 từ (tổng 6 từ)
+                // Sheet "New Word" trong Update.xlsx thực tế chỉ chứa dòng tiêu đề (0 dòng dữ liệu)
                 assertThat(result.isSuccess()).isTrue();
-                assertThat(result.rows()).hasSize(6);
+                assertThat(result.errors()).isEmpty();
+                assertThat(result.rows()).isEmpty();
             }
         }
     }

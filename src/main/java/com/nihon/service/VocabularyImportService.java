@@ -180,9 +180,9 @@ public class VocabularyImportService {
         for (ParsedVocabulary pv : parsed.vocabularies()) {
             Vocabulary e = existingVocab.get(pv.sourceLine());
             if (e != null && !(e.getTopic().getSourceLine() == pv.topicLine()
-                    && e.getJapaneseText().equals(pv.japaneseText())
-                    && e.getRomaji().equals(pv.romaji())
-                    && e.getMeaningVi().equals(pv.meaningVi()))) {
+                    && Objects.equals(e.getJapaneseText(), pv.japaneseText())
+                    && Objects.equals(e.getRomaji(), pv.romaji())
+                    && Objects.equals(e.getMeaningVi(), pv.meaningVi()))) {
                 report.getErrors().add(new ImportIssue(pv.sourceLine(),
                         "Xung đột: database đã có từ vựng khác ở cùng dòng nguồn"));
             }

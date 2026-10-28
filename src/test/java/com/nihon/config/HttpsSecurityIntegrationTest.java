@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -41,7 +42,21 @@ class HttpsSecurityIntegrationTest {
             mockMvc.perform(get("/"))
                     .andExpect(status().isOk())
                     .andExpect(header().string("Content-Security-Policy",
-                            equalTo("default-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")));
+                            equalTo("default-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")));
+        }
+
+        @Test
+        @DisplayName("1. CSP không cho phép 'unsafe-inline' (CSS/JS phải nằm trong file tĩnh)")
+        void contentSecurityPolicyDoesNotAllowUnsafeInline() throws Exception {
+            mockMvc.perform(get("/"))
+                    .andExpect(header().string("Content-Security-Policy", not(containsString("unsafe-inline"))));
+        }
+
+        @Test
+        @DisplayName("1. File CSS/JS tĩnh được phục vụ cùng nguồn (không bị chặn bởi CSP)")
+        void staticAssetsAreServed() throws Exception {
+            mockMvc.perform(get("/css/index.css")).andExpect(status().isOk());
+            mockMvc.perform(get("/js/app.js")).andExpect(status().isOk());
         }
 
         @Test
