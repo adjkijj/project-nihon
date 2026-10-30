@@ -113,19 +113,26 @@ class EndToEndImportFlowTest {
         ImportCommitResult commitResult = importService.commit(multipartFile, ImportMode.SKIP_DUPLICATES, "e2e_tester");
         assertThat(commitResult.success()).isTrue();
         assertThat(commitResult.kanjiAdded()).isGreaterThanOrEqualTo(14);
+        assertThat(commitResult.wordsAdded()).isGreaterThanOrEqualTo(34);
         assertThat(commitResult.kanjiWordsAdded()).isGreaterThanOrEqualTo(34);
 
         // --- BƯỚC 3: KIỂM TRA DỮ LIỆU TRONG DATABASE ---
-        // 1. Kiểm tra Kanji '茶' (hàng 11, kun_reading là NULL) và các từ con
+        // 1. Kiểm tra Kanji '茶' (hàng 11, kun_reading là NULL) và các từ con trong bảng vocabulary chung
         Optional<KanjiEntry> chaOpt = kanjiEntryRepository.findByCharacter("茶");
         assertThat(chaOpt).isPresent();
         KanjiEntry cha = chaOpt.get();
         assertThat(cha.getHanViet()).isEqualTo("TRÀ");
         assertThat(cha.getKunyomi()).isNull();
-        List<KanjiWord> chaWords = kanjiWordRepository.findByKanjiIdOrderBySortOrderAsc(cha.getId());
-        assertThat(chaWords).hasSizeGreaterThanOrEqualTo(2);
-        assertThat(chaWords.stream().anyMatch(w -> w.getJapanese().contains("お茶"))).isTrue();
-        assertThat(chaWords.stream().anyMatch(w -> w.getJapanese().contains("喫茶店"))).isTrue();
+
+        Optional<Vocabulary> ochaVocab = vocabularyRepository.findByTopicIdAndJapaneseText(cha.getTopic().getId(), "お茶（おちゃ）");
+        assertThat(ochaVocab).isPresent();
+        assertThat(ochaVocab.get().getReading()).isEqualTo("おちゃ");
+        assertThat(ochaVocab.get().getRomaji()).isEqualTo("ocha");
+        assertThat(ochaVocab.get().getMeaningVi()).isEqualTo("Trà (chè)");
+
+        Optional<Vocabulary> kissatenVocab = vocabularyRepository.findByTopicIdAndJapaneseText(cha.getTopic().getId(), "喫茶店（きっさてん）");
+        assertThat(kissatenVocab).isPresent();
+        assertThat(kissatenVocab.get().getReading()).isEqualTo("きっさてん");
 
         // 2. Kiểm tra Kanji '料' (hàng 18, kun_reading là NULL) và các từ con
         Optional<KanjiEntry> ryoOpt = kanjiEntryRepository.findByCharacter("料");
@@ -133,22 +140,24 @@ class EndToEndImportFlowTest {
         KanjiEntry ryo = ryoOpt.get();
         assertThat(ryo.getHanViet()).isEqualTo("LIÊU, LIỆU");
         assertThat(ryo.getKunyomi()).isNull();
-        List<KanjiWord> ryoWords = kanjiWordRepository.findByKanjiIdOrderBySortOrderAsc(ryo.getId());
-        assertThat(ryoWords).hasSizeGreaterThanOrEqualTo(2);
-        assertThat(ryoWords.stream().anyMatch(w -> w.getJapanese().contains("資料"))).isTrue();
-        assertThat(ryoWords.stream().anyMatch(w -> w.getJapanese().contains("料金"))).isTrue();
+
+        Optional<Vocabulary> shiryoVocab = vocabularyRepository.findByTopicIdAndJapaneseText(ryo.getTopic().getId(), "資料（しりょう）");
+        assertThat(shiryoVocab).isPresent();
+        assertThat(shiryoVocab.get().getReading()).isEqualTo("しりょう");
+        assertThat(shiryoVocab.get().getRomaji()).isEqualTo("shiryō");
+
+        Optional<Vocabulary> ryokinVocab = vocabularyRepository.findByTopicIdAndJapaneseText(ryo.getTopic().getId(), "料金（りょうきん）");
+        assertThat(ryokinVocab).isPresent();
+        assertThat(ryokinVocab.get().getReading()).isEqualTo("りょうきん");
 
         // 3. Kiểm tra Kanji '野' (hàng 27, không có từ nào)
         Optional<KanjiEntry> noOpt = kanjiEntryRepository.findByCharacter("野");
         assertThat(noOpt).isPresent();
-        List<KanjiWord> noWords = kanjiWordRepository.findByKanjiIdOrderBySortOrderAsc(noOpt.get().getId());
-        assertThat(noWords).isEmpty();
 
         // --- BƯỚC 4: IMPORT LẠI CÙNG FILE VỚI SKIP_DUPLICATES ---
         long topicCountAfterFirst = topicRepository.count();
         long vocabCountAfterFirst = vocabularyRepository.count();
         long kanjiCountAfterFirst = kanjiEntryRepository.count();
-        long kanjiWordCountAfterFirst = kanjiWordRepository.count();
 
         ImportCommitResult secondCommit = importService.commit(multipartFile, ImportMode.SKIP_DUPLICATES, "e2e_tester");
         assertThat(secondCommit.success()).isTrue();
@@ -158,7 +167,7 @@ class EndToEndImportFlowTest {
         assertThat(secondCommit.kanjiAdded()).isEqualTo(0);
         assertThat(secondCommit.kanjiWordsAdded()).isEqualTo(0);
         // Toàn bộ bản ghi cũ được đánh dấu skipped
-        assertThat(secondCommit.wordsSkipped()).isEqualTo(0);
+        assertThat(secondCommit.wordsSkipped()).isGreaterThanOrEqualTo(34);
         assertThat(secondCommit.kanjiSkipped()).isGreaterThanOrEqualTo(14);
         assertThat(secondCommit.kanjiWordsSkipped()).isGreaterThanOrEqualTo(34);
 
@@ -166,7 +175,6 @@ class EndToEndImportFlowTest {
         assertThat(topicRepository.count()).isEqualTo(topicCountAfterFirst);
         assertThat(vocabularyRepository.count()).isEqualTo(vocabCountAfterFirst);
         assertThat(kanjiEntryRepository.count()).isEqualTo(kanjiCountAfterFirst);
-        assertThat(kanjiWordRepository.count()).isEqualTo(kanjiWordCountAfterFirst);
     }
 
     @Test

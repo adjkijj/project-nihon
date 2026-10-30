@@ -76,7 +76,7 @@ public class KanjiController {
         }
 
         KanjiDetailDto kanji = kanjiOpt.get();
-        List<Vocabulary> relatedVocabularies = kanjiService.getRelatedVocabulary(kanji.getCharacter());
+        List<Vocabulary> relatedVocabularies = kanjiService.getRelatedVocabulary(kanji.getCharacter(), kanji.getTopicId());
 
         model.addAttribute("kanji", kanji);
         model.addAttribute("relatedVocabularies", relatedVocabularies);

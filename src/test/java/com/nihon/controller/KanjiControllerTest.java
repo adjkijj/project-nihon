@@ -237,6 +237,7 @@ class KanjiControllerTest {
         sampleVocab.setTopic(kanjiTopic);
 
         when(kanjiService.findDetailById(1L)).thenReturn(Optional.of(kanjiFish));
+        when(kanjiService.getRelatedVocabulary(eq("魚"), any())).thenReturn(List.of(sampleVocab));
         when(kanjiService.getRelatedVocabulary("魚")).thenReturn(List.of(sampleVocab));
 
         mockMvc.perform(get("/kanji/1"))

@@ -95,7 +95,7 @@ class ImportServiceIntegrationTest {
         ImportPreviewReport preview = importService.preview(file);
         assertThat(preview.hasErrors()).isFalse();
         assertThat(preview.newTopicsCount()).isEqualTo(2);
-        assertThat(preview.newWordsCount()).isEqualTo(2);
+        assertThat(preview.newWordsCount()).isEqualTo(4); // 2 từ sheet 1 + 2 từ sheet 2
         assertThat(preview.duplicateWordsCount()).isEqualTo(0);
         assertThat(preview.newKanjiCount()).isEqualTo(1);
         assertThat(preview.newKanjiWordsCount()).isEqualTo(2);
@@ -110,7 +110,7 @@ class ImportServiceIntegrationTest {
 
         assertThat(result.success()).isTrue();
         assertThat(result.topicsAdded()).isEqualTo(2);
-        assertThat(result.wordsAdded()).isEqualTo(2);
+        assertThat(result.wordsAdded()).isEqualTo(4); // 2 từ sheet 1 + 2 từ sheet 2
         assertThat(result.wordsSkipped()).isEqualTo(0);
         assertThat(result.kanjiAdded()).isEqualTo(1);
         assertThat(result.kanjiWordsAdded()).isEqualTo(2);
@@ -134,10 +134,19 @@ class ImportServiceIntegrationTest {
         assertThat(kanji.getHanViet()).isEqualTo("SÂM");
         assertThat(kanji.getMeaningVi()).isEqualTo("Rừng rậm");
 
-        List<KanjiWord> words = kanjiWordRepository.findByKanjiIdOrderBySortOrderAsc(kanji.getId());
-        assertThat(words).hasSize(2);
-        assertThat(words.get(0).getJapanese()).isEqualTo("森林");
-        assertThat(words.get(1).getJapanese()).isEqualTo("森");
+        Optional<Topic> kanjiTopicOpt = topicRepository.findByNameIgnoreCase(testKanjiTopicName);
+        assertThat(kanjiTopicOpt).isPresent();
+        Topic kanjiTopic = kanjiTopicOpt.get();
+
+        Optional<Vocabulary> kw1Opt = vocabularyRepository.findByTopicIdAndJapaneseText(kanjiTopic.getId(), "森林");
+        assertThat(kw1Opt).isPresent();
+        assertThat(kw1Opt.get().getRomaji()).isEqualTo("shinrin");
+        assertThat(kw1Opt.get().getMeaningVi()).isEqualTo("Rừng rú");
+
+        Optional<Vocabulary> kw2Opt = vocabularyRepository.findByTopicIdAndJapaneseText(kanjiTopic.getId(), "森");
+        assertThat(kw2Opt).isPresent();
+        assertThat(kw2Opt.get().getRomaji()).isEqualTo("mori");
+        assertThat(kw2Opt.get().getMeaningVi()).isEqualTo("Rừng");
 
         // 1.4 Kiểm tra Audit Log
         List<ImportAuditLog> logs = auditLogRepository.findByUserIdOrderByImportedAtDesc("user_tester_1");
@@ -145,7 +154,7 @@ class ImportServiceIntegrationTest {
         ImportAuditLog latestLog = logs.get(0);
         assertThat(latestLog.getFileName()).isEqualTo("integration_test_1.xlsx");
         assertThat(latestLog.getResult()).isEqualTo("SUCCESS");
-        assertThat(latestLog.getRecordsAdded()).isEqualTo(7); // 2 topic + 2 word + 1 kanji + 2 kanjiWord
+        assertThat(latestLog.getRecordsAdded()).isEqualTo(7); // 2 topic + 4 word (gồm 2 từ kanji) + 1 kanji
         assertThat(latestLog.getFileHashSha256()).hasSize(64);
     }
 
@@ -166,20 +175,19 @@ class ImportServiceIntegrationTest {
         // Lần 1: Thêm mới
         ImportCommitResult firstCommit = importService.commit(file, ImportMode.SKIP_DUPLICATES, "user_tester_2");
         assertThat(firstCommit.success()).isTrue();
-        assertThat(firstCommit.wordsAdded()).isEqualTo(1);
+        assertThat(firstCommit.wordsAdded()).isEqualTo(2); // 1 từ sheet 1 + 1 từ sheet 2
         assertThat(firstCommit.kanjiAdded()).isEqualTo(1);
 
         long topicCountAfterFirst = topicRepository.count();
         long vocabCountAfterFirst = vocabularyRepository.count();
         long kanjiCountAfterFirst = kanjiEntryRepository.count();
-        long kanjiWordCountAfterFirst = kanjiWordRepository.count();
 
         // Lần 2: Import lại đúng file đó với SKIP_DUPLICATES
         ImportCommitResult secondCommit = importService.commit(file, ImportMode.SKIP_DUPLICATES, "user_tester_2");
         assertThat(secondCommit.success()).isTrue();
         assertThat(secondCommit.topicsAdded()).isEqualTo(0);
         assertThat(secondCommit.wordsAdded()).isEqualTo(0);
-        assertThat(secondCommit.wordsSkipped()).isEqualTo(1);
+        assertThat(secondCommit.wordsSkipped()).isEqualTo(2); // 1 từ sheet 1 + 1 từ sheet 2
         assertThat(secondCommit.kanjiAdded()).isEqualTo(0);
         assertThat(secondCommit.kanjiSkipped()).isEqualTo(1);
         assertThat(secondCommit.kanjiWordsSkipped()).isEqualTo(1);
@@ -188,7 +196,6 @@ class ImportServiceIntegrationTest {
         assertThat(topicRepository.count()).isEqualTo(topicCountAfterFirst);
         assertThat(vocabularyRepository.count()).isEqualTo(vocabCountAfterFirst);
         assertThat(kanjiEntryRepository.count()).isEqualTo(kanjiCountAfterFirst);
-        assertThat(kanjiWordRepository.count()).isEqualTo(kanjiWordCountAfterFirst);
     }
 
     @Test
@@ -246,7 +253,6 @@ class ImportServiceIntegrationTest {
 
         long vocabCount1 = vocabularyRepository.count();
         long kanjiCount1 = kanjiEntryRepository.count();
-        long kwCount1 = kanjiWordRepository.count();
 
         // Lần 2: Nhập lại với UPDATE_EXISTING nhưng các ô Romaji, Kun, Nghĩa để trống/NULL
         byte[] updateXlsx = createStandardImportWorkbook(
@@ -263,7 +269,6 @@ class ImportServiceIntegrationTest {
         // Không tạo bản ghi trùng
         assertThat(vocabularyRepository.count()).isEqualTo(vocabCount1);
         assertThat(kanjiEntryRepository.count()).isEqualTo(kanjiCount1);
-        assertThat(kanjiWordRepository.count()).isEqualTo(kwCount1);
 
         // Kiểm tra dữ liệu cũ trong DB KHÔNG bị ghi đè bởi NULL
         Topic topic = topicRepository.findByNameIgnoreCase(testTopicName).orElseThrow();
@@ -275,10 +280,9 @@ class ImportServiceIntegrationTest {
         assertThat(k.getMeaningVi()).isEqualTo("Giọt sương");
         assertThat(k.getKunyomi()).isEqualTo("shizuku");
 
-        java.util.List<KanjiWord> kws = kanjiWordRepository.findByKanjiIdOrderBySortOrderAsc(k.getId());
-        assertThat(kws).hasSize(1);
-        assertThat(kws.get(0).getRomaji()).isEqualTo("asashizuku");
-        assertThat(kws.get(0).getMeaningVi()).isEqualTo("Giọt sương mai");
+        Vocabulary kw = vocabularyRepository.findByTopicIdAndJapaneseText(topic.getId(), "朝雫（あさしずく）").orElseThrow();
+        assertThat(kw.getRomaji()).isEqualTo("asashizuku");
+        assertThat(kw.getMeaningVi()).isEqualTo("Giọt sương mai");
     }
 
     @Test

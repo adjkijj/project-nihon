@@ -29,24 +29,24 @@ public record ImportCommitResult(
     }
 
     /**
-     * Tổng số bản ghi (chủ đề, từ vựng, kanji, từ kanji) đã được thêm mới.
+     * Tổng số bản ghi (chủ đề, từ vựng gồm cả từ kanji, kanji) đã được thêm mới.
      */
     public int totalAdded() {
-        return topicsAdded + wordsAdded + kanjiAdded + kanjiWordsAdded;
+        return topicsAdded + wordsAdded + kanjiAdded;
     }
 
     /**
      * Tổng số bản ghi đã được cập nhật nội dung mới.
      */
     public int totalUpdated() {
-        return wordsUpdated + kanjiUpdated + kanjiWordsUpdated;
+        return wordsUpdated + kanjiUpdated;
     }
 
     /**
      * Tổng số bản ghi đã được bỏ qua do trùng lặp.
      */
     public int totalSkipped() {
-        return wordsSkipped + kanjiSkipped + kanjiWordsSkipped;
+        return wordsSkipped + kanjiSkipped;
     }
 
     /**

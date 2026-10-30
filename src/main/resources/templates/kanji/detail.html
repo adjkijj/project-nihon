@@ -131,6 +131,7 @@
                     <thead>
                         <tr>
                             <th>Từ vựng tiếng Nhật</th>
+                            <th>Cách đọc</th>
                             <th>Romaji</th>
                             <th>Nghĩa tiếng Việt</th>
                             <th>Bài học</th>
@@ -138,10 +139,11 @@
                     </thead>
                     <tbody>
                         <tr th:each="v : ${relatedVocabularies}">
-                            <td class="vocab-jp" th:text="${v.japaneseText}">魚（さかな）</td>
+                            <td class="vocab-jp" th:text="${(v.japaneseText != null && !v.japaneseText.isBlank()) ? v.japaneseText : '-'}">魚（さかな）</td>
+                            <td th:text="${(v.reading != null && !v.reading.isBlank()) ? v.reading : '-'}">さかな</td>
                             <td class="vocab-romaji" th:text="${(v.romaji != null && !v.romaji.isBlank()) ? v.romaji : '-'}">sakana</td>
                             <td th:text="${(v.meaningVi != null && !v.meaningVi.isBlank()) ? v.meaningVi : '-'}">Cá</td>
-                            <td class="u-color-var-text-muted-font-size-0-8rem" th:text="${v.topic != null ? v.topic.name : '-'}">Kanji Lesson 5</td>
+                            <td class="u-color-var-text-muted-font-size-0-8rem" th:text="${(v.topic != null && v.topic.name != null && !v.topic.name.isBlank()) ? v.topic.name : '-'}">Kanji Lesson 5</td>
                         </tr>
                     </tbody>
                 </table>

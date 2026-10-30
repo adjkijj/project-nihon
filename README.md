@@ -151,3 +151,10 @@ Hệ thống tích hợp bộ lọc tần suất `RateLimitFilter`:
 # Chạy kiểm thử bộ lọc thẻ thanh toán Luhn (PCI-DSS)
 ./mvnw test -Dtest=PaymentCardFilterTest
 ```
+
+---
+
+## 6. Lưu ý kiến trúc cơ sở dữ liệu: Bảng `kanji_word` (Deprecated)
+- **Kiến trúc dữ liệu đồng nhất:** Từ phiên bản hiện tại, toàn bộ từ vựng (bao gồm các từ cần nhớ trong sheet Kanji) được lưu trữ tập trung tại một nguồn dữ liệu duy nhất là bảng từ vựng chung `vocabulary` và liên kết với chủ đề bài học tương ứng của Kanji.
+- **Trạng thái bảng `kanji_word`:** Bảng `kanji_word` hiện tại đã **lỗi thời (deprecated)** và không còn được ứng dụng đọc hay ghi dữ liệu mới. Bảng này tạm thời được giữ nguyên trong cơ sở dữ liệu để bảo toàn lịch sử dữ liệu cũ và có thể an toàn xóa bỏ (`DROP TABLE kanji_word`) sau khi người quản trị kiểm tra và hoàn tất giai đoạn chuyển đổi.
+

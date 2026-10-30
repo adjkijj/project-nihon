@@ -26,6 +26,12 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
 
     List<Vocabulary> findTop10ByJapaneseTextContainingOrderBySourceLineAsc(String character);
 
+    @Query("SELECT v FROM Vocabulary v WHERE v.topic.id = :topicId AND v.japaneseText LIKE CONCAT('%', :character, '%') ORDER BY v.id ASC")
+    List<Vocabulary> findWordsByTopicIdAndCharacter(@Param("topicId") Long topicId, @Param("character") String character);
+
+    @Query("SELECT v FROM Vocabulary v WHERE v.japaneseText LIKE CONCAT('%', :character, '%') ORDER BY v.id ASC")
+    List<Vocabulary> findWordsByCharacter(@Param("character") String character);
+
     @Query("SELECT v FROM Vocabulary v WHERE " +
            "(:topicId IS NULL OR v.topic.id = :topicId) AND " +
            "(:keyword IS NULL OR :keyword = '' OR " +

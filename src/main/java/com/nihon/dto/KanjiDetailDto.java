@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -32,6 +33,9 @@ public class KanjiDetailDto {
     private String parentTopicName;
     private Integer sourceLine;
 
+    @Builder.Default
+    private List<KanjiWordSummaryDto> words = new ArrayList<>();
+
     public static KanjiDetailDto fromEntity(KanjiEntry entity) {
         if (entity == null) {
             return null;
@@ -52,6 +56,7 @@ public class KanjiDetailDto {
                 .topicName(entity.getTopic() != null ? entity.getTopic().getName() : null)
                 .parentTopicName(parentName)
                 .sourceLine(entity.getSourceLine())
+                .words(new ArrayList<>())
                 .build();
     }
 

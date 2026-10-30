@@ -113,6 +113,10 @@
                     <div class="metric-label">Từ Kanji mới</div>
                 </div>
                 <div class="metric-box">
+                    <div class="metric-value" th:text="${previewReport.duplicateKanjiWordsCount}">0</div>
+                    <div class="metric-label">Từ Kanji trùng</div>
+                </div>
+                <div class="metric-box">
                     <div class="metric-value u-color-ef4444" th:text="${previewReport.errors.size()}">0</div>
                     <div class="metric-label">Lỗi phát hiện</div>
                 </div>
@@ -253,6 +257,14 @@
                 <div class="metric-box">
                     <div class="metric-value" th:text="${commitResult.kanjiUpdated}">0</div>
                     <div class="metric-label">Kanji cập nhật</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-value" th:text="${commitResult.kanjiWordsAdded}">0</div>
+                    <div class="metric-label">Từ Kanji thêm mới</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-value" th:text="${commitResult.kanjiWordsUpdated}">0</div>
+                    <div class="metric-label">Từ Kanji cập nhật</div>
                 </div>
             </div>
             <div class="u-text-align-right-margin-top-1rem">

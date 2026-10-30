@@ -496,3 +496,55 @@ footer {
     }
 }
 
+.kanji-words-section {
+    margin-bottom: 0.75rem;
+    background-color: rgba(15, 23, 42, 0.4);
+    padding: 0.6rem 0.75rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(51, 65, 85, 0.5);
+    font-size: 0.8rem;
+}
+
+.kanji-words-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.35rem;
+}
+
+.kanji-words-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.kanji-words-list li {
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px dashed rgba(51, 65, 85, 0.4);
+    padding-bottom: 0.25rem;
+}
+
+.kanji-words-list li:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.kanji-words-list .kw-jp {
+    font-weight: 600;
+    color: #fff;
+    font-size: 0.825rem;
+}
+
+.kanji-words-list .kw-meta {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.kanji-words-list .kw-romaji {
+    color: var(--text-muted);
+}
+
+

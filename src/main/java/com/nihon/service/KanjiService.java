@@ -40,7 +40,12 @@ public class KanjiService {
     public Page<KanjiDetailDto> search(Long topicId, String keyword, Pageable pageable) {
         String sanitizedKeyword = sanitizeKeyword(keyword);
         Page<KanjiEntry> page = kanjiEntryRepository.search(topicId, sanitizedKeyword, pageable);
-        return page.map(KanjiDetailDto::fromEntity);
+        return page.map(entity -> {
+            KanjiDetailDto dto = KanjiDetailDto.fromEntity(entity);
+            Long tId = entity.getTopic() != null ? entity.getTopic().getId() : null;
+            dto.setWords(getWordsForKanji(tId, entity.getCharacter()));
+            return dto;
+        });
     }
 
     /**
@@ -50,7 +55,39 @@ public class KanjiService {
         if (id == null || id <= 0) {
             return Optional.empty();
         }
-        return kanjiEntryRepository.findById(id).map(KanjiDetailDto::fromEntity);
+        return kanjiEntryRepository.findById(id).map(entity -> {
+            KanjiDetailDto dto = KanjiDetailDto.fromEntity(entity);
+            Long tId = entity.getTopic() != null ? entity.getTopic().getId() : null;
+            dto.setWords(getWordsForKanji(tId, entity.getCharacter()));
+            return dto;
+        });
+    }
+
+    /**
+     * Lấy danh sách từ vựng cần nhớ của một ký tự Kanji từ bảng từ vựng chung.
+     */
+    public List<com.nihon.dto.KanjiWordSummaryDto> getWordsForKanji(Long topicId, String character) {
+        if (character == null || character.isBlank()) {
+            return Collections.emptyList();
+        }
+        String cleanChar = character.strip();
+        List<Vocabulary> list;
+        if (topicId != null) {
+            list = vocabularyRepository.findWordsByTopicIdAndCharacter(topicId, cleanChar);
+            if (list.isEmpty()) {
+                list = vocabularyRepository.findWordsByCharacter(cleanChar);
+            }
+        } else {
+            list = vocabularyRepository.findWordsByCharacter(cleanChar);
+        }
+        return list.stream()
+                .map(v -> com.nihon.dto.KanjiWordSummaryDto.builder()
+                        .japaneseText(v.getJapaneseText())
+                        .reading(v.getReading())
+                        .romaji(v.getRomaji())
+                        .meaningVi(v.getMeaningVi())
+                        .build())
+                .toList();
     }
 
     /**
@@ -61,13 +98,27 @@ public class KanjiService {
     }
 
     /**
-     * Lấy danh sách tối đa 10 từ vựng có chứa ký tự Kanji này để làm ví dụ thực tế.
+     * Lấy danh sách từ vựng có chứa ký tự Kanji này từ bảng từ vựng chung để làm ví dụ thực tế.
      */
     public List<Vocabulary> getRelatedVocabulary(String character) {
+        return getRelatedVocabulary(character, null);
+    }
+
+    /**
+     * Lấy danh sách từ vựng có chứa ký tự Kanji này theo chủ đề bài học và ký tự.
+     */
+    public List<Vocabulary> getRelatedVocabulary(String character, Long topicId) {
         if (character == null || character.isBlank()) {
             return Collections.emptyList();
         }
-        return vocabularyRepository.findTop10ByJapaneseTextContainingOrderBySourceLineAsc(character.strip());
+        String cleanChar = character.strip();
+        if (topicId != null) {
+            List<Vocabulary> topicWords = vocabularyRepository.findWordsByTopicIdAndCharacter(topicId, cleanChar);
+            if (!topicWords.isEmpty()) {
+                return topicWords;
+            }
+        }
+        return vocabularyRepository.findTop10ByJapaneseTextContainingOrderBySourceLineAsc(cleanChar);
     }
 
     /**

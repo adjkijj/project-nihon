@@ -57,7 +57,7 @@ public class ImportService {
 
     private static final int BATCH_SIZE = 50;
     private static final Pattern MULTI_SPACE_PATTERN = Pattern.compile("\\s+");
-    private static final Pattern READING_GROUP = Pattern.compile("[（(]([^）)]*)[）)]");
+    private static final Pattern LAST_PARENTHESIS_PATTERN = Pattern.compile("[（(]([^()（）]*)[）)]\\s*$");
 
     private final ExcelUploadValidator validator;
     private final WordSheetParser wordSheetParser;
@@ -189,19 +189,19 @@ public class ImportService {
             }
         }
 
-        // Thống kê từ cần nhớ của Kanji
+        // Thống kê từ cần nhớ của Kanji (được lưu vào bảng từ vựng chung vocabulary)
         int newKanjiWordsCount = 0;
         int duplicateKanjiWordsCount = 0;
-        Set<String> seenKanjiWordsInFile = new HashSet<>();
         for (KanjiRow row : kanjiResult.rows()) {
-            String kanjiChar = row.kanji().trim();
-            Optional<KanjiEntry> kanjiOpt = kanjiEntryRepository.findByCharacter(kanjiChar);
+            String normTopic = normalizeTopic(row.topic());
+            Optional<Topic> topicOpt = topicRepository.findByNameIgnoreCase(normTopic);
 
             for (KanjiWordRow kwRow : row.words()) {
-                String kwKey = kanjiChar + ":" + kwRow.japanese().trim();
-                if (!seenKanjiWordsInFile.add(kwKey)) {
+                String kwJapanese = kwRow.japanese().trim();
+                String kwKey = normTopic.toLowerCase(Locale.ROOT) + ":" + kwJapanese;
+                if (!seenWordsInFile.add(kwKey)) {
                     duplicateKanjiWordsCount++;
-                } else if (kanjiOpt.isPresent() && kanjiWordRepository.existsByKanjiIdAndJapanese(kanjiOpt.get().getId(), kwRow.japanese())) {
+                } else if (topicOpt.isPresent() && vocabularyRepository.existsByTopicIdAndJapaneseText(topicOpt.get().getId(), kwJapanese)) {
                     duplicateKanjiWordsCount++;
                 } else {
                     newKanjiWordsCount++;
@@ -209,10 +209,13 @@ public class ImportService {
             }
         }
 
+        int totalNewWordsCount = newWordsCount + newKanjiWordsCount;
+        int totalDuplicateWordsCount = duplicateWordsCount + duplicateKanjiWordsCount;
+
         return new ImportPreviewReport(
                 newTopicsCount,
-                newWordsCount,
-                duplicateWordsCount,
+                totalNewWordsCount,
+                totalDuplicateWordsCount,
                 newKanjiCount,
                 duplicateKanjiCount,
                 newKanjiWordsCount,
@@ -467,41 +470,67 @@ public class ImportService {
                     kanjiAdded++;
                 }
 
-                // Lưu các từ vựng cần nhớ (KanjiWord)
+                // Ghi các từ cần nhớ của Kanji vào bảng từ vựng chung (vocabulary)
                 for (KanjiWordRow kwRow : row.words()) {
-                    Optional<KanjiWord> existingKwOpt = kanjiWordRepository.findByKanjiIdAndJapanese(kanjiTarget.getId(), kwRow.japanese());
+                    String kwJapanese = kwRow.japanese().trim();
+                    String kwVocabKey = topic.getId() + ":" + kwJapanese;
+                    Optional<Vocabulary> existingVocabOpt = vocabularyRepository.findByTopicIdAndJapaneseText(topic.getId(), kwJapanese);
 
-                    if (existingKwOpt.isPresent()) {
+                    if (existingVocabOpt.isPresent()) {
                         if (effectiveMode == ImportMode.UPDATE_EXISTING) {
-                            KanjiWord existingKw = existingKwOpt.get();
-                            if (kwRow.romaji() != null) {
-                                existingKw.setRomaji(kwRow.romaji());
+                            Vocabulary existing = existingVocabOpt.get();
+                            if (kwRow.romaji() != null && !kwRow.romaji().isBlank()) {
+                                existing.setRomaji(kwRow.romaji().trim());
                             }
-                            if (kwRow.meaningVi() != null) {
-                                existingKw.setMeaningVi(kwRow.meaningVi());
+                            if (kwRow.meaningVi() != null && !kwRow.meaningVi().isBlank()) {
+                                existing.setMeaningVi(kwRow.meaningVi().trim());
                             }
-                            existingKw.setSortOrder(kwRow.rowNumber());
-                            kanjiWordRepository.save(existingKw);
+                            existing.setReading(extractReading(kwJapanese));
+                            existing.setHasKanji(containsKanji(kwJapanese));
+                            vocabBatch.add(existing);
+                            wordsUpdated++;
                             kanjiWordsUpdated++;
                         } else {
+                            wordsSkipped++;
+                            kanjiWordsSkipped++;
+                        }
+                    } else if (!processedVocabKeysInBatch.add(kwVocabKey)) {
+                        // Trùng lặp ngay trong cùng một tệp tin
+                        if (effectiveMode == ImportMode.UPDATE_EXISTING) {
+                            wordsUpdated++;
+                            kanjiWordsUpdated++;
+                        } else {
+                            wordsSkipped++;
                             kanjiWordsSkipped++;
                         }
                     } else {
-                        KanjiWord newKw = new KanjiWord();
-                        newKw.setKanji(kanjiTarget);
-                        newKw.setJapanese(kwRow.japanese());
-                        newKw.setRomaji(kwRow.romaji());
-                        newKw.setMeaningVi(kwRow.meaningVi());
-                        newKw.setSortOrder(kwRow.rowNumber());
-                        kanjiWordRepository.save(newKw);
+                        Vocabulary newVocab = new Vocabulary();
+                        newVocab.setTopic(topic);
+                        newVocab.setJapaneseText(kwJapanese);
+                        newVocab.setReading(extractReading(kwJapanese));
+                        newVocab.setRomaji(kwRow.romaji() != null && !kwRow.romaji().isBlank() ? kwRow.romaji().trim() : null);
+                        newVocab.setMeaningVi(kwRow.meaningVi() != null && !kwRow.meaningVi().isBlank() ? kwRow.meaningVi().trim() : null);
+                        newVocab.setHasKanji(containsKanji(kwJapanese));
+                        newVocab.setSourceLine(null);
+                        vocabBatch.add(newVocab);
+                        wordsAdded++;
                         kanjiWordsAdded++;
+                    }
+
+                    if (vocabBatch.size() >= BATCH_SIZE) {
+                        vocabularyRepository.saveAll(vocabBatch);
+                        vocabBatch.clear();
                     }
                 }
             }
+            if (!vocabBatch.isEmpty()) {
+                vocabularyRepository.saveAll(vocabBatch);
+                vocabBatch.clear();
+            }
 
-            int totalAdded = topicsAdded + wordsAdded + kanjiAdded + kanjiWordsAdded;
-            int totalUpdated = wordsUpdated + kanjiUpdated + kanjiWordsUpdated;
-            int totalSkipped = wordsSkipped + kanjiSkipped + kanjiWordsSkipped;
+            int totalAdded = topicsAdded + wordsAdded + kanjiAdded;
+            int totalUpdated = wordsUpdated + kanjiUpdated;
+            int totalSkipped = wordsSkipped + kanjiSkipped;
 
             // 7. Ghi Audit Log thành công
             auditService.log(effectiveUserId, cleanFileName, fileHash, totalAdded, totalUpdated, totalSkipped, "SUCCESS", null);
@@ -597,7 +626,7 @@ public class ImportService {
     /**
      * Kiểm tra xem chuỗi có chứa chữ Hán tự Kanji (CJK Unified Ideographs) hay không.
      */
-    static boolean containsKanji(String text) {
+    public static boolean containsKanji(String text) {
         if (text == null) {
             return false;
         }
@@ -605,21 +634,20 @@ public class ImportService {
     }
 
     /**
-     * Trích xuất cách đọc Hiragana từ ngoặc tròn cuối chuỗi tiếng Nhật (ví dụ: "私（わたし）" -> "わたし").
+     * Trích xuất cách đọc từ ngoặc tròn cuối chuỗi tiếng Nhật (ví dụ: "私（わたし）" -> "わたし", "地味（な）（じみ）" -> "じみ").
+     * Hỗ trợ cả ngoặc đủ rộng （ ） và ngoặc thường ( ).
+     * Nếu không có ngoặc: trả về null (không gây lỗi).
      */
-    static String extractReading(String japanese) {
+    public static String extractReading(String japanese) {
         if (japanese == null) {
             return null;
         }
-        Matcher m = READING_GROUP.matcher(japanese);
+        String trimmed = japanese.trim();
+        Matcher m = LAST_PARENTHESIS_PATTERN.matcher(trimmed);
         if (!m.find()) {
             return null;
         }
-        String content = m.group(1).strip();
-        boolean atEnd = (m.end() == japanese.length());
-        if (m.find() || !atEnd || content.isEmpty()) {
-            return null;
-        }
-        return content;
+        String content = m.group(1).trim();
+        return content.isEmpty() ? null : content;
     }
 }

@@ -128,6 +128,21 @@
                     </div>
                 </div>
 
+                <!-- Từ cần nhớ của Kanji -->
+                <div class="kanji-words-section">
+                    <div class="kanji-words-title">Từ cần nhớ:</div>
+                    <div th:if="${k.words == null || k.words.isEmpty()}" class="tag-missing">-</div>
+                    <ul th:unless="${k.words == null || k.words.isEmpty()}" class="kanji-words-list">
+                        <li th:each="w : ${k.words}">
+                            <span class="kw-jp" th:text="${(w.japaneseText != null && !w.japaneseText.isBlank()) ? w.japaneseText : '-'}">お酒（おさけ）</span>
+                            <span class="kw-meta">
+                                <span class="kw-romaji" th:text="${(w.romaji != null && !w.romaji.isBlank()) ? w.romaji : '-'}">osake</span> •
+                                <span class="kw-meaning" th:text="${(w.meaningVi != null && !w.meaningVi.isBlank()) ? w.meaningVi : '-'}">Rượu</span>
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+
                 <div class="kanji-card-footer">
                     <span>Xem chi tiết →</span>
                 </div>
