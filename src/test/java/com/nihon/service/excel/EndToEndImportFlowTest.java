@@ -4,12 +4,10 @@ import com.nihon.dto.excel.ImportCommitResult;
 import com.nihon.dto.excel.ImportMode;
 import com.nihon.dto.excel.ImportPreviewReport;
 import com.nihon.entity.KanjiEntry;
-import com.nihon.entity.KanjiWord;
 import com.nihon.entity.Topic;
 import com.nihon.entity.Vocabulary;
 import com.nihon.repository.ImportAuditLogRepository;
 import com.nihon.repository.KanjiEntryRepository;
-import com.nihon.repository.KanjiWordRepository;
 import com.nihon.repository.TopicRepository;
 import com.nihon.repository.VocabularyRepository;
 import org.apache.poi.ss.usermodel.Cell;
@@ -68,9 +66,6 @@ class EndToEndImportFlowTest {
     private KanjiEntryRepository kanjiEntryRepository;
 
     @Autowired
-    private KanjiWordRepository kanjiWordRepository;
-
-    @Autowired
     private ImportAuditLogRepository auditLogRepository;
 
     @Test
@@ -107,7 +102,6 @@ class EndToEndImportFlowTest {
         long topicCountBefore = topicRepository.count();
         long vocabCountBefore = vocabularyRepository.count();
         long kanjiCountBefore = kanjiEntryRepository.count();
-        long kanjiWordCountBefore = kanjiWordRepository.count();
 
         // --- BƯỚC 2: COMMIT LẦN 1 ---
         ImportCommitResult commitResult = importService.commit(multipartFile, ImportMode.SKIP_DUPLICATES, "e2e_tester");

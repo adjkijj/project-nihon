@@ -35,6 +35,11 @@
             <span th:text="${successMessage}">Thao tác thành công.</span>
         </div>
 
+        <div th:if="${errorMessage}" class="alert-error">
+            <span>⚠️</span>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi.</span>
+        </div>
+
         <!-- 1. Phạm vi lưu trữ thông báo -->
         <div class="session-scope-notice">
             <span class="notice-icon">ℹ️</span>

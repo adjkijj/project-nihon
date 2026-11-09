@@ -4,11 +4,14 @@ import com.nihon.entity.ImportAuditLog;
 import com.nihon.repository.ImportAuditLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 /**
  * Dịch vụ ghi nhật ký kiểm toán (audit log) cho hoạt động import tệp tin.
@@ -22,6 +25,72 @@ import java.time.LocalDateTime;
 public class ImportAuditService {
 
     private final ImportAuditLogRepository auditLogRepository;
+
+    /**
+     * Lấy danh sách lịch sử import có phân trang (mới nhất trước).
+     */
+    @Transactional(readOnly = true)
+    public Page<ImportAuditLog> findHistory(Pageable pageable) {
+        return auditLogRepository.findAllByOrderByImportedAtDescIdDesc(pageable);
+    }
+
+    /**
+     * Tìm bản ghi kiểm toán theo ID.
+     */
+    @Transactional(readOnly = true)
+    public Optional<ImportAuditLog> findById(Long id) {
+        return auditLogRepository.findById(id);
+    }
+
+    /**
+     * Lưu cập nhật bản ghi kiểm toán (ví dụ: ghi nhận undone_at) trong cùng transaction hiện tại.
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public ImportAuditLog saveInCurrentTransaction(ImportAuditLog auditLog) {
+        return auditLogRepository.saveAndFlush(auditLog);
+    }
+
+    /**
+     * Ghi thêm một dòng audit cho hành động hoàn tác (kết quả UNDO, lưu số bản ghi đã xóa)
+     * trong cùng transaction của thao tác hoàn tác.
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public ImportAuditLog logUndo(String clientIp, ImportAuditLog originalLog, int totalDeleted,
+                                  int topicsRetained, String detailMessage) {
+        String safeUserId = clientIp != null && !clientIp.isBlank() ? clientIp.trim() : "anonymous";
+        if (safeUserId.length() > 100) {
+            safeUserId = safeUserId.substring(0, 100);
+        }
+        String safeFileName = (originalLog != null && originalLog.getFileName() != null)
+                ? originalLog.getFileName()
+                : "unknown.xlsx";
+        String safeHash = (originalLog != null && originalLog.getFileHashSha256() != null)
+                ? originalLog.getFileHashSha256()
+                : "0".repeat(64);
+
+        ImportAuditLog undoLog = new ImportAuditLog();
+        undoLog.setUserId(safeUserId);
+        undoLog.setImportedAt(LocalDateTime.now());
+        undoLog.setFileName(safeFileName);
+        undoLog.setFileHashSha256(safeHash);
+        undoLog.setRecordsAdded(0);
+        undoLog.setRecordsUpdated(totalDeleted);
+        undoLog.setRecordsSkipped(topicsRetained);
+        undoLog.setResult("UNDO");
+        if (detailMessage != null && detailMessage.length() > 1000) {
+            detailMessage = detailMessage.substring(0, 997) + "...";
+        }
+        undoLog.setErrorMessage(detailMessage);
+
+        ImportAuditLog saved = auditLogRepository.saveAndFlush(undoLog);
+        log.info("Undo audit log recorded: id={}, targetBatchId={}, ip/client={}, deleted={}, retainedTopics={}",
+                saved.getId(),
+                originalLog != null ? originalLog.getId() : null,
+                ExcelCellUtils.sanitizeForLog(saved.getUserId()),
+                totalDeleted,
+                topicsRetained);
+        return saved;
+    }
 
     /**
      * Ghi nhận một bản ghi kiểm toán vào cơ sở dữ liệu.
@@ -40,10 +109,19 @@ public class ImportAuditService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public ImportAuditLog log(String clientIp, String cleanFileName, String fileHashSha256,
                               int added, int updated, int skipped, String result, String errorMessage) {
+        String safeUserId = clientIp != null && !clientIp.isBlank() ? clientIp.trim() : "anonymous";
+        if (safeUserId.length() > 100) {
+            safeUserId = safeUserId.substring(0, 100);
+        }
+        String safeFileName = cleanFileName != null ? cleanFileName : "unknown.xlsx";
+        if (safeFileName.length() > 255) {
+            safeFileName = safeFileName.substring(0, 255);
+        }
+
         ImportAuditLog auditLog = new ImportAuditLog();
-        auditLog.setUserId(clientIp != null && !clientIp.isBlank() ? clientIp.trim() : "anonymous");
+        auditLog.setUserId(safeUserId);
         auditLog.setImportedAt(LocalDateTime.now());
-        auditLog.setFileName(cleanFileName);
+        auditLog.setFileName(safeFileName);
         auditLog.setFileHashSha256(fileHashSha256);
         auditLog.setRecordsAdded(added);
         auditLog.setRecordsUpdated(updated);

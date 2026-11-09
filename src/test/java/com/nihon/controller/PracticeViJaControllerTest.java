@@ -24,6 +24,9 @@ import java.util.Optional;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -175,5 +178,71 @@ class PracticeViJaControllerTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/practice/vi-ja"))
                 .andExpect(flash().attributeExists("errorMessage"));
+    }
+
+    @Test
+    @DisplayName("Lọc topicId không tồn tại ở trang /practice/vi-ja: hiện thông báo 'Chủ đề không tồn tại' và danh sách rỗng")
+    void testIndexWithNonExistentTopicId() throws Exception {
+        when(topicService.findById(999L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/practice/vi-ja").param("topicId", "999"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("practice/vi-ja-index"))
+                .andExpect(model().attribute("errorMessage", "Chủ đề không tồn tại"))
+                .andExpect(model().attribute("topics", java.util.Collections.emptyList()))
+                .andExpect(content().string(containsString("Chủ đề không tồn tại")));
+    }
+
+    @Test
+    @DisplayName("Practice VI->JA: vocabId=0 và vocabId=-1 báo lỗi dữ liệu không hợp lệ")
+    void testCheckAnswerZeroAndNegativeVocabId() throws Exception {
+        mockMvc.perform(post("/practice/vi-ja/check")
+                        .sessionAttr(CsrfInterceptor.CSRF_SESSION_ATTR, CSRF_TOKEN)
+                        .param(CsrfInterceptor.CSRF_PARAM_NAME, CSRF_TOKEN)
+                        .param("vocabId", "0")
+                        .param("userJapanese", "私"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/practice/vi-ja/question"))
+                .andExpect(flash().attributeExists("errorMessage"));
+
+        mockMvc.perform(post("/practice/vi-ja/check")
+                        .sessionAttr(CsrfInterceptor.CSRF_SESSION_ATTR, CSRF_TOKEN)
+                        .param(CsrfInterceptor.CSRF_PARAM_NAME, CSRF_TOKEN)
+                        .param("vocabId", "-1")
+                        .param("userJapanese", "私"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/practice/vi-ja/question"))
+                .andExpect(flash().attributeExists("errorMessage"));
+
+        verify(practiceService, never()).checkReverseAnswer(any());
+    }
+
+    @Test
+    @DisplayName("Practice VI->JA: topicId lệch vẫn chấm điểm đúng và ghi lịch sử với topicId=null")
+    void testCheckAnswerMismatchedTopicIdGradesNormally() throws Exception {
+        PracticeViJaResultDto mismatchedResult = PracticeViJaResultDto.builder()
+                .vocabId(10L)
+                .meaningVi("Tôi")
+                .userJapanese("私")
+                .expectedJapanese("私（わたし）")
+                .expectedReading("わたし")
+                .acceptedVariants(List.of("私", "私（わたし）"))
+                .correct(true)
+                .topicName("1. Chào hỏi")
+                .topicId(null)
+                .feedbackMessage("Chính xác!")
+                .build();
+        when(practiceService.checkReverseAnswer(any(PracticeViJaAnswerForm.class))).thenReturn(mismatchedResult);
+
+        mockMvc.perform(post("/practice/vi-ja/check")
+                        .sessionAttr(CsrfInterceptor.CSRF_SESSION_ATTR, CSRF_TOKEN)
+                        .param(CsrfInterceptor.CSRF_PARAM_NAME, CSRF_TOKEN)
+                        .param("vocabId", "10")
+                        .param("topicId", "999")
+                        .param("userJapanese", "私"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("practice/vi-ja-result"));
+
+        verify(studyProgressService).recordViJaAttempt(any(), eq(mismatchedResult), isNull());
     }
 }

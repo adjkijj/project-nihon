@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${'Chi tiết từ vựng: ' + vocab.japaneseText + ' - Project Nihon'}">Chi tiết từ vựng - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/vocabulary-list.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+</head>
+<body>
+    <header>
+        <a href="/" class="brand">
+            <span class="brand-badge">日</span>
+            <span>Project Nihon</span>
+        </a>
+        <nav class="u-7dbd1ca1">
+            <a href="/">Trang chủ</a>
+            <a href="/vocabulary" class="active">Từ vựng</a>
+            <a href="/topics">Chủ đề</a>
+            <a href="/kanji">Kanji</a>
+            <a href="/practice">Luyện tập</a>
+            <a href="/stats">Thống kê</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="page-header">
+            <div class="page-title">
+                <h1 th:text="${vocab.japaneseText}">先生</h1>
+                <p>Thông tin chi tiết từ vựng, các chủ đề chứa từ và chữ Kanji thành phần</p>
+            </div>
+            <div class="actions-cell">
+                <a th:href="@{/vocabulary}" class="btn btn-secondary">← Danh sách từ vựng</a>
+                <a th:href="@{'/vocabulary/' + ${vocab.id} + '/edit'(scope='ALL')}" class="btn btn-edit">Sửa</a>
+                <form class="u-margin-0" th:action="@{'/vocabulary/' + ${vocab.id} + '/delete'}" method="post"
+                      th:attr="data-confirm=${'Từ này thuộc ' + #lists.size(vocab.topics) + ' chủ đề. Xóa khỏi tất cả?'}">
+                    <input type="hidden" name="_csrf" th:value="${_csrf}">
+                    <input type="hidden" name="scope" value="ALL">
+                    <input th:each="gid : ${vocab.allIds}" type="hidden" name="allIds" th:value="${gid}">
+                    <button type="submit" class="btn btn-danger">Xóa</button>
+                </form>
+            </div>
+        </div>
+
+        <section class="vocab-detail-card">
+            <div class="vocab-detail-grid">
+                <div class="vocab-detail-item">
+                    <span class="vocab-detail-label">Tiếng Nhật</span>
+                    <strong class="vocab-detail-jp" th:text="${vocab.japaneseText}">先生</strong>
+                </div>
+                <div class="vocab-detail-item">
+                    <span class="vocab-detail-label">Cách đọc (Hiragana/Katakana)</span>
+                    <span class="vocab-detail-value" th:text="${(vocab.reading != null and !vocab.reading.isBlank()) ? vocab.reading : '-'}">せんせい</span>
+                </div>
+                <div class="vocab-detail-item">
+                    <span class="vocab-detail-label">Romaji</span>
+                    <span class="vocab-detail-value vocab-romaji" th:text="${(vocab.romaji != null and !vocab.romaji.isBlank()) ? vocab.romaji : '-'}">sensei</span>
+                </div>
+                <div class="vocab-detail-item">
+                    <span class="vocab-detail-label">Nghĩa tiếng Việt</span>
+                    <strong class="vocab-detail-value" th:text="${(vocab.meaningVi != null and !vocab.meaningVi.isBlank()) ? vocab.meaningVi : '-'}">Giáo viên</strong>
+                </div>
+                <div class="vocab-detail-item">
+                    <span class="vocab-detail-label">Chứa chữ Hán (hasKanji)</span>
+                    <span class="vocab-detail-value">
+                        <span th:if="${vocab.hasKanji}" class="badge-kanji">Có Kanji</span>
+                        <span th:unless="${vocab.hasKanji}" class="badge-topic">Không có Kanji</span>
+                    </span>
+                </div>
+                <div class="vocab-detail-item">
+                    <span class="vocab-detail-label">Ngày tạo</span>
+                    <span class="vocab-detail-value" th:text="${vocab.createdAt != null ? #temporals.format(vocab.createdAt, 'dd/MM/yyyy HH:mm') : '-'}">01/01/2026 10:00</span>
+                </div>
+                <div class="vocab-detail-item">
+                    <span class="vocab-detail-label">Cập nhật lần cuối</span>
+                    <span class="vocab-detail-value" th:text="${vocab.updatedAt != null ? #temporals.format(vocab.updatedAt, 'dd/MM/yyyy HH:mm') : '-'}">01/01/2026 10:00</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Danh sách mọi chủ đề chứa từ -->
+        <section class="vocab-detail-card vocab-detail-section">
+            <h2 class="vocab-section-title">Các chủ đề chứa từ này (<span th:text="${#lists.size(vocab.topics)}">1</span>)</h2>
+            <div th:if="${#lists.isEmpty(vocab.topics)}" class="empty-state">
+                Chưa gắn với chủ đề nào.
+            </div>
+            <div th:unless="${#lists.isEmpty(vocab.topics)}" class="topic-badges-list">
+                <a th:each="t : ${vocab.topics}"
+                   th:href="@{/vocabulary(topicId=${t.id})}"
+                   class="badge-topic vocab-topic-link"
+                   th:text="${t.name}">Chủ đề 1</a>
+            </div>
+        </section>
+
+        <!-- Danh sách các chữ Kanji có trong từ -->
+        <section class="vocab-detail-card vocab-detail-section">
+            <h2 class="vocab-section-title">Các chữ Kanji trong từ</h2>
+            <div th:if="${#lists.isEmpty(vocab.kanjis)}" class="empty-state">
+                Từ này không chứa ký tự chữ Hán (Kanji).
+            </div>
+            <div th:unless="${#lists.isEmpty(vocab.kanjis)}" class="vocab-kanji-list">
+                <div th:each="k : ${vocab.kanjis}" class="vocab-kanji-card">
+                    <div class="vocab-kanji-char">
+                        <a th:if="${k.kanjiId != null}"
+                           th:href="@{'/kanji/' + ${k.kanjiId}}"
+                           class="vocab-kanji-link"
+                           th:text="${k.character}">先</a>
+                        <span th:if="${k.kanjiId == null}" th:text="${k.character}">先</span>
+                    </div>
+                    <div class="vocab-kanji-meta">
+                        <div th:if="${k.kanjiId != null}">
+                            <div class="vocab-kanji-hanviet" th:text="${(k.hanViet != null and !k.hanViet.isBlank()) ? k.hanViet : '-'}">TIÊN</div>
+                            <div class="vocab-kanji-meaning" th:text="${(k.meaningVi != null and !k.meaningVi.isBlank()) ? k.meaningVi : '-'}">Trước</div>
+                            <a th:href="@{'/kanji/' + ${k.kanjiId}}" class="vocab-kanji-detail-link">Xem chi tiết Kanji →</a>
+                        </div>
+                        <div th:if="${k.kanjiId == null}" class="vocab-kanji-missing">
+                            Chưa có trong danh mục Kanji
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
+

@@ -304,6 +304,13 @@ main {
 .section-header {
     margin-bottom: 1rem;
 }
+.section-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
 .section-header h2 {
     font-size: 1.25rem;
     font-weight: 700;
@@ -388,6 +395,24 @@ tr:hover td {
 }
 .btn-primary:hover {
     background-color: var(--accent-hover);
+}
+
+.btn-edit {
+    background-color: rgba(56, 189, 248, 0.15);
+    color: var(--accent);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+}
+.btn-edit:hover {
+    background-color: rgba(56, 189, 248, 0.25);
+}
+
+.btn-danger {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.btn-danger:hover {
+    background-color: rgba(239, 68, 68, 0.25);
 }
 
 .actions-bar {

@@ -7,12 +7,12 @@ import java.util.List;
  * Báo cáo xem trước (preview) kết quả phân tích tệp Excel trước khi ghi vào cơ sở dữ liệu:
  * <ul>
  *   <li>Số lượng chủ đề mới</li>
- *   <li>Số lượng từ mới</li>
+ *   <li>Số lượng từ mới (bao gồm từ ở sheet "New Word" và từ cần nhớ ở sheet "Kanji" lưu chung vào bảng {@code vocabulary})</li>
  *   <li>Số lượng từ trùng (sẽ bỏ qua hoặc cập nhật tùy thuộc vào chế độ import)</li>
  *   <li>Số lượng Kanji mới</li>
  *   <li>Số lượng Kanji trùng</li>
- *   <li>Số lượng từ cần nhớ của Kanji mới</li>
- *   <li>Số lượng từ cần nhớ của Kanji trùng</li>
+ *   <li>Số lượng từ cần nhớ ở nhánh Kanji mới (thống kê chi tiết cho giao diện preview)</li>
+ *   <li>Số lượng từ cần nhớ ở nhánh Kanji trùng (thống kê chi tiết cho giao diện preview)</li>
  *   <li>Danh sách các lỗi dòng dữ liệu (RowError)</li>
  * </ul>
  */
@@ -31,6 +31,17 @@ public record ImportPreviewReport(
         if (errors == null) {
             errors = Collections.emptyList();
         }
+    }
+
+    public ImportPreviewReport(
+            int newTopicsCount,
+            int newWordsCount,
+            int duplicateWordsCount,
+            int newKanjiCount,
+            int duplicateKanjiCount,
+            List<RowError> errors
+    ) {
+        this(newTopicsCount, newWordsCount, duplicateWordsCount, newKanjiCount, duplicateKanjiCount, 0, 0, errors);
     }
 
     /**

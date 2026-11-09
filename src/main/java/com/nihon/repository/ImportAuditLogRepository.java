@@ -1,6 +1,8 @@
 package com.nihon.repository;
 
 import com.nihon.entity.ImportAuditLog;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -9,6 +11,11 @@ import java.util.List;
  * Repository truy xuất dữ liệu nhật ký kiểm toán import tệp tin (bảng import_audit_log).
  */
 public interface ImportAuditLogRepository extends JpaRepository<ImportAuditLog, Long> {
+
+    /**
+     * Truy vấn phân trang lịch sử import toàn hệ thống, sắp xếp mới nhất trước.
+     */
+    Page<ImportAuditLog> findAllByOrderByImportedAtDescIdDesc(Pageable pageable);
 
     /**
      * Tìm danh sách lịch sử import của một người dùng theo thời gian giảm dần.

@@ -57,10 +57,42 @@ public class ImportAuditLog {
     @Column(name = "error_message", length = 1000)
     private String errorMessage;
 
+    @Column(name = "undone_at")
+    private LocalDateTime undoneAt;
+
     @PrePersist
     protected void onCreate() {
         if (importedAt == null) {
             importedAt = LocalDateTime.now();
         }
+    }
+
+    /**
+     * Kiểm tra bản ghi audit này có thể hoàn tác hay không (kết quả SUCCESS và chưa hoàn tác).
+     */
+    public boolean isCanUndo() {
+        return "SUCCESS".equals(result) && undoneAt == null;
+    }
+
+    /**
+     * Trả về mã băm SHA-256 rút gọn 12 ký tự đầu để hiển thị trên bảng lịch sử import.
+     */
+    public String getShortHash() {
+        if (fileHashSha256 == null) {
+            return "";
+        }
+        String trimmed = fileHashSha256.strip();
+        return trimmed.length() > 12 ? trimmed.substring(0, 12) : trimmed;
+    }
+
+    /**
+     * Trả về thông báo lỗi đã cắt tối đa 300 ký tự (trả về null nếu không có lỗi).
+     */
+    public String getTruncatedErrorMessage() {
+        if (errorMessage == null || errorMessage.isBlank()) {
+            return null;
+        }
+        String trimmed = errorMessage.strip();
+        return trimmed.length() > 300 ? trimmed.substring(0, 300) : trimmed;
     }
 }

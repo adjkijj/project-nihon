@@ -5,6 +5,7 @@ import com.nihon.dto.ParsedVocabularyFile;
 import com.nihon.dto.ParsedVocabularyFile.ParsedKanji;
 import com.nihon.dto.ParsedVocabularyFile.ParsedTopic;
 import com.nihon.dto.ParsedVocabularyFile.ParsedVocabulary;
+import com.nihon.validation.KanjiLimits;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -34,15 +35,15 @@ public class VocabularyFileParser {
     static final List<String> KANJI_HEADER = List.of("Kanji", "Hán Việt", "Ý nghĩa", "On", "Kun");
 
     // Giới hạn khớp với độ dài cột trong entity.
-    static final int MAX_TOPIC = 255;
-    static final int MAX_JAPANESE = 255;
-    static final int MAX_READING = 255;
-    static final int MAX_ROMAJI = 255;
-    static final int MAX_MEANING_VOCAB = 500;
-    static final int MAX_KANJI_CHAR = 8;
-    static final int MAX_HAN_VIET = 100;
-    static final int MAX_MEANING_KANJI = 255;
-    static final int MAX_ON_KUN = 100;
+    public static final int MAX_TOPIC = KanjiLimits.MAX_TOPIC_LENGTH;
+    public static final int MAX_JAPANESE = KanjiLimits.MAX_JAPANESE_LENGTH;
+    public static final int MAX_READING = KanjiLimits.MAX_READING_LENGTH;
+    public static final int MAX_ROMAJI = KanjiLimits.MAX_ROMAJI_LENGTH;
+    public static final int MAX_MEANING_VOCAB = KanjiLimits.MAX_VOCAB_MEANING_LENGTH;
+    public static final int MAX_KANJI_CHAR = KanjiLimits.MAX_KANJI_CHAR_LENGTH;
+    public static final int MAX_HAN_VIET = KanjiLimits.MAX_HAN_VIET_LENGTH;
+    public static final int MAX_MEANING_KANJI = KanjiLimits.MAX_KANJI_MEANING_LENGTH;
+    public static final int MAX_ON_KUN = KanjiLimits.MAX_ON_KUN_LENGTH;
 
     private static final Pattern SEPARATOR_CELL = Pattern.compile("^:?-{3,}:?$");
     private static final Pattern READING_GROUP = Pattern.compile("[（(]([^）)]*)[）)]");

@@ -19,6 +19,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.nihon.service.StudyProgressService;
 import jakarta.servlet.http.HttpSession;
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -45,8 +46,25 @@ public class PracticeViJaController {
     @GetMapping
     public String index(@RequestParam(value = "topicId", required = false) Long topicId, Model model) {
         List<Topic> topics = topicService.findAllOrdered();
+        Long effectiveTopicId = topicId;
+        if (topicId != null && topicId <= 0) {
+            effectiveTopicId = null;
+            model.addAttribute("errorMessage", "ID không hợp lệ");
+        } else if (topicId != null) {
+            boolean topicExists = topics.stream().anyMatch(t -> topicId.equals(t.getId()))
+                    || topicService.findById(topicId).isPresent();
+            if (!topicExists) {
+                model.addAttribute("errorMessage", "Chủ đề không tồn tại");
+                model.addAttribute("topics", Collections.emptyList());
+                model.addAttribute("selectedTopicId", topicId);
+                model.addAttribute("activeNav", "practice");
+                model.addAttribute("mode", "vi-ja");
+                return "practice/vi-ja-index";
+            }
+        }
+
         model.addAttribute("topics", topics);
-        model.addAttribute("selectedTopicId", topicId);
+        model.addAttribute("selectedTopicId", effectiveTopicId);
         model.addAttribute("activeNav", "practice");
         model.addAttribute("mode", "vi-ja");
         return "practice/vi-ja-index";
@@ -60,7 +78,27 @@ public class PracticeViJaController {
                                @RequestParam(value = "excludeId", required = false) Long excludeId,
                                Model model,
                                RedirectAttributes redirectAttributes) {
-        Optional<PracticeViJaQuestionDto> questionOpt = practiceService.getReverseQuestion(topicId, excludeId);
+        Long effectiveTopicId = topicId;
+        if (topicId != null && topicId <= 0) {
+            effectiveTopicId = null;
+            model.addAttribute("errorMessage", "ID không hợp lệ");
+        } else if (topicId != null) {
+            List<Topic> topics = topicService.findAllOrdered();
+            boolean topicExists = topics.stream().anyMatch(t -> topicId.equals(t.getId()))
+                    || topicService.findById(topicId).isPresent();
+            if (!topicExists) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Chủ đề không tồn tại");
+                return "redirect:/practice/vi-ja";
+            }
+        }
+
+        Long effectiveExcludeId = excludeId;
+        if (excludeId != null && excludeId <= 0) {
+            effectiveExcludeId = null;
+            model.addAttribute("errorMessage", "ID không hợp lệ");
+        }
+
+        Optional<PracticeViJaQuestionDto> questionOpt = practiceService.getReverseQuestion(effectiveTopicId, effectiveExcludeId);
 
         if (questionOpt.isEmpty()) {
             redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy từ vựng nào thuộc chủ đề đã chọn để kiểm tra.");
@@ -70,7 +108,7 @@ public class PracticeViJaController {
         PracticeViJaQuestionDto question = questionOpt.get();
         PracticeViJaAnswerForm form = new PracticeViJaAnswerForm();
         form.setVocabId(question.getVocabId());
-        form.setTopicId(topicId);
+        form.setTopicId(effectiveTopicId);
 
         model.addAttribute("question", question);
         model.addAttribute("form", form);
@@ -93,12 +131,12 @@ public class PracticeViJaController {
         if (bindingResult.hasErrors()) {
             redirectAttributes.addFlashAttribute("errorMessage", "Dữ liệu câu trả lời không hợp lệ hoặc vượt quá độ dài quy định.");
             Long topicId = form.getTopicId();
-            return "redirect:/practice/vi-ja/question" + (topicId != null ? "?topicId=" + topicId : "");
+            return "redirect:/practice/vi-ja/question" + (topicId != null && topicId > 0 ? "?topicId=" + topicId : "");
         }
 
         try {
             PracticeViJaResultDto result = practiceService.checkReverseAnswer(form);
-            studyProgressService.recordViJaAttempt(session, result, form.getTopicId());
+            studyProgressService.recordViJaAttempt(session, result, result.getTopicId());
             model.addAttribute("result", result);
             model.addAttribute("sessionStats", studyProgressService.getSummary(session, null, null));
             model.addAttribute("activeNav", "practice");

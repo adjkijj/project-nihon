@@ -1,7 +1,9 @@
 package com.nihon.service;
 
+import com.nihon.dto.VocabularyDetailDto;
 import com.nihon.dto.VocabularyForm;
 import com.nihon.dto.VocabularyRowDto;
+import com.nihon.entity.KanjiEntry;
 import com.nihon.entity.Topic;
 import com.nihon.entity.Vocabulary;
 import com.nihon.repository.TopicRepository;
@@ -17,9 +19,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.LongStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
 @Import(VocabularyService.class)
@@ -227,5 +232,329 @@ class VocabularyServiceTest {
 
         long countAfter = vocabularyRepository.count();
         assertThat(countAfter).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("9. Phân trang với page=Integer.MAX_VALUE không bị tràn số (IndexOutOfBoundsException) và trả danh sách rỗng")
+    void searchWithMaxIntPage_doesNotOverflowAndReturnsEmptyPage() {
+        createVocab(topicA, "新聞（しんぶん）", "しんぶん", "shinbun", "Báo", 101);
+
+        Page<VocabularyRowDto> page = vocabularyService.search(null, null, PageRequest.of(Integer.MAX_VALUE, 20));
+
+        assertThat(page.getContent()).isEmpty();
+        assertThat(page.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("10. Chuẩn hóa keyword: strip khoảng trắng, giới hạn tối đa 50 ký tự, chuỗi rỗng coi như null")
+    void sanitizeKeyword_stripsAndTruncatesTo50Chars() {
+        assertThat(vocabularyService.sanitizeKeyword(null)).isNull();
+        assertThat(vocabularyService.sanitizeKeyword("")).isNull();
+        assertThat(vocabularyService.sanitizeKeyword("   \t\n  ")).isNull();
+        assertThat(vocabularyService.sanitizeKeyword("  しんぶん  ")).isEqualTo("しんぶん");
+
+        String longKeyword = "  " + "a".repeat(500) + "  ";
+        String sanitized = vocabularyService.sanitizeKeyword(longKeyword);
+        assertThat(sanitized).hasSize(50);
+        assertThat(sanitized).isEqualTo("a".repeat(50));
+    }
+
+    @Test
+    @DisplayName("11. findById với id <= 0 trả về Optional.empty()")
+    void findById_withZeroOrNegativeId_returnsEmpty() {
+        assertThat(vocabularyService.findById(null)).isEmpty();
+        assertThat(vocabularyService.findById(0L)).isEmpty();
+        assertThat(vocabularyService.findById(-5L)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("12. Tạo từ trùng trong cùng chủ đề bị chặn kèm thông báo; cùng từ ở hai chủ đề khác nhau được phép")
+    void createVocabulary_duplicateInSameTopicBlocked_sameWordInDifferentTopicAllowed() {
+        VocabularyForm formA1 = new VocabularyForm();
+        formA1.setTopicId(topicA.getId());
+        formA1.setJapaneseText("  水（みず）\u200B ");
+        formA1.setReading(" みず ");
+        formA1.setRomaji(" mizu ");
+        formA1.setMeaningVi(" Nước ");
+        Vocabulary savedA1 = vocabularyService.create(formA1);
+        assertThat(savedA1.getJapaneseText()).isEqualTo("水（みず）");
+        assertThat(savedA1.getReading()).isEqualTo("みず");
+        assertThat(savedA1.getRomaji()).isEqualTo("mizu");
+        assertThat(savedA1.getMeaningVi()).isEqualTo("Nước");
+
+        // Tạo lại cùng từ trong cùng Chủ đề A -> bị chặn
+        VocabularyForm formA2Duplicate = new VocabularyForm();
+        formA2Duplicate.setTopicId(topicA.getId());
+        formA2Duplicate.setJapaneseText("水（みず）");
+        formA2Duplicate.setReading("みず");
+        assertThatThrownBy(() -> vocabularyService.create(formA2Duplicate))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Từ này đã tồn tại trong chủ đề đã chọn.");
+
+        // Tạo cùng từ "水（みず）" trong Chủ đề B -> được phép
+        VocabularyForm formB1 = new VocabularyForm();
+        formB1.setTopicId(topicB.getId());
+        formB1.setJapaneseText("水（みず）");
+        formB1.setReading("みず");
+        Vocabulary savedB1 = vocabularyService.create(formB1);
+        assertThat(savedB1.getId()).isNotNull();
+        assertThat(savedB1.getTopic().getId()).isEqualTo(topicB.getId());
+    }
+
+    @Test
+    @DisplayName("13. Sửa từ mà không đổi gì vẫn lưu thành công, không tự báo trùng với chính nó; đổi sang từ trùng trong cùng chủ đề bị chặn")
+    void updateVocabulary_unchangedSelfSucceeds_duplicateInSameTopicBlocked() {
+        Vocabulary v1 = createVocab(topicA, "先生（せんせい）", "せんせい", "sensei", "Giáo viên", 110);
+        Vocabulary v2 = createVocab(topicA, "学生（がくせい）", "がくせい", "gakusei", "Học sinh", 111);
+
+        // Sửa v1 mà không đổi gì -> lưu thành công
+        VocabularyForm unchangedForm = vocabularyService.toForm(v1);
+        Vocabulary updatedSelf = vocabularyService.update(v1.getId(), unchangedForm);
+        assertThat(updatedSelf.getId()).isEqualTo(v1.getId());
+        assertThat(updatedSelf.getJapaneseText()).isEqualTo("先生（せんせい）");
+
+        // Đổi japaneseText của v2 thành "先生（せんせい）" trong cùng topicA -> bị chặn
+        VocabularyForm duplicateForm = vocabularyService.toForm(v2);
+        duplicateForm.setJapaneseText("先生（せんせい）");
+        assertThatThrownBy(() -> vocabularyService.update(v2.getId(), duplicateForm))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Từ này đã tồn tại trong chủ đề đã chọn.");
+    }
+
+    @Test
+    @DisplayName("14. Từ có Kanji nhưng chưa có cách đọc vẫn cho lưu thành công")
+    void createVocabulary_kanjiWithoutReading_savesSuccessfully() {
+        VocabularyForm form = new VocabularyForm();
+        form.setTopicId(topicA.getId());
+        form.setJapaneseText("日本");
+        form.setReading("   ");
+        form.setRomaji(null);
+        form.setMeaningVi("Nhật Bản");
+
+        Vocabulary saved = vocabularyService.create(form);
+        assertThat(saved.getId()).isNotNull();
+        assertThat(saved.isHasKanji()).isTrue();
+        assertThat(saved.getReading()).isNull();
+    }
+
+    @Test
+    @DisplayName("15. Từ có 3 bản ghi ở 3 chủ đề: lọc theo chủ đề A rồi xóa (deleteInTopic) thì còn 2 bản ghi")
+    void deleteInTopic_wordInThreeTopics_filteredByTopicA_leavesTwoRecords() {
+        createVocab(topicA, "店（みせ）", "みせ", "mise", "Cửa hàng", 101);
+        Vocabulary vB = createVocab(topicB, "店（みせ）", "みせ", "mise", "Cửa hàng", 201);
+        Vocabulary vC = createVocab(topicC, "店（みせ）", "みせ", "mise", "Cửa hàng", 301);
+
+        // Lọc theo Chủ đề A -> lấy id đại diện của Chủ đề A
+        Page<VocabularyRowDto> filteredA = vocabularyService.search(topicA.getId(), null, PageRequest.of(0, 20));
+        assertThat(filteredA.getTotalElements()).isEqualTo(1);
+        Long repIdInTopicA = filteredA.getContent().get(0).getId();
+
+        int deletedCount = vocabularyService.deleteInTopic(repIdInTopicA);
+
+        assertThat(deletedCount).isEqualTo(1);
+        assertThat(vocabularyRepository.count()).isEqualTo(2);
+        assertThat(vocabularyRepository.findById(repIdInTopicA)).isEmpty();
+        assertThat(vocabularyRepository.findById(vB.getId())).isPresent();
+        assertThat(vocabularyRepository.findById(vC.getId())).isPresent();
+    }
+
+    @Test
+    @DisplayName("16. Từ có 3 bản ghi ở 3 chủ đề: không lọc rồi xóa (deleteGroup) thì còn 0 bản ghi")
+    void deleteGroup_wordInThreeTopics_notFiltered_leavesZeroRecords() {
+        createVocab(topicA, "店（みせ）", "みせ", "mise", "Cửa hàng", 101);
+        createVocab(topicB, "店（みせ）", "みせ", "mise", "Cửa hàng", 201);
+        createVocab(topicC, "店（みせ）", "みせ", "mise", "Cửa hàng", 301);
+
+        Page<VocabularyRowDto> unfiltered = vocabularyService.search(null, null, PageRequest.of(0, 20));
+        assertThat(unfiltered.getTotalElements()).isEqualTo(1);
+        VocabularyRowDto row = unfiltered.getContent().get(0);
+        assertThat(row.getAllIds()).hasSize(3);
+
+        int deletedCount = vocabularyService.deleteGroup(row.getId(), row.getAllIds());
+
+        assertThat(deletedCount).isEqualTo(3);
+        assertThat(vocabularyRepository.count()).isZero();
+    }
+
+    @Test
+    @DisplayName("17. Sửa nghĩa khi không lọc (updateGroup): cả 3 bản ghi đổi nghĩa và vẫn hiện thành một hàng")
+    void updateGroup_editMeaningWhenNotFiltered_updatesAllThreeAndDisplaysAsSingleRow() {
+        Vocabulary vA = createVocab(topicA, "店（みせ）", "みせ", "mise", "Cửa hàng", 101);
+        Vocabulary vB = createVocab(topicB, "店（みせ）", "みせ", "mise", "Cửa hàng", 201);
+        Vocabulary vC = createVocab(topicC, "店（みせ）", "みせ", "mise", "Cửa hàng", 301);
+
+        VocabularyForm form = vocabularyService.toForm(vA);
+        form.setScope("ALL");
+        form.setMeaningVi("Tiệm, cửa tiệm");
+
+        List<Vocabulary> updated = vocabularyService.updateGroup(vA.getId(), form);
+
+        assertThat(updated).hasSize(3);
+        assertThat(vocabularyRepository.findById(vA.getId()).orElseThrow().getMeaningVi()).isEqualTo("Tiệm, cửa tiệm");
+        assertThat(vocabularyRepository.findById(vB.getId()).orElseThrow().getMeaningVi()).isEqualTo("Tiệm, cửa tiệm");
+        assertThat(vocabularyRepository.findById(vC.getId()).orElseThrow().getMeaningVi()).isEqualTo("Tiệm, cửa tiệm");
+
+        // Khi tìm kiếm lại vẫn gom thành 1 hàng duy nhất với đủ 3 chủ đề
+        Page<VocabularyRowDto> page = vocabularyService.search(null, null, PageRequest.of(0, 20));
+        assertThat(page.getTotalElements()).isEqualTo(1);
+        VocabularyRowDto row = page.getContent().get(0);
+        assertThat(row.getMeaningVi()).isEqualTo("Tiệm, cửa tiệm");
+        assertThat(row.getTopics()).extracting(Topic::getName)
+                .containsExactly("Chủ đề A", "Chủ đề B", "Chủ đề C");
+    }
+
+    @Test
+    @DisplayName("18. Gửi allIds chứa ID của từ không liên quan: ID đó bị bỏ qua và không bị xóa hay sửa")
+    void deleteGroupAndUpdateGroup_withUnrelatedIdInAllIds_ignoresUnrelatedId() {
+        Vocabulary vA = createVocab(topicA, "店（みせ）", "みせ", "mise", "Cửa hàng", 101);
+        Vocabulary vB = createVocab(topicB, "店（みせ）", "みせ", "mise", "Cửa hàng", 201);
+        Vocabulary unrelated = createVocab(topicC, "車（くるま）", "くるま", "kuruma", "Xe hơi", 301);
+
+        // 1. Thử sửa nhóm kèm ID không liên quan trong allIds -> từ không liên quan giữ nguyên
+        VocabularyForm form = vocabularyService.toForm(vA);
+        form.setMeaningVi("Quán, cửa hàng");
+        form.setAllIds(List.of(vA.getId(), vB.getId(), unrelated.getId(), 999999L));
+
+        List<Vocabulary> updated = vocabularyService.updateGroup(vA.getId(), form);
+        assertThat(updated).hasSize(2);
+        assertThat(vocabularyRepository.findById(unrelated.getId()).orElseThrow().getMeaningVi()).isEqualTo("Xe hơi");
+
+        // 2. Thử xóa nhóm kèm ID không liên quan trong allIds -> từ không liên quan không bị xóa
+        int deletedCount = vocabularyService.deleteGroup(
+                vA.getId(), List.of(vA.getId(), vB.getId(), unrelated.getId(), 999999L));
+
+        assertThat(deletedCount).isEqualTo(2);
+        assertThat(vocabularyRepository.findById(vA.getId())).isEmpty();
+        assertThat(vocabularyRepository.findById(vB.getId())).isEmpty();
+        assertThat(vocabularyRepository.findById(unrelated.getId())).isPresent();
+    }
+
+    @Test
+    @DisplayName("19. Một bản ghi trong nhóm vi phạm ràng buộc trùng khi sửa: dừng toàn bộ, không bản ghi nào trong nhóm bị đổi")
+    void updateGroup_whenOneMemberViolatesDuplicateConstraint_noRecordIsChanged() {
+        Vocabulary vA = createVocab(topicA, "店（みせ）", "みせ", "mise", "Cửa hàng", 101);
+        Vocabulary vB = createVocab(topicB, "店（みせ）", "みせ", "mise", "Cửa hàng", 201);
+        Vocabulary vC = createVocab(topicC, "店（みせ）", "みせ", "mise", "Cửa hàng", 301);
+
+        // Chủ đề C đã có sẵn từ "駅（えき）"
+        createVocab(topicC, "駅（えき）", "えき", "eki", "Nhà ga", 302);
+
+        // Sửa nhóm "店（みせ）" thành "駅（えき）" -> vA (topicA) và vB (topicB) hợp lệ nhưng vC (topicC) bị trùng!
+        VocabularyForm form = vocabularyService.toForm(vA);
+        form.setJapaneseText("駅（えき）");
+        form.setReading("えき");
+        form.setRomaji("eki");
+        form.setMeaningVi("Nhà ga");
+
+        assertThatThrownBy(() -> vocabularyService.updateGroup(vA.getId(), form))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Từ này đã tồn tại trong chủ đề đã chọn.");
+
+        em.clear();
+
+        // Không bản ghi nào trong nhóm bị đổi
+        Vocabulary unchangedA = vocabularyRepository.findById(vA.getId()).orElseThrow();
+        Vocabulary unchangedB = vocabularyRepository.findById(vB.getId()).orElseThrow();
+        Vocabulary unchangedC = vocabularyRepository.findById(vC.getId()).orElseThrow();
+
+        assertThat(unchangedA.getJapaneseText()).isEqualTo("店（みせ）");
+        assertThat(unchangedA.getMeaningVi()).isEqualTo("Cửa hàng");
+        assertThat(unchangedB.getJapaneseText()).isEqualTo("店（みせ）");
+        assertThat(unchangedB.getMeaningVi()).isEqualTo("Cửa hàng");
+        assertThat(unchangedC.getJapaneseText()).isEqualTo("店（みせ）");
+        assertThat(unchangedC.getMeaningVi()).isEqualTo("Cửa hàng");
+    }
+
+    @Test
+    @DisplayName("20. Chi tiết từ thuộc 2 chủ đề hiện cả 2 chủ đề và liên kết Kanji")
+    void findDetailById_wordBelongingToTwoTopics_returnsBothTopicsAndExtractedKanjis() {
+        Vocabulary vA = createVocab(topicA, "先生（せんせい）", "せんせい", "sensei", "Giáo viên", 101);
+        Vocabulary vB = createVocab(topicB, "先生（せんせい）", "せんせい", "sensei", "Giáo viên", 201);
+
+        KanjiEntry kSen = new KanjiEntry();
+        kSen.setTopic(topicA);
+        kSen.setCharacter("先");
+        kSen.setHanViet("TIÊN");
+        kSen.setMeaningVi("Trước");
+        kSen.setSourceLine(500);
+        kSen = em.persistAndFlush(kSen);
+
+        VocabularyDetailDto detail = vocabularyService.findDetailById(vA.getId()).orElseThrow();
+
+        assertThat(detail.getJapaneseText()).isEqualTo("先生（せんせい）");
+        assertThat(detail.getTopics()).extracting(Topic::getName)
+                .containsExactly("Chủ đề A", "Chủ đề B");
+        assertThat(detail.getAllIds()).containsExactlyInAnyOrder(vA.getId(), vB.getId());
+        assertThat(detail.getKanjis()).hasSize(2);
+        assertThat(detail.getKanjis().get(0).getCharacter()).isEqualTo("先");
+        assertThat(detail.getKanjis().get(0).getKanjiId()).isEqualTo(kSen.getId());
+        assertThat(detail.getKanjis().get(1).getCharacter()).isEqualTo("生");
+        assertThat(detail.getKanjis().get(1).getKanjiId()).isNull();
+    }
+
+    @Test
+    @DisplayName("21. Xóa hàng loạt 3 từ thành công; 201 ID bị từ chối")
+    void bulkDelete_threeWordsSucceeds_and201IdsRejected() {
+        Vocabulary v1 = createVocab(topicA, "一（いち）", "いち", "ichi", "Một", 101);
+        Vocabulary v2 = createVocab(topicA, "二（に）", "に", "ni", "Hai", 102);
+        Vocabulary v3 = createVocab(topicB, "三（さん）", "さん", "san", "Ba", 201);
+
+        VocabularyService.BulkDeleteResult result = vocabularyService.bulkDelete(
+                List.of(v1.getId(), v2.getId(), v3.getId()));
+
+        assertThat(result.deletedCount()).isEqualTo(3);
+        assertThat(result.skippedCount()).isZero();
+        assertThat(vocabularyRepository.findById(v1.getId())).isEmpty();
+        assertThat(vocabularyRepository.findById(v2.getId())).isEmpty();
+        assertThat(vocabularyRepository.findById(v3.getId())).isEmpty();
+
+        List<Long> ids201 = LongStream.rangeClosed(1, 201).boxed().toList();
+        assertThatThrownBy(() -> vocabularyService.bulkDelete(ids201))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("200");
+    }
+
+    @Test
+    @DisplayName("22. Chuyển hàng loạt có từ trùng ở chủ đề đích được gộp đúng")
+    void bulkMove_withDuplicateWordInTargetTopic_mergesByDeletingSourceAndReportsCounts() {
+        Vocabulary vDupInA = createVocab(topicA, "店（みせ）", "みせ", "mise", "Cửa hàng", 101);
+        Vocabulary vUniqueInA = createVocab(topicA, "車（くるま）", "くるま", "kuruma", "Xe hơi", 102);
+        Vocabulary existingInB = createVocab(topicB, "店（みせ）", "みせ", "mise", "Cửa hàng", 201);
+
+        VocabularyService.BulkMoveResult result = vocabularyService.bulkMove(
+                List.of(vDupInA.getId(), vUniqueInA.getId()), topicB.getId());
+
+        assertThat(result.movedCount()).isEqualTo(1);
+        assertThat(result.mergedCount()).isEqualTo(1);
+        assertThat(result.skippedCount()).isZero();
+
+        // Bản ghi nguồn bị trùng được xóa (gộp vào bản ghi ở đích)
+        assertThat(vocabularyRepository.findById(vDupInA.getId())).isEmpty();
+        assertThat(vocabularyRepository.findById(existingInB.getId())).isPresent();
+
+        // Bản ghi không trùng được chuyển sang chủ đề B
+        Vocabulary moved = vocabularyRepository.findById(vUniqueInA.getId()).orElseThrow();
+        assertThat(moved.getTopic().getId()).isEqualTo(topicB.getId());
+    }
+
+    @Test
+    @DisplayName("23. Danh sách ID có số không hợp lệ hoặc không tồn tại được bỏ qua, không lỗi")
+    void bulkOperations_withInvalidAndNonExistentIds_skipsWithoutError() {
+        Vocabulary v1 = createVocab(topicA, "水（みず）", "みず", "mizu", "Nước", 101);
+
+        VocabularyService.BulkMoveResult moveResult = vocabularyService.bulkMove(
+                Arrays.asList(v1.getId(), -5L, 0L, 999999L, null), topicB.getId());
+
+        assertThat(moveResult.movedCount()).isEqualTo(1);
+        assertThat(moveResult.mergedCount()).isZero();
+        assertThat(moveResult.skippedCount()).isEqualTo(4);
+        assertThat(vocabularyRepository.findById(v1.getId()).orElseThrow().getTopic().getId()).isEqualTo(topicB.getId());
+
+        VocabularyService.BulkDeleteResult deleteResult = vocabularyService.bulkDelete(
+                Arrays.asList(v1.getId(), -10L, 888888L));
+
+        assertThat(deleteResult.deletedCount()).isEqualTo(1);
+        assertThat(deleteResult.skippedCount()).isEqualTo(2);
+        assertThat(vocabularyRepository.findById(v1.getId())).isEmpty();
     }
 }

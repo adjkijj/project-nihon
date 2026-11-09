@@ -503,4 +503,48 @@ class KanjiSheetParserTest {
             assertThat(result.errors().get(0).column()).isEqualTo("Sheet");
         }
     }
+
+    @Test
+    @DisplayName("Hán Việt 200 ký tự, Ý nghĩa Kanji 255 ký tự, Từ cần nhớ 500 ký tự: hợp lệ; vượt quá giới hạn: báo lỗi đúng hàng và cột")
+    void testFieldLengthsForHanVietKanjiMeaningAndWordMeaning() throws IOException {
+        String hanViet200 = "H".repeat(200);
+        String kanjiMeaning255 = "M".repeat(255);
+        String wordMeaning500 = "W".repeat(500);
+
+        String[][] validData = {
+                {"Topic", "Kanji", "Hán Việt", "Ý nghĩa", "On", "Kun", "Word", null, null},
+                {null, null, null, null, null, null, "Tiếng Nhật", "Romaji", "Nghĩa tiếng Việt"},
+                {"Bài 1", "山", hanViet200, kanjiMeaning255, "さん", "やま", "山地", "sanchi", wordMeaning500}
+        };
+
+        try (InputStream in = createWorkbookStream("Kanji", validData)) {
+            ParseResult<KanjiRow> result = parser.parse(in);
+            assertThat(result.isSuccess()).isTrue();
+            assertThat(result.rows()).hasSize(1);
+            assertThat(result.rows().get(0).hanViet()).hasSize(200);
+            assertThat(result.rows().get(0).meaningVi()).hasSize(255);
+            assertThat(result.rows().get(0).words().get(0).meaningVi()).hasSize(500);
+        }
+
+        // Hán Việt 256 ký tự (hàng 3) và Ý nghĩa Kanji 256 ký tự (hàng 4) -> báo lỗi hàng và cột
+        String hanViet256 = "H".repeat(256);
+        String kanjiMeaning256 = "M".repeat(256);
+        String[][] invalidData = {
+                {"Topic", "Kanji", "Hán Việt", "Ý nghĩa", "On", "Kun", "Word", null, null},
+                {null, null, null, null, null, null, "Tiếng Nhật", "Romaji", "Nghĩa tiếng Việt"},
+                {"Bài 1", "山", hanViet256, "Núi", "さん", "やま", null, null, null},
+                {"Bài 1", "川", "XUYÊN", kanjiMeaning256, "せん", "かわ", null, null, null}
+        };
+
+        try (InputStream in = createWorkbookStream("Kanji", invalidData)) {
+            ParseResult<KanjiRow> result = parser.parse(in);
+            assertThat(result.hasErrors()).isTrue();
+            assertThat(result.rows()).isEmpty();
+            assertThat(result.errors()).hasSize(2);
+            assertThat(result.errors().get(0).rowNumber()).isEqualTo(3);
+            assertThat(result.errors().get(0).column()).isEqualTo("Hán Việt");
+            assertThat(result.errors().get(1).rowNumber()).isEqualTo(4);
+            assertThat(result.errors().get(1).column()).isEqualTo("Ý nghĩa");
+        }
+    }
 }

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${'Chi tiết chủ đề: ' + topic.name + ' - Project Nihon'}">Chi tiết chủ đề - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/topics-list.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+</head>
+<body>
+    <header>
+        <a href="/" class="brand">
+            <span class="brand-badge">日</span>
+            <span>Project Nihon</span>
+        </a>
+        <nav class="u-7dbd1ca1">
+            <a href="/">Trang chủ</a>
+            <a href="/vocabulary">Từ vựng</a>
+            <a href="/topics" class="active">Chủ đề</a>
+            <a href="/kanji">Kanji</a>
+            <a href="/practice">Luyện tập</a>
+            <a href="/stats">Thống kê</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="page-header">
+            <div class="page-title">
+                <h1 th:text="${topic.name}">Tên chủ đề</h1>
+                <p>Thông tin chi tiết, thống kê dữ liệu và chủ đề con trực thuộc</p>
+            </div>
+            <div class="actions-cell">
+                <a th:href="@{/topics}" class="btn btn-secondary">← Danh sách chủ đề</a>
+                <a th:href="@{'/topics/' + ${topic.id} + '/edit'}" class="btn btn-edit">Sửa chủ đề</a>
+            </div>
+        </div>
+
+        <section class="detail-card">
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <span class="detail-label">Tên chủ đề</span>
+                    <strong class="detail-value" th:text="${topic.name}">1. Chào hỏi</strong>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Chủ đề cha</span>
+                    <span class="detail-value">
+                        <a th:if="${topic.parentId != null}"
+                           th:href="@{'/topics/' + ${topic.parentId}}"
+                           class="topic-link"
+                           th:text="${topic.parentName}">Chủ đề cha</a>
+                        <span th:if="${topic.parentId == null}" class="u-color-var-text-muted-font-size-0-8rem">(Chủ đề gốc)</span>
+                    </span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Phân loại</span>
+                    <span class="detail-value">
+                        <span th:if="${topic.kanjiSection}" class="badge-kanji">Kanji</span>
+                        <span th:if="${!topic.kanjiSection}" class="badge-normal">Từ vựng thường</span>
+                    </span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Số từ vựng</span>
+                    <strong class="detail-value" th:text="${vocabularyCount}">0</strong>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Số Kanji</span>
+                    <strong class="detail-value" th:text="${kanjiCount}">0</strong>
+                </div>
+            </div>
+
+            <div class="detail-links">
+                <a th:href="@{/vocabulary(topicId=${topic.id})}" class="btn btn-primary">
+                    Xem danh sách từ vựng của chủ đề →
+                </a>
+                <a th:href="@{/kanji(topicId=${topic.id})}" class="btn btn-secondary">
+                    Xem danh sách Kanji của chủ đề →
+                </a>
+            </div>
+        </section>
+
+        <!-- Danh sách chủ đề con -->
+        <section class="table-container detail-section">
+            <div class="section-heading">
+                <h2>Danh sách chủ đề con</h2>
+            </div>
+            <div th:if="${children == null or children.isEmpty()}" class="empty-state">
+                Chủ đề này chưa có chủ đề con trực thuộc.
+            </div>
+            <table th:unless="${children == null or children.isEmpty()}">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tên chủ đề con</th>
+                        <th>Phân loại</th>
+                        <th class="u-width-15pct-text-align-right">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="child : ${children}">
+                        <td th:text="${child.id}">2</td>
+                        <td>
+                            <a th:href="@{'/topics/' + ${child.id}}" class="topic-link" th:text="${child.name}">Bài 1</a>
+                        </td>
+                        <td>
+                            <span th:if="${child.kanjiSection}" class="badge-kanji">Kanji</span>
+                            <span th:if="${!child.kanjiSection}" class="badge-normal">Từ vựng</span>
+                        </td>
+                        <td>
+                            <div class="actions-cell">
+                                <a th:href="@{'/topics/' + ${child.id}}" class="btn btn-secondary btn-sm">Chi tiết</a>
+                                <a th:href="@{'/topics/' + ${child.id} + '/edit'}" class="btn btn-edit">Sửa</a>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Chuyển nội dung rồi xóa -->
+        <section th:if="${!topic.canDelete}" class="detail-card detail-section">
+            <div class="cannot-delete-box">
+                <strong th:text="${topic.cannotDeleteReason}">Không thể xóa chủ đề này.</strong>
+            </div>
+            <form th:if="${(vocabularyCount > 0 or kanjiCount > 0) and candidateTargetTopics != null and !candidateTargetTopics.isEmpty()}"
+                  th:action="@{'/topics/' + ${topic.id} + '/move-content'}"
+                  method="post"
+                  class="move-content-form"
+                  data-confirm="Chuyển toàn bộ từ vựng và Kanji của chủ đề này sang chủ đề đích đã chọn?">
+                <input type="hidden" name="_csrf" th:value="${_csrf}">
+                <label for="targetTopicId">Chuyển toàn bộ từ vựng &amp; Kanji sang chủ đề cùng loại:</label>
+                <select id="targetTopicId" name="targetTopicId" class="form-control" required>
+                    <option value="">-- Chọn chủ đề đích --</option>
+                    <option th:each="cand : ${candidateTargetTopics}"
+                            th:value="${cand.id}"
+                            th:text="${cand.name}">Chủ đề đích</option>
+                </select>
+                <button type="submit" class="btn btn-primary">Chuyển dữ liệu</button>
+            </form>
+        </section>
+    </main>
+</body>
+</html>
+

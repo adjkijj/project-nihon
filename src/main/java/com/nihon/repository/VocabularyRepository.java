@@ -4,9 +4,11 @@ import com.nihon.entity.Vocabulary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,6 +21,8 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
     Optional<Vocabulary> findByTopicIdAndJapaneseText(Long topicId, String japaneseText);
 
     boolean existsByTopicIdAndJapaneseText(Long topicId, String japaneseText);
+
+    boolean existsByTopicIdAndJapaneseTextAndIdNot(Long topicId, String japaneseText, Long id);
 
     boolean existsByTopicId(Long topicId);
 
@@ -49,4 +53,18 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
     long countByHasKanjiTrue();
 
     long countByHasKanjiFalse();
+
+    List<Vocabulary> findByImportBatchId(Long importBatchId);
+
+    long countByImportBatchId(Long importBatchId);
+
+    @Query("SELECT COUNT(v) FROM Vocabulary v WHERE v.importBatchId = :batchId AND v.updatedAt > :importedAt")
+    long countModifiedAfterImport(@Param("batchId") Long batchId, @Param("importedAt") LocalDateTime importedAt);
+
+    @Query("SELECT COUNT(v) > 0 FROM Vocabulary v WHERE v.topic.id = :topicId AND (v.importBatchId IS NULL OR v.importBatchId <> :batchId)")
+    boolean existsByTopicIdOutsideBatch(@Param("topicId") Long topicId, @Param("batchId") Long batchId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Vocabulary v SET v.importBatchId = :batchId, v.updatedAt = v.createdAt WHERE v.id IN :ids")
+    void assignImportBatchId(@Param("ids") List<Long> ids, @Param("batchId") Long batchId);
 }

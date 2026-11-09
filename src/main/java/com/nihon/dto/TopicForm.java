@@ -1,5 +1,6 @@
 package com.nihon.dto;
 
+import com.nihon.validation.NoControlChars;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -18,6 +19,7 @@ public class TopicForm {
 
     @NotBlank(message = "Tên chủ đề không được để trống.")
     @Size(max = 255, message = "Tên chủ đề không được vượt quá 255 ký tự.")
+    @NoControlChars
     private String name;
 
     private Long parentId;

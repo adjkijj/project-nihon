@@ -1,5 +1,6 @@
 package com.nihon.entity;
 
+import com.nihon.validation.KanjiLimits;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -27,7 +28,8 @@ import lombok.Setter;
         uniqueConstraints = @UniqueConstraint(name = "uk_topic_source_line", columnNames = "source_line"),
         indexes = {
                 @Index(name = "idx_topic_parent", columnList = "parent_id"),
-                @Index(name = "idx_topic_sort", columnList = "sort_order")
+                @Index(name = "idx_topic_sort", columnList = "sort_order"),
+                @Index(name = "idx_topic_import_batch", columnList = "import_batch_id")
         })
 @Getter
 @Setter
@@ -39,7 +41,7 @@ public class Topic {
     private Long id;
 
     /** Tên chủ đề giữ nguyên văn từ tiêu đề nguồn. */
-    @Column(name = "name", nullable = false, length = 255)
+    @Column(name = "name", nullable = false, length = KanjiLimits.MAX_TOPIC_LENGTH)
     private String name;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -57,6 +59,10 @@ public class Topic {
     /** Đánh dấu chủ đề thuộc khu vực Kanji (mục "13. Kanji" và các bài con). */
     @Column(name = "kanji_section", nullable = false)
     private boolean kanjiSection;
+
+    /** Mã lô import (tham chiếu ImportAuditLog.id) nếu chủ đề được tạo mới từ chức năng import Excel. */
+    @Column(name = "import_batch_id")
+    private Long importBatchId;
 
     @Column(name = "created_at", updatable = false)
     private java.time.LocalDateTime createdAt;

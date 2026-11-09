@@ -70,12 +70,17 @@ public class PracticeService {
      * Kiểm tra cách đọc Hiragana (đối với từ có Kanji và có dữ liệu) và nghĩa tiếng Việt.
      */
     public PracticeResultDto checkAnswer(PracticeAnswerForm form) {
-        if (form.getVocabId() == null) {
+        if (form.getVocabId() == null || form.getVocabId() <= 0) {
             throw new IllegalArgumentException("Mã từ vựng không hợp lệ.");
         }
 
         Vocabulary v = vocabularyRepository.findById(form.getVocabId())
                 .orElseThrow(() -> new NoSuchElementException("Không tìm thấy từ vựng với mã: " + form.getVocabId()));
+
+        Long effectiveTopicId = form.getTopicId();
+        if (effectiveTopicId != null && (v.getTopic() == null || !effectiveTopicId.equals(v.getTopic().getId()))) {
+            effectiveTopicId = null;
+        }
 
         boolean hasKanji = v.isHasKanji();
         boolean hasReadingInSource = v.getReading() != null && !v.getReading().isBlank();
@@ -122,7 +127,7 @@ public class PracticeService {
                 .vocabId(v.getId())
                 .japaneseText(v.getJapaneseText())
                 .topicName(v.getTopic() != null ? v.getTopic().getName() : "Tất cả chủ đề")
-                .topicId(form.getTopicId())
+                .topicId(effectiveTopicId)
                 .hasKanji(hasKanji)
                 .requireReading(requireReading)
                 .readingMissingInSource(readingMissingInSource)
@@ -271,12 +276,17 @@ public class PracticeService {
      * Không tự thay Kanji bằng Hiragana hoặc Romaji.
      */
     public PracticeViJaResultDto checkReverseAnswer(PracticeViJaAnswerForm form) {
-        if (form.getVocabId() == null) {
+        if (form.getVocabId() == null || form.getVocabId() <= 0) {
             throw new IllegalArgumentException("Mã từ vựng không hợp lệ.");
         }
 
         Vocabulary v = vocabularyRepository.findById(form.getVocabId())
                 .orElseThrow(() -> new NoSuchElementException("Không tìm thấy từ vựng với mã: " + form.getVocabId()));
+
+        Long effectiveTopicId = form.getTopicId();
+        if (effectiveTopicId != null && (v.getTopic() == null || !effectiveTopicId.equals(v.getTopic().getId()))) {
+            effectiveTopicId = null;
+        }
 
         List<String> acceptedVariants = parseAcceptedJapaneseVariants(v.getJapaneseText());
         String normalizedUserInput = normalizeJapaneseInput(form.getUserJapanese());
@@ -309,7 +319,7 @@ public class PracticeService {
                 .acceptedVariants(acceptedVariants)
                 .correct(correct)
                 .topicName(v.getTopic() != null ? v.getTopic().getName() : "Tất cả chủ đề")
-                .topicId(form.getTopicId())
+                .topicId(effectiveTopicId)
                 .feedbackMessage(feedbackMessage)
                 .build();
     }

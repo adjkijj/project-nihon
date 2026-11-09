@@ -4,12 +4,8 @@ import com.nihon.dto.excel.ImportCommitResult;
 import com.nihon.dto.excel.ImportMode;
 import com.nihon.dto.excel.ImportPreviewReport;
 import com.nihon.dto.VocabularyRowDto;
-import com.nihon.entity.KanjiEntry;
-import com.nihon.entity.KanjiWord;
 import com.nihon.entity.Topic;
 import com.nihon.entity.Vocabulary;
-import com.nihon.repository.KanjiEntryRepository;
-import com.nihon.repository.KanjiWordRepository;
 import com.nihon.repository.TopicRepository;
 import com.nihon.repository.VocabularyRepository;
 import com.nihon.service.excel.ImportService;
@@ -40,19 +36,10 @@ class KanjiWordUnifiedVocabularyTest {
     private ImportService importService;
 
     @Autowired
-    private KanjiWordMigrationService migrationService;
-
-    @Autowired
     private TopicRepository topicRepository;
 
     @Autowired
     private VocabularyRepository vocabularyRepository;
-
-    @Autowired
-    private KanjiEntryRepository kanjiEntryRepository;
-
-    @Autowired
-    private KanjiWordRepository kanjiWordRepository;
 
     @Autowired
     private VocabularyService vocabularyService;
@@ -216,45 +203,7 @@ class KanjiWordUnifiedVocabularyTest {
     }
 
     @Test
-    @DisplayName("5. Migration trên dữ liệu có sẵn trong kanji_word: tạo đủ từ, chạy lại không trùng")
-    void testMigration_MigratesKanjiWordsIdempotently() {
-        Topic topic = new Topic();
-        topic.setName("Chủ đề migration test");
-        topic.setSortOrder(999);
-        topic.setKanjiSection(true);
-        topic = topicRepository.save(topic);
-
-        KanjiEntry kanji = new KanjiEntry();
-        kanji.setTopic(topic);
-        kanji.setCharacter("遷");
-        kanji.setHanViet("TIỂN");
-        kanji.setSourceLine(9999);
-        kanji = kanjiEntryRepository.save(kanji);
-
-        KanjiWord kw = new KanjiWord();
-        kw.setKanji(kanji);
-        kw.setJapanese("変遷（へんせん）");
-        kw.setRomaji("hensen");
-        kw.setMeaningVi("Sự biến thiên");
-        kw.setSortOrder(1);
-        kanjiWordRepository.save(kw);
-
-        // Chạy migration lần 1
-        int migrated1 = migrationService.migrateAll();
-        assertThat(migrated1).isGreaterThanOrEqualTo(1);
-
-        Optional<Vocabulary> migratedVocab = vocabularyRepository.findByTopicIdAndJapaneseText(topic.getId(), "変遷（へんせん）");
-        assertThat(migratedVocab).isPresent();
-        assertThat(migratedVocab.get().getReading()).isEqualTo("へんせん");
-        assertThat(migratedVocab.get().getRomaji()).isEqualTo("hensen");
-
-        // Chạy migration lần 2: không tạo trùng, trả về 0
-        int migrated2 = migrationService.migrateAll();
-        assertThat(migrated2).isEqualTo(0);
-    }
-
-    @Test
-    @DisplayName("6. Trang Từ vựng lọc theo chủ đề Kanji trả đúng danh sách")
+    @DisplayName("5. Trang Từ vựng lọc theo chủ đề Kanji trả đúng danh sách")
     void testVocabularyPage_FilterByKanjiTopic_ReturnsCorrectList() throws IOException {
         String topicName = "Kanji Lesson Filter Test";
         byte[] bytes = createTestWorkbook(

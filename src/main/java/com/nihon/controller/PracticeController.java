@@ -19,6 +19,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.nihon.service.StudyProgressService;
 import jakarta.servlet.http.HttpSession;
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -45,8 +46,24 @@ public class PracticeController {
     @GetMapping
     public String index(@RequestParam(value = "topicId", required = false) Long topicId, Model model) {
         List<Topic> topics = topicService.findAllOrdered();
+        Long effectiveTopicId = topicId;
+        if (topicId != null && topicId <= 0) {
+            effectiveTopicId = null;
+            model.addAttribute("errorMessage", "ID không hợp lệ");
+        } else if (topicId != null) {
+            boolean topicExists = topics.stream().anyMatch(t -> topicId.equals(t.getId()))
+                    || topicService.findById(topicId).isPresent();
+            if (!topicExists) {
+                model.addAttribute("errorMessage", "Chủ đề không tồn tại");
+                model.addAttribute("topics", Collections.emptyList());
+                model.addAttribute("selectedTopicId", topicId);
+                model.addAttribute("activeNav", "practice");
+                return "practice/index";
+            }
+        }
+
         model.addAttribute("topics", topics);
-        model.addAttribute("selectedTopicId", topicId);
+        model.addAttribute("selectedTopicId", effectiveTopicId);
         model.addAttribute("activeNav", "practice");
         return "practice/index";
     }
@@ -59,7 +76,27 @@ public class PracticeController {
                                @RequestParam(value = "excludeId", required = false) Long excludeId,
                                Model model,
                                RedirectAttributes redirectAttributes) {
-        Optional<PracticeQuestionDto> questionOpt = practiceService.getNextQuestion(topicId, excludeId);
+        Long effectiveTopicId = topicId;
+        if (topicId != null && topicId <= 0) {
+            effectiveTopicId = null;
+            model.addAttribute("errorMessage", "ID không hợp lệ");
+        } else if (topicId != null) {
+            List<Topic> topics = topicService.findAllOrdered();
+            boolean topicExists = topics.stream().anyMatch(t -> topicId.equals(t.getId()))
+                    || topicService.findById(topicId).isPresent();
+            if (!topicExists) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Chủ đề không tồn tại");
+                return "redirect:/practice";
+            }
+        }
+
+        Long effectiveExcludeId = excludeId;
+        if (excludeId != null && excludeId <= 0) {
+            effectiveExcludeId = null;
+            model.addAttribute("errorMessage", "ID không hợp lệ");
+        }
+
+        Optional<PracticeQuestionDto> questionOpt = practiceService.getNextQuestion(effectiveTopicId, effectiveExcludeId);
 
         if (questionOpt.isEmpty()) {
             redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy từ vựng nào thuộc chủ đề đã chọn để kiểm tra.");
@@ -69,7 +106,7 @@ public class PracticeController {
         PracticeQuestionDto question = questionOpt.get();
         PracticeAnswerForm form = new PracticeAnswerForm();
         form.setVocabId(question.getVocabId());
-        form.setTopicId(topicId);
+        form.setTopicId(effectiveTopicId);
 
         model.addAttribute("question", question);
         model.addAttribute("form", form);
@@ -91,12 +128,12 @@ public class PracticeController {
         if (bindingResult.hasErrors()) {
             redirectAttributes.addFlashAttribute("errorMessage", "Dữ liệu câu trả lời không hợp lệ hoặc vượt quá độ dài quy định.");
             Long topicId = form.getTopicId();
-            return "redirect:/practice/question" + (topicId != null ? "?topicId=" + topicId : "");
+            return "redirect:/practice/question" + (topicId != null && topicId > 0 ? "?topicId=" + topicId : "");
         }
 
         try {
             PracticeResultDto result = practiceService.checkAnswer(form);
-            studyProgressService.recordJaViAttempt(session, result, form.getTopicId());
+            studyProgressService.recordJaViAttempt(session, result, result.getTopicId());
             model.addAttribute("result", result);
             model.addAttribute("sessionStats", studyProgressService.getSummary(session, null, null));
             model.addAttribute("activeNav", "practice");

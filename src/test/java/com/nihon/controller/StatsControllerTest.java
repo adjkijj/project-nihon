@@ -150,4 +150,51 @@ class StatsControllerTest {
 
         verify(studyProgressService).clearProgress(any());
     }
+
+    @Test
+    void testStatsWithInvalidMode_fallsBackToAll() throws Exception {
+        when(vocabularyRepository.count()).thenReturn(10L);
+        when(topicRepository.count()).thenReturn(1L);
+        when(kanjiEntryRepository.count()).thenReturn(5L);
+        when(vocabularyRepository.countByHasKanjiTrue()).thenReturn(5L);
+        when(vocabularyRepository.countByHasKanjiFalse()).thenReturn(5L);
+        when(topicRepository.findAllByOrderBySortOrderAsc()).thenReturn(List.of());
+
+        StudyProgressSummaryDto emptySummary = StudyProgressSummaryDto.builder()
+                .totalAnswered(0)
+                .correctCount(0)
+                .incorrectCount(0)
+                .accuracyPercentage(0)
+                .records(Collections.emptyList())
+                .incorrectRecords(Collections.emptyList())
+                .currentModeFilter("ALL")
+                .build();
+
+        when(studyProgressService.getSummary(any(), eq("ALL"), eq(null))).thenReturn(emptySummary);
+
+        mockMvc.perform(get("/stats").param("mode", "abc"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("stats"))
+                .andExpect(model().attribute("selectedMode", "ALL"));
+
+        verify(studyProgressService).getSummary(any(), eq("ALL"), eq(null));
+    }
+
+    @Test
+    void testStatsWithNonExistentTopicId_showsErrorMessageAndEmptyList() throws Exception {
+        when(vocabularyRepository.count()).thenReturn(10L);
+        when(topicRepository.count()).thenReturn(1L);
+        when(kanjiEntryRepository.count()).thenReturn(5L);
+        when(vocabularyRepository.countByHasKanjiTrue()).thenReturn(5L);
+        when(vocabularyRepository.countByHasKanjiFalse()).thenReturn(5L);
+        when(topicRepository.findAllByOrderBySortOrderAsc()).thenReturn(List.of());
+        when(topicRepository.existsById(999L)).thenReturn(false);
+
+        mockMvc.perform(get("/stats").param("topicId", "999"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("stats"))
+                .andExpect(model().attribute("errorMessage", "Chủ đề không tồn tại"))
+                .andExpect(content().string(containsString("Chủ đề không tồn tại")))
+                .andExpect(content().string(containsString("Chưa có dữ liệu làm bài trong phạm vi đã chọn")));
+    }
 }

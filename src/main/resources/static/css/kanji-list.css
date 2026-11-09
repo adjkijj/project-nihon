@@ -132,6 +132,16 @@ main {
     color: #fca5a5;
     border: 1px solid rgba(239, 68, 68, 0.3);
 }
+.flash-success {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #6ee7b7;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.flash-warning {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #fcd34d;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
 
 .filter-panel {
     background-color: var(--bg-surface);
@@ -383,13 +393,55 @@ main {
 
 .kanji-card-footer {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
+    gap: 0.5rem;
     border-top: 1px solid var(--border-color);
     padding-top: 0.75rem;
     font-size: 0.8rem;
     color: var(--accent);
     font-weight: 600;
+}
+
+.kanji-detail-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+}
+.kanji-detail-link:hover {
+    text-decoration: underline;
+}
+
+.kanji-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.btn-edit {
+    background-color: rgba(56, 189, 248, 0.15);
+    color: var(--accent);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    padding: 0.3rem 0.65rem;
+    font-size: 0.78rem;
+}
+.btn-edit:hover {
+    background-color: rgba(56, 189, 248, 0.25);
+}
+
+.btn-danger {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 0.3rem 0.65rem;
+    font-size: 0.78rem;
+}
+.btn-danger:hover {
+    background-color: rgba(239, 68, 68, 0.25);
+}
+
+.kanji-box {
+    text-decoration: none;
 }
 
 .empty-state {

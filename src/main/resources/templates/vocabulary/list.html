@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
     <script th:src="@{/js/app.js}" defer></script>
 </head>
+
 <body>
     <header>
         <a href="/" class="brand">
@@ -38,6 +40,11 @@
             <span th:text="${successMessage}">Thao tác thành công.</span>
         </div>
 
+        <div th:if="${warningMessage}" class="alert alert-warning">
+            <span>⚠️</span>
+            <span th:text="${warningMessage}">Cảnh báo.</span>
+        </div>
+
         <div th:if="${errorMessage}" class="alert alert-error">
             <span>⚠️</span>
             <span th:text="${errorMessage}">Đã xảy ra lỗi.</span>
@@ -47,18 +54,17 @@
             <form th:action="@{/vocabulary}" method="get" class="filter-form">
                 <div class="form-group">
                     <label for="keyword">Tìm kiếm (Tiếng Nhật, Cách đọc, Nghĩa)</label>
-                    <input type="text" id="keyword" name="keyword" th:value="${keyword}"
-                           class="form-control" placeholder="Nhập từ khóa cần tìm...">
+                    <input type="text" id="keyword" name="keyword" th:value="${keyword}" class="form-control"
+                        placeholder="Nhập từ khóa cần tìm...">
                 </div>
 
                 <div class="form-group">
                     <label for="topicId">Lọc theo chủ đề</label>
                     <select id="topicId" name="topicId" class="form-control">
                         <option value="">-- Tất cả chủ đề --</option>
-                        <option th:each="t : ${topics}"
-                                th:value="${t.id}"
-                                th:text="${t.parent != null ? '↳ ' + t.name : t.name}"
-                                th:selected="${selectedTopicId != null and selectedTopicId == t.id}">
+                        <option th:each="t : ${topics}" th:value="${t.id}"
+                            th:text="${t.parent != null ? '↳ ' + t.name : t.name}"
+                            th:selected="${selectedTopicId != null and selectedTopicId == t.id}">
                         </option>
                     </select>
                 </div>
@@ -69,9 +75,36 @@
         </section>
 
         <section class="table-container">
+            <div class="bulk-actions-bar" th:if="${!vocabPage.empty}">
+                <form id="bulk-delete-form" th:action="@{/vocabulary/bulk-delete}" method="post"
+                    class="bulk-action-form">
+                    <input type="hidden" name="_csrf" th:value="${_csrf}">
+                    <input type="hidden" name="scope" th:value="${selectedTopicId != null ? 'TOPIC' : 'ALL'}">
+                    <input type="hidden" name="ids" class="bulk-ids-input" value="">
+                    <button type="submit" class="btn btn-danger" id="btn-bulk-delete">Xóa đã chọn</button>
+                </form>
+
+                <form id="bulk-move-form" th:action="@{/vocabulary/bulk-move}" method="post" class="bulk-action-form">
+                    <input type="hidden" name="_csrf" th:value="${_csrf}">
+                    <input type="hidden" name="scope" th:value="${selectedTopicId != null ? 'TOPIC' : 'ALL'}">
+                    <input type="hidden" name="ids" class="bulk-ids-input" value="">
+                    <select name="targetTopicId" id="bulk-target-topic" class="form-control bulk-topic-select" required>
+                        <option value="">-- Chọn chủ đề đích --</option>
+                        <option th:each="t : ${topics}" th:value="${t.id}"
+                            th:text="${t.parent != null ? '↳ ' + t.name : t.name}">
+                        </option>
+                    </select>
+                    <button type="submit" class="btn btn-primary" id="btn-bulk-move">Chuyển đã chọn sang chủ
+                        đề...</button>
+                </form>
+            </div>
+
             <table>
                 <thead>
                     <tr>
+                        <th class="col-checkbox">
+                            <input type="checkbox" id="select-all-vocab" aria-label="Chọn tất cả từ vựng trên trang">
+                        </th>
                         <th class="u-width-21pct">Tiếng Nhật</th>
                         <th class="u-width-14pct">Cách đọc</th>
                         <th class="u-width-14pct">Romaji</th>
@@ -82,8 +115,14 @@
                 </thead>
                 <tbody>
                     <tr th:each="v : ${vocabPage.content}">
+                        <td class="col-checkbox">
+                            <input type="checkbox" class="vocab-row-checkbox" th:value="${v.id}"
+                                th:attr="data-affected-count=${selectedTopicId != null ? 1 : #lists.size(v.allIds)}"
+                                aria-label="Chọn từ vựng">
+                        </td>
                         <td>
-                            <span class="jp-text" th:text="${v.japaneseText}">私（わたし）</span>
+                            <a th:href="@{'/vocabulary/' + ${v.id}}" class="jp-text vocab-detail-link"
+                                th:text="${v.japaneseText}">私（わたし）</a>
                         </td>
                         <td>
                             <span th:if="${v.reading != null}" class="reading-badge" th:text="${v.reading}">わたし</span>
@@ -93,24 +132,28 @@
                         <td th:text="${(v.meaningVi != null && !v.meaningVi.isBlank()) ? v.meaningVi : '-'}">Tôi</td>
                         <td>
                             <div class="topic-list">
-                                <span th:each="t : ${v.topics}" class="topic-badge"
-                                      th:text="${t.name}" th:title="${t.name}">Chủ đề</span>
+                                <span th:each="t : ${v.topics}" class="topic-badge" th:text="${t.name}"
+                                    th:title="${t.name}">Chủ đề</span>
                             </div>
                         </td>
                         <td>
                             <div class="actions-cell u-justify-content-flex-end">
-                                <a th:href="@{'/vocabulary/' + ${v.id} + '/edit'}" class="btn btn-edit">Sửa</a>
-                                <form class="u-margin-0" th:action="@{'/vocabulary/' + ${v.id} + '/delete'}" method="post"
-                                       th:attr="data-confirm=${v.hasMultipleTopics() ? 'Từ này xuất hiện ở nhiều chủ đề. Xóa thao tác này chỉ xóa bản ghi tại chủ đề hiện tại. Bạn có chắc chắn?' : 'Bạn có chắc chắn muốn xóa từ vựng này?'}"
-                                     >
+                                <a th:href="@{'/vocabulary/' + ${v.id}}" class="btn btn-secondary">Chi tiết</a>
+                                <a th:href="@{'/vocabulary/' + ${v.id} + '/edit'(scope=${selectedTopicId != null ? 'TOPIC' : 'ALL'})}"
+                                    class="btn btn-edit">Sửa</a>
+                                <form class="u-margin-0" th:action="@{'/vocabulary/' + ${v.id} + '/delete'}"
+                                    method="post"
+                                    th:attr="data-confirm=${selectedTopicId != null ? ('Xóa từ này khỏi chủ đề ' + (selectedTopicName != null ? selectedTopicName : v.topicNamesDisplay) + '?') : ('Từ này thuộc ' + #lists.size(v.topics) + ' chủ đề. Xóa khỏi tất cả?')}">
                                     <input type="hidden" name="_csrf" th:value="${_csrf}">
+                                    <input type="hidden" name="scope" th:value="${selectedTopicId != null ? 'TOPIC' : 'ALL'}">
+                                    <input type="hidden" name="allIds" th:value="${v.allIds != null ? #strings.listJoin(v.allIds, ',') : v.id}">
                                     <button type="submit" class="btn btn-danger">Xóa</button>
                                 </form>
                             </div>
                         </td>
                     </tr>
                     <tr th:if="${vocabPage.empty}">
-                        <td colspan="6" class="empty-state">
+                        <td colspan="7" class="empty-state">
                             Không tìm thấy từ vựng nào khớp với điều kiện tìm kiếm.
                         </td>
                     </tr>
@@ -121,18 +164,20 @@
                 <div>
                     Hiển thị <strong th:text="${vocabPage.numberOfElements}">20</strong> trên tổng số
                     <strong th:text="${vocabPage.totalElements}">1547</strong> từ vựng
-                    (Trang <span th:text="${vocabPage.number + 1}">1</span> / <span th:text="${vocabPage.totalPages}">78</span>)
+                    (Trang <span th:text="${vocabPage.number + 1}">1</span> / <span
+                        th:text="${vocabPage.totalPages}">78</span>)
                 </div>
                 <div class="page-links">
                     <a th:if="${vocabPage.hasPrevious()}"
-                       th:href="@{/vocabulary(page=${vocabPage.number - 1}, topicId=${selectedTopicId}, keyword=${keyword})}"
-                       class="btn btn-secondary u-padding-0-35rem-0-8rem-font-size-0-825rem">← Trang trước</a>
+                        th:href="@{/vocabulary(page=${vocabPage.number - 1}, topicId=${selectedTopicId}, keyword=${keyword})}"
+                        class="btn btn-secondary u-padding-0-35rem-0-8rem-font-size-0-825rem">← Trang trước</a>
                     <a th:if="${vocabPage.hasNext()}"
-                       th:href="@{/vocabulary(page=${vocabPage.number + 1}, topicId=${selectedTopicId}, keyword=${keyword})}"
-                       class="btn btn-secondary u-padding-0-35rem-0-8rem-font-size-0-825rem">Trang sau →</a>
+                        th:href="@{/vocabulary(page=${vocabPage.number + 1}, topicId=${selectedTopicId}, keyword=${keyword})}"
+                        class="btn btn-secondary u-padding-0-35rem-0-8rem-font-size-0-825rem">Trang sau →</a>
                 </div>
             </div>
         </section>
     </main>
 </body>
+
 </html>

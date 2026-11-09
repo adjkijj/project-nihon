@@ -2,6 +2,7 @@ package com.nihon.controller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -21,6 +22,18 @@ import java.util.NoSuchElementException;
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    /**
+     * Xử lý trường hợp dữ liệu bị trùng hoặc vi phạm ràng buộc toàn vẹn cơ sở dữ liệu (HTTP 409).
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public String handleDataIntegrityViolation(DataIntegrityViolationException ex, Model model) {
+        log.error("Data integrity violation occurred", ex);
+        model.addAttribute("errorTitle", "409 - Xung đột dữ liệu");
+        model.addAttribute("errorMessage", "Dữ liệu bị trùng hoặc vi phạm ràng buộc");
+        return "error";
+    }
 
     /**
      * Xử lý trường hợp tham số kiểu dữ liệu không hợp lệ (ví dụ: ID là chuỗi thay vì số).
@@ -100,6 +113,18 @@ public class GlobalExceptionHandler {
         log.warn("Max upload size exceeded: {}", com.nihon.service.excel.ExcelCellUtils.sanitizeForLog(ex.getMessage()));
         model.addAttribute("errorTitle", "400 - Dung lượng tệp quá lớn");
         model.addAttribute("errorMessage", "Dung lượng tệp tin tải lên vượt quá giới hạn tối đa 5 MB cho phép.");
+        return "error";
+    }
+
+    /**
+     * Xử lý trường hợp phương thức HTTP không được hỗ trợ trên đường dẫn (ví dụ: POST vào trang chỉ hỗ trợ GET -> HTTP 405).
+     */
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
+    public String handleMethodNotSupported(org.springframework.web.HttpRequestMethodNotSupportedException ex, Model model) {
+        log.warn("HTTP method not supported: {}", com.nihon.service.excel.ExcelCellUtils.sanitizeForLog(ex.getMessage()));
+        model.addAttribute("errorTitle", "405 - Phương thức không được hỗ trợ");
+        model.addAttribute("errorMessage", "Phương thức truy cập không được phép trên đường dẫn này.");
         return "error";
     }
 

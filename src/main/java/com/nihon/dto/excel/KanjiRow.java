@@ -4,7 +4,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * DTO đại diện cho một Kanji hợp lệ kèm danh sách các từ cần nhớ liên thuộc trong sheet "Kanji".
+ * DTO đại diện cho một Kanji hợp lệ kèm danh sách các từ cần nhớ đi kèm trong sheet "Kanji"
+ * (các từ cần nhớ sẽ được lưu trực tiếp vào bảng {@code vocabulary} thuộc chủ đề của Kanji).
  *
  * @param rowNumber số thứ tự của hàng định nghĩa Kanji trong file Excel (bắt đầu từ 1)
  * @param topic tên chủ đề áp dụng cho Kanji này
@@ -13,7 +14,7 @@ import java.util.List;
  * @param meaningVi ý nghĩa tiếng Việt của Kanji
  * @param onReading âm On (Onyomi)
  * @param kunReading âm Kun (Kunyomi)
- * @param words danh sách các từ vựng cần nhớ thuộc Kanji này
+ * @param words danh sách các dòng từ cần nhớ đi kèm Kanji trên sheet Excel
  */
 public record KanjiRow(
         int rowNumber,

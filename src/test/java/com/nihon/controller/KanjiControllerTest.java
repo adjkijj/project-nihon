@@ -3,12 +3,17 @@ package com.nihon.controller;
 import com.nihon.config.CsrfInterceptor;
 import com.nihon.config.WebConfig;
 import com.nihon.dto.KanjiDetailDto;
+import com.nihon.dto.KanjiForm;
+import com.nihon.entity.KanjiEntry;
 import com.nihon.entity.Topic;
 import com.nihon.entity.Vocabulary;
 import com.nihon.service.KanjiService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -18,15 +23,20 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
@@ -37,6 +47,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(KanjiController.class)
 @Import({WebConfig.class, CsrfInterceptor.class})
 class KanjiControllerTest {
+
+    private static final String CSRF_TOKEN = "test-csrf-token-kanji-123";
 
     @Autowired
     private MockMvc mockMvc;
@@ -275,5 +287,211 @@ class KanjiControllerTest {
         mockMvc.perform(get("/kanji").param("keyword", xssPayload))
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("<script>alert('xss')</script>"))));
+    }
+
+    @Test
+    @DisplayName("Lọc Kanji với topicId không tồn tại: hiện thông báo 'Chủ đề không tồn tại' và danh sách rỗng")
+    void testFilterByNonExistentTopic() throws Exception {
+        when(kanjiService.getKanjiTopics()).thenReturn(List.of(kanjiTopic));
+        when(kanjiService.existsTopicById(999L)).thenReturn(false);
+        when(kanjiService.countTotal()).thenReturn(126L);
+
+        mockMvc.perform(get("/kanji").param("topicId", "999"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("kanji/list"))
+                .andExpect(model().attribute("errorMessage", "Chủ đề không tồn tại"))
+                .andExpect(content().string(containsString("Chủ đề không tồn tại")))
+                .andExpect(content().string(containsString("Không tìm thấy ký tự Kanji phù hợp")));
+    }
+
+    @Test
+    @DisplayName("Xem chi tiết Kanji với ID <= 0 chuyển hướng với thông báo 'ID không hợp lệ'")
+    void testDetailInvalidId() throws Exception {
+        mockMvc.perform(get("/kanji/0"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/kanji"))
+                .andExpect(flash().attribute("errorMessage", "ID không hợp lệ"));
+
+        mockMvc.perform(get("/kanji/-5"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/kanji"))
+                .andExpect(flash().attribute("errorMessage", "ID không hợp lệ"));
+    }
+
+    @Test
+    @DisplayName("1. Tạo Kanji hợp lệ với CSRF chuyển hướng về danh sách kèm thông báo thành công")
+    void createKanji_validDataWithCsrf_redirectsWithSuccess() throws Exception {
+        KanjiEntry saved = new KanjiEntry();
+        saved.setId(10L);
+        saved.setCharacter("魚");
+        saved.setTopic(kanjiTopic);
+
+        when(kanjiService.create(any(KanjiForm.class))).thenReturn(saved);
+
+        mockMvc.perform(post("/kanji/new")
+                        .sessionAttr(CsrfInterceptor.CSRF_SESSION_ATTR, CSRF_TOKEN)
+                        .param(CsrfInterceptor.CSRF_PARAM_NAME, CSRF_TOKEN)
+                        .param("topicId", "5")
+                        .param("character", "魚")
+                        .param("hanViet", "NGƯ")
+                        .param("meaningVi", "Cá")
+                        .param("onyomi", "ギョ")
+                        .param("kunyomi", "さかな"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/kanji"))
+                .andExpect(flash().attributeExists("successMessage"));
+
+        verify(kanjiService).create(any(KanjiForm.class));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "   ", "魚肉", "あ", "ア", "A", "1"})
+    @DisplayName("2. character nhiều ký tự, ký tự kana, chữ Latin, số, chuỗi rỗng bị chặn bởi @SingleKanji")
+    void createKanji_invalidCharacter_failsValidation(String invalidChar) throws Exception {
+        when(kanjiService.getKanjiTopics()).thenReturn(List.of(kanjiTopic));
+
+        mockMvc.perform(post("/kanji/new")
+                        .sessionAttr(CsrfInterceptor.CSRF_SESSION_ATTR, CSRF_TOKEN)
+                        .param(CsrfInterceptor.CSRF_PARAM_NAME, CSRF_TOKEN)
+                        .param("topicId", "5")
+                        .param("character", invalidChar)
+                        .param("hanViet", "NGƯ")
+                        .param("meaningVi", "Cá"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("kanji/form"))
+                .andExpect(model().hasErrors())
+                .andExpect(model().attributeHasFieldErrors("form", "character"));
+
+        verify(kanjiService, never()).create(any());
+    }
+
+    @Test
+    @DisplayName("3. character trùng báo lỗi ở trường character; sửa không đổi gì thì lưu thành công")
+    void createAndUpdateKanji_duplicateCharacterFails_unchangedSelfSucceeds() throws Exception {
+        when(kanjiService.getKanjiTopics()).thenReturn(List.of(kanjiTopic));
+        when(kanjiService.create(any(KanjiForm.class)))
+                .thenThrow(new IllegalArgumentException("Kanji này đã tồn tại."));
+
+        mockMvc.perform(post("/kanji/new")
+                        .sessionAttr(CsrfInterceptor.CSRF_SESSION_ATTR, CSRF_TOKEN)
+                        .param(CsrfInterceptor.CSRF_PARAM_NAME, CSRF_TOKEN)
+                        .param("topicId", "5")
+                        .param("character", "魚")
+                        .param("hanViet", "NGƯ")
+                        .param("meaningVi", "Cá"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("kanji/form"))
+                .andExpect(model().hasErrors())
+                .andExpect(model().attributeHasFieldErrors("form", "character"))
+                .andExpect(content().string(containsString("Kanji này đã tồn tại.")));
+
+        // Sửa không đổi gì -> lưu thành công
+        KanjiEntry existing = new KanjiEntry();
+        existing.setId(1L);
+        existing.setCharacter("魚");
+        existing.setTopic(kanjiTopic);
+        when(kanjiService.findById(1L)).thenReturn(Optional.of(existing));
+        when(kanjiService.update(eq(1L), any(KanjiForm.class))).thenReturn(existing);
+
+        mockMvc.perform(post("/kanji/1/edit")
+                        .sessionAttr(CsrfInterceptor.CSRF_SESSION_ATTR, CSRF_TOKEN)
+                        .param(CsrfInterceptor.CSRF_PARAM_NAME, CSRF_TOKEN)
+                        .param("topicId", "5")
+                        .param("character", "魚")
+                        .param("hanViet", "NGƯ")
+                        .param("meaningVi", "Cá")
+                        .param("onyomi", "ギョ")
+                        .param("kunyomi", "さかな"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/kanji"))
+                .andExpect(flash().attributeExists("successMessage"));
+    }
+
+    @Test
+    @DisplayName("4. topicId trỏ tới chủ đề không phải nhánh Kanji báo lỗi ở trường topicId")
+    void createKanji_nonKanjiTopic_showsFieldErrorOnTopicId() throws Exception {
+        when(kanjiService.getKanjiTopics()).thenReturn(List.of(kanjiTopic));
+        when(kanjiService.create(any(KanjiForm.class)))
+                .thenThrow(new IllegalArgumentException("Chủ đề đã chọn không thuộc nhánh Kanji."));
+
+        mockMvc.perform(post("/kanji/new")
+                        .sessionAttr(CsrfInterceptor.CSRF_SESSION_ATTR, CSRF_TOKEN)
+                        .param(CsrfInterceptor.CSRF_PARAM_NAME, CSRF_TOKEN)
+                        .param("topicId", "2")
+                        .param("character", "魚")
+                        .param("hanViet", "NGƯ")
+                        .param("meaningVi", "Cá"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("kanji/form"))
+                .andExpect(model().hasErrors())
+                .andExpect(model().attributeHasFieldErrors("form", "topicId"))
+                .andExpect(content().string(containsString("Chủ đề đã chọn không thuộc nhánh Kanji.")));
+    }
+
+    @Test
+    @DisplayName("5. Xóa Kanji thành công; trang chi tiết hiển thị nút Thêm từ cần nhớ và hộp xác nhận ghi số từ vựng giữ lại")
+    void deleteKanjiAndDetailView_showsAddWordLinkAndRetainedVocabCount() throws Exception {
+        Vocabulary sampleVocab = new Vocabulary();
+        sampleVocab.setId(101L);
+        sampleVocab.setJapaneseText("魚（さかな）");
+        sampleVocab.setReading("さかな");
+        sampleVocab.setRomaji("sakana");
+        sampleVocab.setMeaningVi("Cá");
+        sampleVocab.setTopic(kanjiTopic);
+
+        when(kanjiService.findDetailById(1L)).thenReturn(Optional.of(kanjiFish));
+        when(kanjiService.getRelatedVocabulary(eq("魚"), any())).thenReturn(List.of(sampleVocab));
+
+        mockMvc.perform(get("/kanji/1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("/vocabulary/new?topicId=5&amp;japaneseText=")))
+                .andExpect(content().string(containsString("1 từ vựng liên quan còn giữ lại")));
+
+        mockMvc.perform(post("/kanji/1/delete")
+                        .sessionAttr(CsrfInterceptor.CSRF_SESSION_ATTR, CSRF_TOKEN)
+                        .param(CsrfInterceptor.CSRF_PARAM_NAME, CSRF_TOKEN))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/kanji"))
+                .andExpect(flash().attributeExists("successMessage"));
+
+        verify(kanjiService).delete(1L);
+    }
+
+    @Test
+    @DisplayName("6. POST tạo, sửa, xóa Kanji thiếu CSRF bị chặn (403 Forbidden) và không cho bind id từ client")
+    void postKanji_missingCsrfBlocked_andFakeIdNotBound() throws Exception {
+        mockMvc.perform(post("/kanji/new")
+                        .sessionAttr(CsrfInterceptor.CSRF_SESSION_ATTR, CSRF_TOKEN)
+                        .param("topicId", "5")
+                        .param("character", "魚"))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/kanji/1/edit")
+                        .sessionAttr(CsrfInterceptor.CSRF_SESSION_ATTR, CSRF_TOKEN)
+                        .param("topicId", "5")
+                        .param("character", "魚"))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/kanji/1/delete")
+                        .sessionAttr(CsrfInterceptor.CSRF_SESSION_ATTR, CSRF_TOKEN))
+                .andExpect(status().isForbidden());
+
+        // Gửi id=999 giả trong body khi tạo mới -> form.id vẫn là null
+        KanjiEntry saved = new KanjiEntry();
+        saved.setId(1L);
+        saved.setCharacter("魚");
+        when(kanjiService.create(any(KanjiForm.class))).thenReturn(saved);
+
+        mockMvc.perform(post("/kanji/new")
+                        .sessionAttr(CsrfInterceptor.CSRF_SESSION_ATTR, CSRF_TOKEN)
+                        .param(CsrfInterceptor.CSRF_PARAM_NAME, CSRF_TOKEN)
+                        .param("id", "999")
+                        .param("topicId", "5")
+                        .param("character", "魚"))
+                .andExpect(status().is3xxRedirection());
+
+        ArgumentCaptor<KanjiForm> captor = ArgumentCaptor.forClass(KanjiForm.class);
+        verify(kanjiService).create(captor.capture());
+        assertThat(captor.getValue().getId()).isNull();
     }
 }

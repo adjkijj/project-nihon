@@ -1,5 +1,6 @@
 package com.nihon.entity;
 
+import com.nihon.validation.KanjiLimits;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -29,7 +30,8 @@ import lombok.Setter;
         },
         indexes = {
                 @Index(name = "idx_vocabulary_topic", columnList = "topic_id"),
-                @Index(name = "idx_vocabulary_japanese", columnList = "japanese_text")
+                @Index(name = "idx_vocabulary_japanese", columnList = "japanese_text"),
+                @Index(name = "idx_vocabulary_import_batch", columnList = "import_batch_id")
         })
 @Getter
 @Setter
@@ -45,20 +47,20 @@ public class Vocabulary {
     private Topic topic;
 
     /** Nội dung cột "Tiếng Nhật" giữ nguyên văn, ví dụ "私（わたし）". */
-    @Column(name = "japanese_text", nullable = false, length = 255)
+    @Column(name = "japanese_text", nullable = false, length = KanjiLimits.MAX_JAPANESE_LENGTH)
     private String japaneseText;
 
     /**
      * Cách đọc Hiragana lấy từ ngoặc trong nguồn. NULL nếu nguồn không ghi
      * (ví dụ "1歳", "1月"); không tự suy đoán.
      */
-    @Column(name = "reading", length = 255)
+    @Column(name = "reading", length = KanjiLimits.MAX_READING_LENGTH)
     private String reading;
 
-    @Column(name = "romaji", length = 255)
+    @Column(name = "romaji", length = KanjiLimits.MAX_ROMAJI_LENGTH)
     private String romaji;
 
-    @Column(name = "meaning_vi", length = 500)
+    @Column(name = "meaning_vi", length = KanjiLimits.MAX_VOCAB_MEANING_LENGTH)
     private String meaningVi;
 
     /** Từ có chứa ký tự Kanji hay không (quyết định quy tắc kiểm tra Nhật → Việt). */
@@ -67,6 +69,10 @@ public class Vocabulary {
 
     @Column(name = "source_line")
     private Integer sourceLine;
+
+    /** Mã lô import (tham chiếu ImportAuditLog.id) nếu từ vựng được thêm mới từ chức năng import Excel. */
+    @Column(name = "import_batch_id")
+    private Long importBatchId;
 
     @Column(name = "created_at", updatable = false)
     private java.time.LocalDateTime createdAt;
@@ -86,6 +92,11 @@ public class Vocabulary {
 
     @jakarta.persistence.PreUpdate
     protected void onUpdate() {
-        updatedAt = java.time.LocalDateTime.now();
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        if (updatedAt != null && !now.isAfter(updatedAt)) {
+            updatedAt = updatedAt.plusNanos(1000);
+        } else {
+            updatedAt = now;
+        }
     }
 }

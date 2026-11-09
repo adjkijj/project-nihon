@@ -330,6 +330,61 @@ tbody tr:last-child td {
     height: 1.1rem;
 }
 
+.header-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.empty-history {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.badge-result-success {
+    background-color: var(--success-bg);
+    color: #4ade80;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.audit-hash {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    background-color: rgba(15, 23, 42, 0.6);
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    color: var(--accent);
+    font-size: 0.825rem;
+}
+
+.audit-error-msg {
+    margin-top: 0.35rem;
+    font-size: 0.8rem;
+    color: #f87171;
+    word-break: break-word;
+}
+
+.history-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.history-page-links {
+    display: flex;
+    gap: 0.5rem;
+}
+
 footer {
     background-color: var(--bg-surface);
     border-top: 1px solid var(--border-color);

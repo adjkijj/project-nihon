@@ -27,9 +27,20 @@ class MigrationV2Test {
 
         JdbcTemplate jdbcTemplate = new JdbcTemplate(ds);
 
-        // 1. Khởi tạo schema ban đầu (V1)
+        // 1. Khởi tạo schema ban đầu (V1, bao gồm bảng kanji_word ở thời điểm V1)
         ResourceDatabasePopulator v1Populator = new ResourceDatabasePopulator(new ClassPathResource("schema.sql"));
         v1Populator.execute(ds);
+        jdbcTemplate.execute(
+                "CREATE TABLE IF NOT EXISTS kanji_word (" +
+                "id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, " +
+                "kanji_id BIGINT NOT NULL, " +
+                "japanese VARCHAR(255) NOT NULL, " +
+                "romaji VARCHAR(255) NOT NULL, " +
+                "meaning_vi VARCHAR(500) NOT NULL, " +
+                "sort_order INT NOT NULL DEFAULT 0, " +
+                "created_at TIMESTAMP NULL, " +
+                "updated_at TIMESTAMP NULL)"
+        );
 
         // 2. Chèn dữ liệu mẫu có đầy đủ cột
         jdbcTemplate.update(

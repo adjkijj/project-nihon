@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS topic (
     sort_order INT NOT NULL,
     source_line INT NULL,
     kanji_section BOOLEAN NOT NULL DEFAULT FALSE,
+    import_batch_id BIGINT NULL,
     created_at TIMESTAMP NULL,
     PRIMARY KEY (id),
     CONSTRAINT uk_topic_source_line UNIQUE (source_line),
@@ -23,10 +24,11 @@ CREATE TABLE IF NOT EXISTS vocabulary (
     topic_id BIGINT NOT NULL,
     japanese_text VARCHAR(255) NOT NULL,
     reading VARCHAR(255) NULL,
-    romaji VARCHAR(255) NOT NULL,
-    meaning_vi VARCHAR(500) NOT NULL,
+    romaji VARCHAR(255) NULL,
+    meaning_vi VARCHAR(500) NULL,
     has_kanji BOOLEAN NOT NULL DEFAULT FALSE,
     source_line INT NULL,
+    import_batch_id BIGINT NULL,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
     PRIMARY KEY (id),
@@ -40,11 +42,12 @@ CREATE TABLE IF NOT EXISTS kanji_entry (
     id BIGINT NOT NULL AUTO_INCREMENT,
     topic_id BIGINT NOT NULL,
     kanji_character VARCHAR(8) NOT NULL,
-    han_viet VARCHAR(100) NOT NULL,
-    meaning_vi VARCHAR(255) NOT NULL,
-    onyomi VARCHAR(100) NULL,
-    kunyomi VARCHAR(100) NULL,
+    han_viet VARCHAR(255) NULL,
+    meaning_vi VARCHAR(255) NULL,
+    onyomi VARCHAR(255) NULL,
+    kunyomi VARCHAR(255) NULL,
     source_line INT NOT NULL,
+    import_batch_id BIGINT NULL,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
     PRIMARY KEY (id),
@@ -53,22 +56,7 @@ CREATE TABLE IF NOT EXISTS kanji_entry (
     CONSTRAINT fk_kanji_topic FOREIGN KEY (topic_id) REFERENCES topic (id) ON DELETE RESTRICT
 );
 
--- 4. Bảng kanji_word: Quản lý các từ vựng cần nhớ thuộc Kanji
-CREATE TABLE IF NOT EXISTS kanji_word (
-    id BIGINT NOT NULL AUTO_INCREMENT,
-    kanji_id BIGINT NOT NULL,
-    japanese VARCHAR(255) NOT NULL,
-    romaji VARCHAR(255) NOT NULL,
-    meaning_vi VARCHAR(500) NOT NULL,
-    sort_order INT NOT NULL DEFAULT 0,
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL,
-    PRIMARY KEY (id),
-    CONSTRAINT uk_kanji_word_kanji_japanese UNIQUE (kanji_id, japanese),
-    CONSTRAINT fk_kanji_word_kanji FOREIGN KEY (kanji_id) REFERENCES kanji_entry (id) ON DELETE CASCADE
-);
-
--- 5. Bảng import_audit_log: Ghi nhật ký kiểm toán cho mỗi lần import tệp Excel
+-- 4. Bảng import_audit_log: Ghi nhật ký kiểm toán cho mỗi lần import tệp Excel
 CREATE TABLE IF NOT EXISTS import_audit_log (
     id BIGINT NOT NULL AUTO_INCREMENT,
     user_id VARCHAR(100) NOT NULL,
@@ -80,14 +68,17 @@ CREATE TABLE IF NOT EXISTS import_audit_log (
     records_skipped INT NOT NULL DEFAULT 0,
     result VARCHAR(50) NOT NULL,
     error_message VARCHAR(1000) NULL,
+    undone_at TIMESTAMP NULL,
     PRIMARY KEY (id)
 );
 
 -- Chỉ mục hỗ trợ truy vấn hiệu năng cao
 CREATE INDEX IF NOT EXISTS idx_topic_parent ON topic (parent_id);
 CREATE INDEX IF NOT EXISTS idx_topic_sort ON topic (sort_order);
+CREATE INDEX IF NOT EXISTS idx_topic_import_batch ON topic (import_batch_id);
 CREATE INDEX IF NOT EXISTS idx_vocabulary_topic ON vocabulary (topic_id);
 CREATE INDEX IF NOT EXISTS idx_vocabulary_japanese ON vocabulary (japanese_text);
+CREATE INDEX IF NOT EXISTS idx_vocabulary_import_batch ON vocabulary (import_batch_id);
 CREATE INDEX IF NOT EXISTS idx_kanji_topic ON kanji_entry (topic_id);
-CREATE INDEX IF NOT EXISTS idx_kanji_word_kanji ON kanji_word (kanji_id);
+CREATE INDEX IF NOT EXISTS idx_kanji_import_batch ON kanji_entry (import_batch_id);
 CREATE INDEX IF NOT EXISTS idx_import_audit_imported_at ON import_audit_log (imported_at);

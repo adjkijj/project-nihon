@@ -141,4 +141,26 @@ class VocabularyFileParserTest {
         assertThat(r.kanji()).hasSize(126);
         assertThat(r.vocabularies().size() + r.skippedDuplicateInFile()).isEqualTo(1547);
     }
+
+    @Test
+    void kanjiHanVietAndOnKunUpTo255CharsAreValidAnd256CharsReportedAsError() throws IOException {
+        String hanViet200 = "H".repeat(200);
+        String on255 = "お".repeat(255);
+        String kun255 = "く".repeat(255);
+        String hanViet256 = "H".repeat(256);
+
+        String md = "## 13. Kanji\n" +
+                "| Kanji | Hán Việt | Ý nghĩa | On | Kun |\n" +
+                "| --- | --- | --- | --- | --- |\n" +
+                "| 駅 | " + hanViet200 + " | Ga tàu | " + on255 + " | " + kun255 + " |\n" +
+                "| 道 | " + hanViet256 + " | Đường | どう | みち |\n";
+
+        ParsedVocabularyFile r = parse(md);
+        assertThat(r.kanji()).hasSize(1);
+        assertThat(r.kanji().get(0).character()).isEqualTo("駅");
+        assertThat(r.kanji().get(0).hanViet()).hasSize(200);
+        assertThat(r.errors()).hasSize(1);
+        assertThat(r.errors().get(0).line()).isEqualTo(5);
+        assertThat(r.errors().get(0).message()).contains("Hán Việt").contains("255");
+    }
 }

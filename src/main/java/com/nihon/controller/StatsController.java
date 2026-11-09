@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 @Controller
 @RequestMapping("/stats")
@@ -42,6 +44,8 @@ public class StatsController {
                         @RequestParam(value = "topicId", required = false) Long topicId,
                         HttpSession session,
                         Model model) {
+        String safeMode = normalizeMode(mode);
+
         // 1. Thống kê kho dữ liệu học liệu chung
         long totalVocab = vocabularyRepository.count();
         long totalTopics = topicRepository.count();
@@ -73,14 +77,64 @@ public class StatsController {
         model.addAttribute("topicStats", topicStats);
         model.addAttribute("topics", allTopics);
 
-        // 2. Thống kê tiến độ học tập cá nhân trong phiên làm việc
-        StudyProgressSummaryDto progress = studyProgressService.getSummary(session, mode, topicId);
+        // 2. Kiểm tra bộ lọc topicId và thống kê tiến độ học tập cá nhân trong phiên làm việc
+        Long effectiveTopicId = topicId;
+        if (topicId != null && topicId <= 0) {
+            effectiveTopicId = null;
+            model.addAttribute("errorMessage", "ID không hợp lệ");
+        } else if (topicId != null) {
+            boolean topicExists = allTopics.stream().anyMatch(t -> topicId.equals(t.getId()))
+                    || topicRepository.existsById(topicId);
+            if (!topicExists) {
+                model.addAttribute("errorMessage", "Chủ đề không tồn tại");
+                StudyProgressSummaryDto emptyProgress = StudyProgressSummaryDto.builder()
+                        .totalAnswered(0)
+                        .correctCount(0)
+                        .incorrectCount(0)
+                        .accuracyPercentage(0)
+                        .records(Collections.emptyList())
+                        .incorrectRecords(Collections.emptyList())
+                        .currentModeFilter(safeMode)
+                        .currentTopicFilter(topicId)
+                        .build();
+                model.addAttribute("progress", emptyProgress);
+                model.addAttribute("selectedMode", safeMode);
+                model.addAttribute("selectedTopicId", topicId);
+                model.addAttribute("activeNav", "stats");
+                return "stats";
+            }
+        }
+
+        StudyProgressSummaryDto progress = studyProgressService.getSummary(session, safeMode, effectiveTopicId);
+        if (progress == null) {
+            progress = StudyProgressSummaryDto.builder()
+                    .totalAnswered(0)
+                    .correctCount(0)
+                    .incorrectCount(0)
+                    .accuracyPercentage(0)
+                    .records(Collections.emptyList())
+                    .incorrectRecords(Collections.emptyList())
+                    .currentModeFilter(safeMode)
+                    .currentTopicFilter(effectiveTopicId)
+                    .build();
+        }
         model.addAttribute("progress", progress);
-        model.addAttribute("selectedMode", mode);
-        model.addAttribute("selectedTopicId", topicId);
+        model.addAttribute("selectedMode", safeMode);
+        model.addAttribute("selectedTopicId", effectiveTopicId);
         model.addAttribute("activeNav", "stats");
 
         return "stats";
+    }
+
+    private String normalizeMode(String mode) {
+        if (mode == null || mode.isBlank()) {
+            return "ALL";
+        }
+        String trimmedUpper = mode.strip().toUpperCase(Locale.ROOT);
+        if ("JA_VI".equals(trimmedUpper) || "VI_JA".equals(trimmedUpper) || "ALL".equals(trimmedUpper)) {
+            return trimmedUpper;
+        }
+        return "ALL";
     }
 
     @PostMapping("/reset")

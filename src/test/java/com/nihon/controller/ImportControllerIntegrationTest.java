@@ -8,7 +8,6 @@ import com.nihon.entity.ImportAuditLog;
 import com.nihon.entity.KanjiEntry;
 import com.nihon.repository.ImportAuditLogRepository;
 import com.nihon.repository.KanjiEntryRepository;
-import com.nihon.repository.KanjiWordRepository;
 import com.nihon.repository.TopicRepository;
 import com.nihon.repository.VocabularyRepository;
 import jakarta.servlet.http.Cookie;
@@ -56,9 +55,6 @@ class ImportControllerIntegrationTest {
 
     @Autowired
     private KanjiEntryRepository kanjiEntryRepository;
-
-    @Autowired
-    private KanjiWordRepository kanjiWordRepository;
 
     @Autowired
     private ImportAuditLogRepository auditLogRepository;

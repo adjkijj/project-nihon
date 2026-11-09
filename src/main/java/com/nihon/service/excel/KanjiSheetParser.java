@@ -4,6 +4,7 @@ import com.nihon.dto.excel.KanjiRow;
 import com.nihon.dto.excel.KanjiWordRow;
 import com.nihon.dto.excel.ParseResult;
 import com.nihon.dto.excel.RowError;
+import com.nihon.validation.KanjiLimits;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
@@ -38,13 +39,14 @@ public class KanjiSheetParser {
     public static final String HEADER_WORD_ROMAJI = "Romaji";
     public static final String HEADER_WORD_MEANING = "Nghĩa tiếng Việt";
 
-    public static final int MAX_TOPIC_LENGTH = 255;
-    public static final int MAX_HAN_VIET_LENGTH = 255;
-    public static final int MAX_MEANING_LENGTH = 500;
-    public static final int MAX_ON_KUN_LENGTH = 255;
-    public static final int MAX_WORD_JAPANESE_LENGTH = 255;
-    public static final int MAX_WORD_ROMAJI_LENGTH = 255;
-    public static final int MAX_WORD_MEANING_LENGTH = 500;
+    public static final int MAX_TOPIC_LENGTH = KanjiLimits.MAX_TOPIC_LENGTH;
+    public static final int MAX_KANJI_CHAR_LENGTH = KanjiLimits.MAX_KANJI_CHAR_LENGTH;
+    public static final int MAX_HAN_VIET_LENGTH = KanjiLimits.MAX_HAN_VIET_LENGTH;
+    public static final int MAX_MEANING_LENGTH = KanjiLimits.MAX_KANJI_MEANING_LENGTH;
+    public static final int MAX_ON_KUN_LENGTH = KanjiLimits.MAX_ON_KUN_LENGTH;
+    public static final int MAX_WORD_JAPANESE_LENGTH = KanjiLimits.MAX_JAPANESE_LENGTH;
+    public static final int MAX_WORD_ROMAJI_LENGTH = KanjiLimits.MAX_ROMAJI_LENGTH;
+    public static final int MAX_WORD_MEANING_LENGTH = KanjiLimits.MAX_VOCAB_MEANING_LENGTH;
 
     private final DataFormatter dataFormatter = new DataFormatter();
 

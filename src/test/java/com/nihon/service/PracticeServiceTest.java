@@ -296,4 +296,26 @@ class PracticeServiceTest {
         assertThat(q).isPresent();
         assertThat(q.get().getVocabId()).isEqualTo(20L);
     }
+
+    @Test
+    @DisplayName("topicId lệch với chủ đề của từ vựng -> bỏ qua topicId (đặt về null), vẫn chấm điểm đúng")
+    void testCheckAnswer_mismatchedTopicId_ignoresTopicIdAndGradesNormally() {
+        when(vocabularyRepository.findById(10L)).thenReturn(Optional.of(vocabWithKanji));
+
+        PracticeAnswerForm form = new PracticeAnswerForm();
+        form.setVocabId(10L);
+        form.setTopicId(999L); // không khớp với sampleTopic (id=1L)
+        form.setUserReading("わたし");
+        form.setUserMeaning("Tôi");
+
+        PracticeResultDto result = practiceService.checkAnswer(form);
+
+        assertThat(result.isOverallCorrect()).isTrue();
+        assertThat(result.getTopicId()).isNull();
+
+        // Khi topicId khớp (1L) -> giữ nguyên topicId = 1L
+        form.setTopicId(1L);
+        PracticeResultDto matchingResult = practiceService.checkAnswer(form);
+        assertThat(matchingResult.getTopicId()).isEqualTo(1L);
+    }
 }

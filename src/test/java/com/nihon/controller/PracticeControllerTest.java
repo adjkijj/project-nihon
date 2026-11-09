@@ -22,8 +22,12 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -181,5 +185,109 @@ class PracticeControllerTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/practice"))
                 .andExpect(flash().attributeExists("errorMessage"));
+    }
+
+    @Test
+    @DisplayName("Lọc topicId không tồn tại ở trang /practice: hiện thông báo 'Chủ đề không tồn tại' và danh sách rỗng")
+    void testIndexWithNonExistentTopicId() throws Exception {
+        when(topicService.findById(999L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/practice").param("topicId", "999"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("practice/index"))
+                .andExpect(model().attribute("errorMessage", "Chủ đề không tồn tại"))
+                .andExpect(model().attribute("topics", java.util.Collections.emptyList()))
+                .andExpect(content().string(containsString("Chủ đề không tồn tại")));
+    }
+
+    @Test
+    @DisplayName("Practice: vocabId=0 và vocabId=-1 báo lỗi dữ liệu không hợp lệ")
+    void testCheckAnswerZeroAndNegativeVocabId() throws Exception {
+        mockMvc.perform(post("/practice/check")
+                        .sessionAttr(CsrfInterceptor.CSRF_SESSION_ATTR, CSRF_TOKEN)
+                        .param(CsrfInterceptor.CSRF_PARAM_NAME, CSRF_TOKEN)
+                        .param("vocabId", "0")
+                        .param("userReading", "わたし")
+                        .param("userMeaning", "Tôi"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/practice/question"))
+                .andExpect(flash().attributeExists("errorMessage"));
+
+        mockMvc.perform(post("/practice/check")
+                        .sessionAttr(CsrfInterceptor.CSRF_SESSION_ATTR, CSRF_TOKEN)
+                        .param(CsrfInterceptor.CSRF_PARAM_NAME, CSRF_TOKEN)
+                        .param("vocabId", "-1")
+                        .param("userReading", "わたし")
+                        .param("userMeaning", "Tôi"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/practice/question"))
+                .andExpect(flash().attributeExists("errorMessage"));
+
+        verify(practiceService, never()).checkAnswer(any());
+    }
+
+    @Test
+    @DisplayName("Practice JA->VI: câu trả lời trống ở cả 2 trường vẫn qua validation và chấm là sai")
+    void testCheckAnswerEmptyBothFieldsGradedAsWrong() throws Exception {
+        PracticeResultDto wrongResult = PracticeResultDto.builder()
+                .vocabId(10L)
+                .japaneseText("私（わたし）")
+                .topicName("1. Chào hỏi")
+                .topicId(null)
+                .userReading("")
+                .userMeaning("")
+                .readingCorrect(false)
+                .meaningCorrect(false)
+                .overallCorrect(false)
+                .expectedReading("わたし")
+                .expectedMeaning("Tôi")
+                .feedbackMessage("Chưa chính xác cả cách đọc Hiragana và nghĩa tiếng Việt.")
+                .build();
+        when(practiceService.checkAnswer(any(PracticeAnswerForm.class))).thenReturn(wrongResult);
+
+        mockMvc.perform(post("/practice/check")
+                        .sessionAttr(CsrfInterceptor.CSRF_SESSION_ATTR, CSRF_TOKEN)
+                        .param(CsrfInterceptor.CSRF_PARAM_NAME, CSRF_TOKEN)
+                        .param("vocabId", "10")
+                        .param("topicId", "999") // topicId lệch -> result.getTopicId() là null
+                        .param("userReading", "")
+                        .param("userMeaning", ""))
+                .andExpect(status().isOk())
+                .andExpect(view().name("practice/result"))
+                .andExpect(model().attributeExists("result"));
+
+        // Ghi lịch sử với topicId từ result (null do lệch chủ đề)
+        verify(studyProgressService).recordJaViAttempt(any(), eq(wrongResult), isNull());
+    }
+
+    @Test
+    @DisplayName("Practice JA->VI: chuỗi có '<script>' được escape an toàn khi hiển thị ở trang kết quả")
+    void testCheckAnswerScriptInInputIsEscapedInHtml() throws Exception {
+        PracticeResultDto xssResult = PracticeResultDto.builder()
+                .vocabId(10L)
+                .japaneseText("私（わたし）")
+                .topicName("1. Chào hỏi")
+                .topicId(1L)
+                .userReading("<script>alert(1)</script>")
+                .userMeaning("<script>alert(2)</script>")
+                .readingCorrect(false)
+                .meaningCorrect(false)
+                .overallCorrect(false)
+                .expectedReading("わたし")
+                .expectedMeaning("Tôi")
+                .feedbackMessage("Chưa chính xác.")
+                .build();
+        when(practiceService.checkAnswer(any(PracticeAnswerForm.class))).thenReturn(xssResult);
+
+        mockMvc.perform(post("/practice/check")
+                        .sessionAttr(CsrfInterceptor.CSRF_SESSION_ATTR, CSRF_TOKEN)
+                        .param(CsrfInterceptor.CSRF_PARAM_NAME, CSRF_TOKEN)
+                        .param("vocabId", "10")
+                        .param("userReading", "<script>alert(1)</script>")
+                        .param("userMeaning", "<script>alert(2)</script>"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("practice/result"))
+                .andExpect(content().string(containsString("&lt;script&gt;alert(2)&lt;/script&gt;")))
+                .andExpect(content().string(not(containsString("<script>alert(2)</script>"))));
     }
 }

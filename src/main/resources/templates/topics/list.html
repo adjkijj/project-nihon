@@ -43,23 +43,60 @@
             <span th:text="${errorMessage}">Đã xảy ra lỗi.</span>
         </div>
 
+        <!-- Bộ lọc tìm kiếm theo tên (tối đa 50 ký tự) và lọc theo loại -->
+        <section class="filter-panel">
+            <form th:action="@{/topics}" method="get" class="filter-form">
+                <div class="form-group">
+                    <label for="keyword">Tìm kiếm theo tên chủ đề</label>
+                    <input type="text" id="keyword" name="keyword" th:value="${keyword}"
+                           maxlength="50" class="form-control"
+                           placeholder="Nhập tên chủ đề cần tìm (tối đa 50 ký tự)...">
+                </div>
+
+                <div class="form-group">
+                    <label for="type">Phân loại</label>
+                    <select id="type" name="type" class="form-control">
+                        <option value="ALL" th:selected="${selectedType == null or selectedType == 'ALL'}">-- Tất cả loại --</option>
+                        <option value="VOCAB" th:selected="${selectedType == 'VOCAB'}">Từ vựng thường</option>
+                        <option value="KANJI" th:selected="${selectedType == 'KANJI'}">Kanji</option>
+                    </select>
+                </div>
+
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary">Lọc</button>
+                    <a th:href="@{/topics}" class="btn btn-secondary">Đặt lại</a>
+                </div>
+            </form>
+        </section>
+
         <section class="table-container">
             <table>
                 <thead>
                     <tr>
                         <th class="u-width-8pct">ID</th>
-                        <th class="u-width-42pct">Tên chủ đề</th>
-                        <th class="u-width-25pct">Chủ đề cha</th>
+                        <th class="u-width-32pct">Tên chủ đề</th>
+                        <th class="u-width-20pct">Chủ đề cha</th>
                         <th class="u-width-10pct">Phân loại</th>
-                        <th class="u-width-15pct-text-align-right">Thao tác</th>
+                        <th class="u-width-10pct">Thứ tự</th>
+                        <th class="u-width-20pct-text-align-right">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr th:each="t : ${topics}">
                         <td class="u-color-var-text-muted-font-size-0-8rem" th:text="${t.id}">1</td>
                         <td>
-                            <span th:if="${t.parent != null}" class="tag-subtopic">↳ <span th:text="${t.name}">Tên</span></span>
-                            <span class="u-font-weight-700-color-fff" th:if="${t.parent == null}" th:text="${t.name}">Tên</span>
+                            <a th:if="${t.parent != null}"
+                               th:href="@{'/topics/' + ${t.id}}"
+                               class="tag-subtopic topic-link">↳ <span th:text="${t.name}">Tên</span></a>
+                            <a th:if="${t.parent == null}"
+                               th:href="@{'/topics/' + ${t.id}}"
+                               class="u-font-weight-700-color-fff topic-link"
+                               th:text="${t.name}">Tên</a>
+                            <div th:if="${cannotDeleteReasons != null and cannotDeleteReasons.containsKey(t.id)}"
+                                 class="cannot-delete-reason"
+                                 th:text="${cannotDeleteReasons.get(t.id)}">
+                                Không thể xóa vì đang có từ vựng
+                            </div>
                         </td>
                         <td>
                             <span class="u-color-var-text-secondary-font-size-0-85rem" th:if="${t.parent != null}" th:text="${t.parent.name}">Cha</span>
@@ -70,18 +107,57 @@
                             <span th:if="${!t.kanjiSection}" class="badge-normal">Từ vựng</span>
                         </td>
                         <td>
+                            <div class="move-buttons">
+                                <form th:if="${canMoveUpIds != null and canMoveUpIds.contains(t.id)}"
+                                      class="u-margin-0"
+                                      th:action="@{'/topics/' + ${t.id} + '/move'(direction='UP')}"
+                                      method="post">
+                                    <input type="hidden" name="_csrf" th:value="${_csrf}">
+                                    <button type="submit" class="btn btn-move" title="Di chuyển lên">↑</button>
+                                </form>
+                                <form th:if="${canMoveDownIds != null and canMoveDownIds.contains(t.id)}"
+                                      class="u-margin-0"
+                                      th:action="@{'/topics/' + ${t.id} + '/move'(direction='DOWN')}"
+                                      method="post">
+                                    <input type="hidden" name="_csrf" th:value="${_csrf}">
+                                    <button type="submit" class="btn btn-move" title="Di chuyển xuống">↓</button>
+                                </form>
+                            </div>
+                        </td>
+                        <td>
                             <div class="actions-cell">
+                                <a th:href="@{'/topics/' + ${t.id}}" class="btn btn-secondary btn-sm">Chi tiết</a>
                                 <a th:href="@{'/topics/' + ${t.id} + '/edit'}" class="btn btn-edit">Sửa</a>
-                                <form class="u-margin-0" th:action="@{'/topics/' + ${t.id} + '/delete'}" method="post" data-confirm="Bạn có chắc chắn muốn xóa chủ đề này? Hệ thống sẽ ngăn chặn nếu chủ đề đang có từ vựng hoặc chủ đề con."
-                                     >
+                                <form class="u-margin-0" th:action="@{'/topics/' + ${t.id} + '/delete'}" method="post"
+                                      data-confirm="Bạn có chắc chắn muốn xóa chủ đề này? Hệ thống sẽ ngăn chặn nếu chủ đề đang có từ vựng hoặc chủ đề con.">
                                     <input type="hidden" name="_csrf" th:value="${_csrf}">
                                     <button type="submit" class="btn btn-danger">Xóa</button>
                                 </form>
                             </div>
                         </td>
                     </tr>
+                    <tr th:if="${topics == null or topics.isEmpty()}">
+                        <td colspan="6" class="empty-state">Không tìm thấy chủ đề phù hợp.</td>
+                    </tr>
                 </tbody>
             </table>
+
+            <!-- Hiện phân trang khi có hơn 50 chủ đề (totalPages > 1) -->
+            <div class="pagination" th:if="${topicPage != null and topicPage.totalPages > 1}">
+                <div>
+                    Hiển thị <strong th:text="${topicPage.numberOfElements}">50</strong> /
+                    <strong th:text="${topicPage.totalElements}">55</strong> chủ đề
+                    (Trang <span th:text="${topicPage.number + 1}">1</span> / <span th:text="${topicPage.totalPages}">2</span>)
+                </div>
+                <div class="page-links">
+                    <a th:if="${topicPage.hasPrevious()}"
+                       th:href="@{/topics(page=${topicPage.number - 1}, size=${topicPage.size}, keyword=${keyword}, type=${selectedType})}"
+                       class="btn btn-secondary btn-sm">← Trang trước</a>
+                    <a th:if="${topicPage.hasNext()}"
+                       th:href="@{/topics(page=${topicPage.number + 1}, size=${topicPage.size}, keyword=${keyword}, type=${selectedType})}"
+                       class="btn btn-secondary btn-sm">Trang sau →</a>
+                </div>
+            </div>
         </section>
     </main>
 </body>

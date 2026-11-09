@@ -267,4 +267,25 @@ class PracticeViJaServiceTest {
         assertThat(q.get().getMeaningVi()).isEqualTo("Tôi");
         assertThat(q.get().getVocabId()).isEqualTo(10L);
     }
+
+    @Test
+    @DisplayName("topicId lệch với chủ đề của từ vựng trong VI->JA -> bỏ qua topicId (đặt về null), vẫn chấm điểm đúng")
+    void testCheckReverseAnswer_mismatchedTopicId_ignoresTopicIdAndGradesNormally() {
+        when(vocabularyRepository.findById(10L)).thenReturn(Optional.of(vocabWithKanji));
+
+        PracticeViJaAnswerForm form = new PracticeViJaAnswerForm();
+        form.setVocabId(10L);
+        form.setTopicId(888L); // lệch với sampleTopic (id=1L)
+        form.setUserJapanese("私");
+
+        PracticeViJaResultDto result = practiceService.checkReverseAnswer(form);
+
+        assertThat(result.isCorrect()).isTrue();
+        assertThat(result.getTopicId()).isNull();
+
+        // Khi topicId khớp (1L) -> giữ nguyên topicId = 1L
+        form.setTopicId(1L);
+        PracticeViJaResultDto matchingResult = practiceService.checkReverseAnswer(form);
+        assertThat(matchingResult.getTopicId()).isEqualTo(1L);
+    }
 }

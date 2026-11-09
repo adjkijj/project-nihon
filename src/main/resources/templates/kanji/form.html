@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${isEdit ? 'Chỉnh sửa Kanji' : 'Thêm Kanji mới'} + ' - Project Nihon'">Thêm/Sửa Kanji</title>
+    <link rel="stylesheet" th:href="@{/css/vocabulary-form.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+</head>
+<body>
+    <header>
+        <a href="/" class="brand">
+            <span class="brand-badge">日</span>
+            <span>Project Nihon</span>
+        </a>
+        <nav class="u-7dbd1ca1">
+            <a href="/">Trang chủ</a>
+            <a href="/vocabulary">Từ vựng</a>
+            <a href="/topics">Chủ đề</a>
+            <a href="/kanji" class="active">Kanji</a>
+            <a href="/practice">Luyện tập</a>
+            <a href="/stats">Thống kê</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="form-card">
+            <div class="form-header">
+                <h1 th:text="${isEdit ? 'Chỉnh sửa Kanji' : 'Thêm Kanji mới'}">Thêm Kanji</h1>
+            </div>
+
+            <form th:action="${isEdit ? '/kanji/' + kanjiId + '/edit' : '/kanji/new'}"
+                  th:object="${form}" method="post">
+
+                <input type="hidden" name="_csrf" th:value="${_csrf}">
+
+                <div class="form-group">
+                    <label for="topicId">Bài học Kanji <span class="required">*</span></label>
+                    <select id="topicId" th:field="*{topicId}" class="form-control"
+                            th:classappend="${#fields.hasErrors('topicId')} ? 'is-invalid' : ''">
+                        <option value="">-- Chọn bài học Kanji --</option>
+                        <option th:each="t : ${topics}"
+                                th:value="${t.id}"
+                                th:text="${t.name}">
+                        </option>
+                    </select>
+                    <div th:if="${#fields.hasErrors('topicId')}" th:errors="*{topicId}" class="field-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="character">Ký tự Kanji <span class="required">*</span></label>
+                    <input type="text" id="character" th:field="*{character}" class="form-control"
+                           placeholder="Ví dụ: 魚"
+                           maxlength="8"
+                           th:readonly="${isEdit}"
+                           th:classappend="${#fields.hasErrors('character')} ? 'is-invalid' : ''">
+                    <div th:if="${!isEdit}" class="field-hint">Nhập đúng một ký tự chữ Hán (Kanji).</div>
+                    <div th:if="${isEdit}" class="field-hint">
+                        Không cho phép sửa ký tự Kanji sau khi tạo vì các từ cần nhớ liên kết theo ký tự sẽ không còn khớp.
+                    </div>
+                    <div th:if="${#fields.hasErrors('character')}" th:errors="*{character}" class="field-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="hanViet">Âm Hán Việt</label>
+                    <input type="text" id="hanViet" th:field="*{hanViet}" class="form-control"
+                           placeholder="Ví dụ: NGƯ"
+                           maxlength="255"
+                           th:classappend="${#fields.hasErrors('hanViet')} ? 'is-invalid' : ''">
+                    <div class="field-hint">Chữ cái in hoa tiếng Việt, ngăn cách bằng dấu phẩy nếu có nhiều âm.</div>
+                    <div th:if="${#fields.hasErrors('hanViet')}" th:errors="*{hanViet}" class="field-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="meaningVi">Ý nghĩa tiếng Việt</label>
+                    <input type="text" id="meaningVi" th:field="*{meaningVi}" class="form-control"
+                           placeholder="Ví dụ: Cá"
+                           maxlength="255"
+                           th:classappend="${#fields.hasErrors('meaningVi')} ? 'is-invalid' : ''">
+                    <div th:if="${#fields.hasErrors('meaningVi')}" th:errors="*{meaningVi}" class="field-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="onyomi">Âm On (Onyomi)</label>
+                    <input type="text" id="onyomi" th:field="*{onyomi}" class="form-control"
+                           placeholder="Ví dụ: ギョ"
+                           maxlength="255"
+                           th:classappend="${#fields.hasErrors('onyomi')} ? 'is-invalid' : ''">
+                    <div class="field-hint">Katakana hoặc Hiragana, ngăn cách bằng dấu "、" hoặc "-".</div>
+                    <div th:if="${#fields.hasErrors('onyomi')}" th:errors="*{onyomi}" class="field-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="kunyomi">Âm Kun (Kunyomi)</label>
+                    <input type="text" id="kunyomi" th:field="*{kunyomi}" class="form-control"
+                           placeholder="Ví dụ: さかな"
+                           maxlength="255"
+                           th:classappend="${#fields.hasErrors('kunyomi')} ? 'is-invalid' : ''">
+                    <div class="field-hint">Hiragana hoặc Katakana, có thể dùng dấu "・", "-" hoặc "、".</div>
+                    <div th:if="${#fields.hasErrors('kunyomi')}" th:errors="*{kunyomi}" class="field-error"></div>
+                </div>
+
+                <div class="form-actions">
+                    <a href="/kanji" class="btn btn-secondary">Hủy bỏ</a>
+                    <button type="submit" class="btn btn-primary" th:text="${isEdit ? 'Lưu thay đổi' : 'Tạo Kanji'}">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </main>
+</body>
+</html>
+

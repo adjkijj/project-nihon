@@ -3,6 +3,7 @@ package com.nihon.service.excel;
 import com.nihon.dto.excel.ParseResult;
 import com.nihon.dto.excel.RowError;
 import com.nihon.dto.excel.WordRow;
+import com.nihon.validation.KanjiLimits;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
@@ -29,10 +30,11 @@ public class WordSheetParser {
     public static final String HEADER_ROMAJI = "Romaji";
     public static final String HEADER_MEANING = "Nghĩa tiếng Việt";
 
-    public static final int MAX_TOPIC_LENGTH = 255;
-    public static final int MAX_JAPANESE_LENGTH = 255;
-    public static final int MAX_ROMAJI_LENGTH = 255;
-    public static final int MAX_MEANING_LENGTH = 500;
+    public static final int MAX_TOPIC_LENGTH = KanjiLimits.MAX_TOPIC_LENGTH;
+    public static final int MAX_JAPANESE_LENGTH = KanjiLimits.MAX_JAPANESE_LENGTH;
+    public static final int MAX_READING_LENGTH = KanjiLimits.MAX_READING_LENGTH;
+    public static final int MAX_ROMAJI_LENGTH = KanjiLimits.MAX_ROMAJI_LENGTH;
+    public static final int MAX_MEANING_LENGTH = KanjiLimits.MAX_VOCAB_MEANING_LENGTH;
 
     private final DataFormatter dataFormatter = new DataFormatter();
 

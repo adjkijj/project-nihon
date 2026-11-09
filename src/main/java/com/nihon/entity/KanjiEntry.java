@@ -1,5 +1,6 @@
 package com.nihon.entity;
 
+import com.nihon.validation.KanjiLimits;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -26,7 +27,10 @@ import lombok.Setter;
                 @UniqueConstraint(name = "uk_kanji_character", columnNames = "kanji_character"),
                 @UniqueConstraint(name = "uk_kanji_source_line", columnNames = "source_line")
         },
-        indexes = @Index(name = "idx_kanji_topic", columnList = "topic_id"))
+        indexes = {
+                @Index(name = "idx_kanji_topic", columnList = "topic_id"),
+                @Index(name = "idx_kanji_import_batch", columnList = "import_batch_id")
+        })
 @Getter
 @Setter
 @NoArgsConstructor
@@ -40,23 +44,27 @@ public class KanjiEntry {
     @JoinColumn(name = "topic_id", nullable = false, foreignKey = @ForeignKey(name = "fk_kanji_topic"))
     private Topic topic;
 
-    @Column(name = "kanji_character", nullable = false, length = 8)
+    @Column(name = "kanji_character", nullable = false, length = KanjiLimits.MAX_KANJI_CHAR_LENGTH)
     private String character;
 
-    @Column(name = "han_viet", length = 100)
+    @Column(name = "han_viet", length = KanjiLimits.MAX_HAN_VIET_LENGTH)
     private String hanViet;
 
-    @Column(name = "meaning_vi", length = 255)
+    @Column(name = "meaning_vi", length = KanjiLimits.MAX_KANJI_MEANING_LENGTH)
     private String meaningVi;
 
-    @Column(name = "onyomi", length = 100)
+    @Column(name = "onyomi", length = KanjiLimits.MAX_ONYOMI_LENGTH)
     private String onyomi;
 
-    @Column(name = "kunyomi", length = 100)
+    @Column(name = "kunyomi", length = KanjiLimits.MAX_KUNYOMI_LENGTH)
     private String kunyomi;
 
     @Column(name = "source_line", nullable = false)
     private Integer sourceLine;
+
+    /** Mã lô import (tham chiếu ImportAuditLog.id) nếu Kanji được thêm mới từ chức năng import Excel. */
+    @Column(name = "import_batch_id")
+    private Long importBatchId;
 
     @Column(name = "created_at", updatable = false)
     private java.time.LocalDateTime createdAt;
@@ -76,6 +84,11 @@ public class KanjiEntry {
 
     @jakarta.persistence.PreUpdate
     protected void onUpdate() {
-        updatedAt = java.time.LocalDateTime.now();
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        if (updatedAt != null && !now.isAfter(updatedAt)) {
+            updatedAt = updatedAt.plusNanos(1000);
+        } else {
+            updatedAt = now;
+        }
     }
 }

@@ -5,12 +5,10 @@ import com.nihon.dto.excel.ImportMode;
 import com.nihon.dto.excel.ImportPreviewReport;
 import com.nihon.entity.ImportAuditLog;
 import com.nihon.entity.KanjiEntry;
-import com.nihon.entity.KanjiWord;
 import com.nihon.entity.Topic;
 import com.nihon.entity.Vocabulary;
 import com.nihon.repository.ImportAuditLogRepository;
 import com.nihon.repository.KanjiEntryRepository;
-import com.nihon.repository.KanjiWordRepository;
 import com.nihon.repository.TopicRepository;
 import com.nihon.repository.VocabularyRepository;
 import org.apache.poi.ss.usermodel.Cell;
@@ -54,9 +52,6 @@ class ImportServiceIntegrationTest {
 
     @Autowired
     private KanjiEntryRepository kanjiEntryRepository;
-
-    @Autowired
-    private KanjiWordRepository kanjiWordRepository;
 
     @Autowired
     private ImportAuditLogRepository auditLogRepository;
@@ -498,5 +493,85 @@ class ImportServiceIntegrationTest {
         assertThat(lastLog.getFileName()).isEqualTo("corrupt.xlsx");
         assertThat(lastLog.getUserId()).isEqualTo("user_tester_rejected");
         assertThat(lastLog.getErrorMessage()).contains("Tệp tin không đúng định dạng bảng tính Excel");
+    }
+
+    @Test
+    @DisplayName("7. File Excel có Hán Việt 200 ký tự: preview và commit import thành công vào database")
+    void testExcelWithHanViet200Chars_ImportsSuccessfully() throws IOException {
+        String hanViet200 = "H".repeat(200);
+        String onyomi200 = "お".repeat(200);
+        String kunyomi200 = "く".repeat(200);
+        String meaning255 = "M".repeat(255);
+        String wordMeaning500 = "V".repeat(500);
+
+        byte[] xlsxBytes = createStandardImportWorkbook(
+                null, null,
+                "Bài Kanji Hán Việt 200",
+                "曜", hanViet200, meaning255, onyomi200, kunyomi200,
+                java.util.Collections.singletonList(new String[]{"日曜日（にちようび）", "nichiyoubi", wordMeaning500})
+        );
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "hanviet_200.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                xlsxBytes
+        );
+
+        ImportPreviewReport preview = importService.preview(file);
+        assertThat(preview.hasErrors()).isFalse();
+        assertThat(preview.newKanjiCount()).isEqualTo(1);
+
+        ImportCommitResult result = importService.commit(file, ImportMode.SKIP_DUPLICATES, "user_hanviet_200");
+        assertThat(result.success()).isTrue();
+        assertThat(result.kanjiAdded()).isEqualTo(1);
+
+        KanjiEntry saved = kanjiEntryRepository.findByCharacter("曜").orElseThrow();
+        assertThat(saved.getHanViet()).hasSize(200).isEqualTo(hanViet200);
+        assertThat(saved.getMeaningVi()).hasSize(255).isEqualTo(meaning255);
+        assertThat(saved.getOnyomi()).hasSize(200).isEqualTo(onyomi200);
+        assertThat(saved.getKunyomi()).hasSize(200).isEqualTo(kunyomi200);
+    }
+
+    @Test
+    @DisplayName("8. File Excel có Hán Việt 256 ký tự: parser báo lỗi đúng hàng và cột, không ghi database")
+    void testExcelWithHanViet256Chars_ReportsRowAndColumnErrorAndDoesNotWriteDatabase() throws IOException {
+        String hanViet256 = "H".repeat(256);
+        long kanjiCountBefore = kanjiEntryRepository.count();
+        long topicCountBefore = topicRepository.count();
+
+        byte[] xlsxBytes = createStandardImportWorkbook(
+                null, null,
+                "Bài Kanji Hán Việt 256",
+                "鏡", hanViet256, "Cái gương", "キョウ", "かがみ",
+                null
+        );
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "hanviet_256.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                xlsxBytes
+        );
+
+        // 1. Preview báo lỗi đúng hàng 3, cột "Hán Việt"
+        ImportPreviewReport preview = importService.preview(file);
+        assertThat(preview.hasErrors()).isTrue();
+        assertThat(preview.errors()).hasSize(1);
+        assertThat(preview.errors().get(0).rowNumber()).isEqualTo(3);
+        assertThat(preview.errors().get(0).column()).isEqualTo("Hán Việt");
+        assertThat(preview.errors().get(0).message()).contains("255");
+
+        // 2. Commit ném ImportRollbackException kèm lỗi hàng/cột và không ghi gì vào database
+        assertThatThrownBy(() -> importService.commit(file, ImportMode.SKIP_DUPLICATES, "user_hanviet_256"))
+                .isInstanceOf(ImportRollbackException.class)
+                .satisfies(ex -> {
+                    ImportRollbackException rollbackEx = (ImportRollbackException) ex;
+                    assertThat(rollbackEx.getErrors()).hasSize(1);
+                    assertThat(rollbackEx.getErrors().get(0).rowNumber()).isEqualTo(3);
+                    assertThat(rollbackEx.getErrors().get(0).column()).isEqualTo("Hán Việt");
+                });
+
+        assertThat(kanjiEntryRepository.count()).isEqualTo(kanjiCountBefore);
+        assertThat(topicRepository.count()).isEqualTo(topicCountBefore);
+        assertThat(kanjiEntryRepository.findByCharacter("鏡")).isEmpty();
     }
 }

@@ -28,6 +28,7 @@ import java.util.UUID;
 public class StudyProgressService {
 
     public static final String SESSION_STUDY_RECORDS = "STUDY_PROGRESS_RECORDS";
+    public static final int MAX_SESSION_RECORDS = 500;
 
     /**
      * Lấy toàn bộ danh sách lịch sử làm bài từ session hiện tại.
@@ -113,7 +114,12 @@ public class StudyProgressService {
 
     private void addRecordToSession(HttpSession session, PracticeRecordDto record) {
         List<PracticeRecordDto> list = getOrCreateHistoryList(session);
-        list.add(0, record); // Mới nhất hiển thị đầu tiên
+        synchronized (list) {
+            list.add(0, record); // Mới nhất hiển thị đầu tiên
+            while (list.size() > MAX_SESSION_RECORDS) {
+                list.remove(list.size() - 1);
+            }
+        }
         session.setAttribute(SESSION_STUDY_RECORDS, list);
     }
 
@@ -129,15 +135,28 @@ public class StudyProgressService {
     }
 
     /**
+     * Chuẩn hóa tham số chế độ kiểm tra: chỉ nhận ALL, JA_VI, VI_JA (không phân biệt hoa thường).
+     * Mọi giá trị khác coi như ALL.
+     */
+    public String normalizeMode(String modeFilter) {
+        if (modeFilter == null || modeFilter.isBlank()) {
+            return "ALL";
+        }
+        String trimmedUpper = modeFilter.strip().toUpperCase(java.util.Locale.ROOT);
+        if ("JA_VI".equals(trimmedUpper) || "VI_JA".equals(trimmedUpper) || "ALL".equals(trimmedUpper)) {
+            return trimmedUpper;
+        }
+        return "ALL";
+    }
+
+    /**
      * Tổng hợp thống kê tiến độ học tập kèm bộ lọc theo chế độ kiểm tra và chủ đề.
      * Tính toán 100% tại máy chủ. Nếu lịch sử rỗng, trả về các giá trị 0 và danh sách rỗng.
      */
     public StudyProgressSummaryDto getSummary(HttpSession session, String modeFilter, Long topicIdFilter) {
         List<PracticeRecordDto> all = getHistory(session);
 
-        String normalizedMode = (modeFilter == null || modeFilter.isBlank() || "ALL".equalsIgnoreCase(modeFilter))
-                ? "ALL"
-                : modeFilter.toUpperCase();
+        String normalizedMode = normalizeMode(modeFilter);
 
         List<PracticeRecordDto> filtered = all.stream()
                 .filter(r -> {

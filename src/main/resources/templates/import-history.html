@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch Sử Import Excel - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/import.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+</head>
+<body>
+    <header>
+        <a href="/" class="brand">
+            <span class="brand-badge">日</span>
+            <span class="brand-name">Project Nihon</span>
+        </a>
+        <nav>
+            <a href="/">Trang chủ</a>
+            <a href="/vocabulary">Từ vựng</a>
+            <a href="/topics">Chủ đề</a>
+            <a href="/kanji">Kanji</a>
+            <a href="/practice">Luyện tập</a>
+            <a href="/stats">Thống kê</a>
+            <a href="/import" class="active">Nhập Excel</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="page-header">
+            <div class="page-title">
+                <h1>Lịch Sử Import Học Liệu</h1>
+                <p>Nhật ký kiểm toán các lần thực hiện nhập dữ liệu Excel (sắp xếp mới nhất trước).</p>
+            </div>
+            <div class="header-actions">
+                <a th:href="@{/import}" class="btn-template">
+                    <span>← Quay lại trang Import</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="alert alert-success" th:if="${successMessage != null}">
+            <span>✅</span>
+            <span th:text="${successMessage}">Đã hoàn tác thành công!</span>
+        </div>
+
+        <div class="alert alert-error" th:if="${errorMessage != null}">
+            <span>⚠️</span>
+            <span th:text="${errorMessage}">Không thể hoàn tác lần import này.</span>
+        </div>
+
+        <section class="card">
+            <div class="card-title">
+                <span>📋</span>
+                <span>Danh Sách Các Lần Import Đã Thực Hiện</span>
+            </div>
+
+            <div th:if="${historyPage.empty}" class="empty-history">
+                Chưa có lịch sử import nào được ghi nhận.
+            </div>
+
+            <div th:unless="${historyPage.empty}" class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Thời điểm</th>
+                            <th>Tên file</th>
+                            <th>SHA-256 (12 ký tự)</th>
+                            <th>Số thêm</th>
+                            <th>Số cập nhật</th>
+                            <th>Số bỏ qua</th>
+                            <th>Kết quả</th>
+                            <th>IP</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="item : ${historyPage.content}">
+                            <td class="audit-time"
+                                th:text="${item.importedAt != null ? #temporals.format(item.importedAt, 'dd/MM/yyyy HH:mm:ss') : '-'}">
+                                06/11/2026 16:00:00
+                            </td>
+                            <td class="audit-filename" th:text="${item.fileName}">Update.xlsx</td>
+                            <td>
+                                <code class="audit-hash"
+                                      th:text="${item.shortHash}"
+                                      th:title="${item.fileHashSha256}">a1b2c3d4e5f6</code>
+                            </td>
+                            <td th:text="${item.recordsAdded}">0</td>
+                            <td th:text="${item.recordsUpdated}">0</td>
+                            <td th:text="${item.recordsSkipped}">0</td>
+                            <td>
+                                <span th:if="${item.result == 'SUCCESS'}" class="badge-result-success" th:text="${item.result}">SUCCESS</span>
+                                <span th:unless="${item.result == 'SUCCESS'}" class="badge-error" th:text="${item.result}">FAILED</span>
+                                <div th:if="${item.truncatedErrorMessage != null}"
+                                     class="audit-error-msg"
+                                     th:text="${item.truncatedErrorMessage}">
+                                    Chi tiết lỗi
+                                </div>
+                            </td>
+                            <td class="audit-ip" th:text="${item.userId}">127.0.0.1</td>
+                            <td>
+                                <form th:if="${item.canUndo}"
+                                      th:action="@{/import/history/{id}/undo(id=${item.id})}"
+                                      method="post"
+                                      th:attr="data-confirm=${undoPreviews != null && undoPreviews.containsKey(item.id) ? undoPreviews.get(item.id).confirmMessage : 'Bạn có chắc chắn muốn hoàn tác lần import này?'}">
+                                    <input type="hidden" name="_csrf" th:value="${_csrf}" />
+                                    <button type="submit" class="btn-template">↩ Hoàn tác</button>
+                                </form>
+                                <span th:if="${item.undoneAt != null}"
+                                      class="audit-time"
+                                      th:text="${'Đã hoàn tác (' + #temporals.format(item.undoneAt, 'dd/MM/yyyy HH:mm') + ')'}">
+                                    Đã hoàn tác
+                                </span>
+                                <span th:if="${!item.canUndo && item.undoneAt == null}" class="audit-time">-</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="history-pagination" th:if="${!historyPage.empty}">
+                <div>
+                    Hiển thị <strong th:text="${historyPage.numberOfElements}">20</strong> trên tổng số
+                    <strong th:text="${historyPage.totalElements}">100</strong> bản ghi
+                    (Trang <span th:text="${historyPage.number + 1}">1</span> / <span th:text="${historyPage.totalPages}">5</span>)
+                </div>
+                <div class="history-page-links">
+                    <a th:if="${historyPage.hasPrevious()}"
+                       th:href="@{/import/history(page=${historyPage.number - 1})}"
+                       class="btn-template">← Trang trước</a>
+                    <a th:if="${historyPage.hasNext()}"
+                       th:href="@{/import/history(page=${historyPage.number + 1})}"
+                       class="btn-template">Trang sau →</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Hệ thống ghi nhớ từ vựng tiếng Nhật.</p>
+    </footer>
+</body>
+</html>
+

@@ -118,8 +118,14 @@
         <!-- Related Vocabulary Section -->
         <section class="related-section">
             <div class="section-header">
-                <h2><span>📚</span> Từ Vựng Thực Tế Có Chứa Chữ <span class="u-color-var-accent" th:text="${kanji.character}">魚</span></h2>
-                <p>Các từ vựng tiếng Nhật trong hệ thống có chứa ký tự chữ Hán này để người học đối chiếu ngữ cảnh.</p>
+                <div class="section-header-row">
+                    <div>
+                        <h2><span>📚</span> Từ Vựng Thực Tế Có Chứa Chữ <span class="u-color-var-accent" th:text="${kanji.character}">魚</span></h2>
+                        <p>Các từ vựng tiếng Nhật trong hệ thống có chứa ký tự chữ Hán này để người học đối chiếu ngữ cảnh.</p>
+                    </div>
+                    <a th:href="@{/vocabulary/new(topicId=${kanji.topicId}, japaneseText=${kanji.character})}"
+                       class="btn btn-primary">+ Thêm từ cần nhớ</a>
+                </div>
             </div>
 
             <div th:if="${#lists.isEmpty(relatedVocabularies)}" class="missing-notice">
@@ -159,6 +165,12 @@
                th:text="${'Xem các Kanji cùng bài (' + kanji.topicName + ')'}">
                 Xem các Kanji cùng bài
             </a>
+            <a th:href="@{'/kanji/' + ${kanji.id} + '/edit'}" class="btn btn-edit">Sửa</a>
+            <form class="u-margin-0" th:action="@{'/kanji/' + ${kanji.id} + '/delete'}" method="post"
+                  th:attr="data-confirm=${'Xóa Kanji ' + kanji.character + '? (' + (relatedVocabularies != null ? #lists.size(relatedVocabularies) : 0) + ' từ vựng liên quan còn giữ lại)'}">
+                <input type="hidden" name="_csrf" th:value="${_csrf}">
+                <button type="submit" class="btn btn-danger">Xóa</button>
+            </form>
         </div>
     </main>
 

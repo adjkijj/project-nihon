@@ -24,6 +24,11 @@
     </header>
 
     <main>
+        <div th:if="${errorMessage}" class="warning-notice">
+            <span>⚠️</span>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi.</span>
+        </div>
+
         <div class="question-card">
             <div class="topic-indicator">
                 <span class="topic-badge" th:text="${question.topicName}">Chủ đề</span>

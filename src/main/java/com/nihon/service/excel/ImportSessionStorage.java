@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 /**
  * Kho lưu trữ tệp tin tạm thời gắn với mã xem trước (preview token) trong phiên người dùng.
@@ -20,6 +21,19 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ImportSessionStorage {
 
     public static final long TOKEN_VALIDITY_MINUTES = 10L;
+    private static final Pattern UUID_TOKEN_PATTERN = Pattern.compile(
+            "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    );
+
+    /**
+     * Kiểm tra mã previewToken có đúng mẫu UUID do ImportSessionStorage tạo hay không.
+     */
+    public boolean isValidTokenFormat(String token) {
+        if (token == null) {
+            return false;
+        }
+        return UUID_TOKEN_PATTERN.matcher(token.strip()).matches();
+    }
 
     /**
      * Bản ghi lưu trữ tệp tin tải lên trong bộ nhớ tạm thời.

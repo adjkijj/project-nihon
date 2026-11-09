@@ -30,6 +30,17 @@
                 <h1><span>漢</span> Khu Vực Tra Cứu Kanji</h1>
                 <p>Khu vực chuyên biệt quản lý và tra cứu chữ Hán, âm Hán Việt, âm On/Kun và ngữ cảnh sử dụng thực tế.</p>
             </div>
+            <a th:href="@{/kanji/new}" class="btn btn-primary">+ Thêm Kanji</a>
+        </div>
+
+        <div th:if="${successMessage}" class="flash-alert flash-success">
+            <span>✓</span>
+            <span th:text="${successMessage}">Thao tác thành công</span>
+        </div>
+
+        <div th:if="${warningMessage}" class="flash-alert flash-warning">
+            <span>⚠️</span>
+            <span th:text="${warningMessage}">Cảnh báo</span>
         </div>
 
         <div th:if="${errorMessage}" class="flash-alert flash-error">
@@ -89,12 +100,13 @@
 
         <!-- Kanji Grid -->
         <section th:unless="${kanjiPage.empty}" class="kanji-grid">
-            <a th:each="k : ${kanjiPage.content}"
-               th:href="@{/kanji/{id}(id=${k.id})}"
-               class="kanji-card"
-               th:title="${'Xem chi tiết chữ ' + k.character}">
+            <div th:each="k : ${kanjiPage.content}"
+                 class="kanji-card">
                 <div class="kanji-card-top">
-                    <div class="kanji-box" th:text="${k.character}">魚</div>
+                    <a th:href="@{/kanji/{id}(id=${k.id})}"
+                       class="kanji-box"
+                       th:title="${'Xem chi tiết chữ ' + k.character}"
+                       th:text="${k.character}">魚</a>
                     <div class="kanji-main-info">
                         <div class="kanji-hanviet" th:text="${(k.hanViet != null && !k.hanViet.isBlank()) ? k.hanViet : '-'}">NGƯ</div>
                         <div class="kanji-meaning" th:text="${(k.meaningVi != null && !k.meaningVi.isBlank()) ? k.meaningVi : '-'}">Cá</div>
@@ -144,9 +156,17 @@
                 </div>
 
                 <div class="kanji-card-footer">
-                    <span>Xem chi tiết →</span>
+                    <a th:href="@{/kanji/{id}(id=${k.id})}" class="kanji-detail-link">Xem chi tiết →</a>
+                    <div class="kanji-card-actions">
+                        <a th:href="@{'/kanji/' + ${k.id} + '/edit'}" class="btn btn-edit">Sửa</a>
+                        <form class="u-margin-0" th:action="@{'/kanji/' + ${k.id} + '/delete'}" method="post"
+                              th:attr="data-confirm=${'Xóa Kanji ' + k.character + '? (' + (k.words != null ? #lists.size(k.words) : 0) + ' từ vựng liên quan còn giữ lại)'}">
+                            <input type="hidden" name="_csrf" th:value="${_csrf}">
+                            <button type="submit" class="btn btn-danger">Xóa</button>
+                        </form>
+                    </div>
                 </div>
-            </a>
+            </div>
         </section>
 
         <!-- Pagination -->

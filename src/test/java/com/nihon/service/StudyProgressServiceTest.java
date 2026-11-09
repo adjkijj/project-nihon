@@ -249,4 +249,54 @@ class StudyProgressServiceTest {
         assertThat(summary.getTotalAnswered()).isEqualTo(0);
         assertThat(summary.getRecords()).isEmpty();
     }
+
+    @Test
+    @DisplayName("Tham số mode không hợp lệ trong getSummary được coi như ALL")
+    void testInvalidModeTreatedAsAll() {
+        PracticeResultDto javi = PracticeResultDto.builder()
+                .vocabId(1L)
+                .japaneseText("山（やま）")
+                .overallCorrect(true)
+                .userMeaning("Núi")
+                .expectedMeaning("Núi")
+                .build();
+        studyProgressService.recordJaViAttempt(session, javi, 1L);
+
+        PracticeViJaResultDto vija = PracticeViJaResultDto.builder()
+                .vocabId(2L)
+                .meaningVi("Biển")
+                .correct(false)
+                .userJapanese("やま")
+                .expectedJapanese("海")
+                .build();
+        studyProgressService.recordViJaAttempt(session, vija, 2L);
+
+        StudyProgressSummaryDto summaryAbc = studyProgressService.getSummary(session, "abc", null);
+        StudyProgressSummaryDto summaryAll = studyProgressService.getSummary(session, "ALL", null);
+
+        assertThat(summaryAbc.getCurrentModeFilter()).isEqualTo("ALL");
+        assertThat(summaryAbc.getTotalAnswered()).isEqualTo(summaryAll.getTotalAnswered());
+        assertThat(summaryAbc.getCorrectCount()).isEqualTo(summaryAll.getCorrectCount());
+        assertThat(summaryAbc.getIncorrectCount()).isEqualTo(summaryAll.getIncorrectCount());
+    }
+
+    @Test
+    @DisplayName("Giới hạn lịch sử session tối đa MAX_SESSION_RECORDS (500 bản ghi mới nhất)")
+    void testSessionHistoryCapAtMaxRecords() {
+        for (int i = 1; i <= StudyProgressService.MAX_SESSION_RECORDS + 25; i++) {
+            PracticeResultDto res = PracticeResultDto.builder()
+                    .vocabId((long) i)
+                    .japaneseText("Từ #" + i)
+                    .overallCorrect(true)
+                    .userMeaning("Nghĩa #" + i)
+                    .expectedMeaning("Nghĩa #" + i)
+                    .build();
+            studyProgressService.recordJaViAttempt(session, res, 1L);
+        }
+
+        List<PracticeRecordDto> history = studyProgressService.getHistory(session);
+        assertThat(history).hasSize(StudyProgressService.MAX_SESSION_RECORDS);
+        assertThat(history.get(0).getQuestionPrompt()).isEqualTo("Từ #" + (StudyProgressService.MAX_SESSION_RECORDS + 25));
+        assertThat(history.get(history.size() - 1).getQuestionPrompt()).isEqualTo("Từ #26");
+    }
 }
