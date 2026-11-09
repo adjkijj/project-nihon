@@ -8,6 +8,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.ByteArrayInputStream;
@@ -15,12 +16,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
@@ -74,18 +77,17 @@ class ExcelUploadValidatorTest {
     }
 
     @Test
-    @DisplayName("2. Ca hợp lệ: File Update.xlsx thực tế pass kiểm tra nếu tồn tại")
+    @DisplayName("2. Ca hợp lệ: File Update.xlsx từ static/template pass kiểm tra")
     void testActualUpdateXlsx_PassesValidation() throws IOException {
-        File file = new File("Update.xlsx");
-        if (file.exists()) {
-            try (FileInputStream fis = new FileInputStream(file)) {
-                MockMultipartFile multipartFile = new MockMultipartFile(
-                        "file", "Update.xlsx",
-                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        fis.readAllBytes()
-                );
-                validator.validate(multipartFile);
-            }
+        ClassPathResource resource = new ClassPathResource("static/template/Update.xlsx");
+        assertThat(resource.exists()).isTrue();
+        try (InputStream in = resource.getInputStream()) {
+            MockMultipartFile multipartFile = new MockMultipartFile(
+                    "file", "Update.xlsx",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    in.readAllBytes()
+            );
+            assertThatCode(() -> validator.validate(multipartFile)).doesNotThrowAnyException();
         }
     }
 

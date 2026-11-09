@@ -16,7 +16,6 @@ import com.nihon.service.excel.UploadRejectedException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.domain.Page;
@@ -143,13 +142,6 @@ public class ImportController {
     @GetMapping("/template")
     public ResponseEntity<Resource> downloadTemplate() {
         Resource resource = resourceLoader.getResource("classpath:static/template/Update.xlsx");
-        if (!resource.exists()) {
-            File rootFile = new File("Update.xlsx");
-            if (rootFile.exists()) {
-                resource = new FileSystemResource(rootFile);
-            }
-        }
-
         if (!resource.exists()) {
             log.error("Không tìm thấy tệp tin mẫu Update.xlsx trên hệ thống");
             return ResponseEntity.notFound().build();

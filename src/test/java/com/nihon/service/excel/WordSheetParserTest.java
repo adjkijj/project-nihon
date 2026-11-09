@@ -10,6 +10,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -347,17 +348,16 @@ class WordSheetParserTest {
     }
 
     @Test
-    @DisplayName("Kiểm tra với file Update.xlsx có sẵn trong repo")
+    @DisplayName("Kiểm tra với file Update.xlsx có sẵn trong static/template")
     void testWithActualUpdateXlsxFile() throws IOException {
-        Path path = Path.of("Update.xlsx");
-        if (Files.exists(path)) {
-            try (InputStream in = new FileInputStream(path.toFile())) {
-                ParseResult<WordRow> result = parser.parse(in);
-                // Sheet "New Word" trong Update.xlsx thực tế chỉ chứa dòng tiêu đề (0 dòng dữ liệu)
-                assertThat(result.isSuccess()).isTrue();
-                assertThat(result.errors()).isEmpty();
-                assertThat(result.rows()).isEmpty();
-            }
+        ClassPathResource resource = new ClassPathResource("static/template/Update.xlsx");
+        assertThat(resource.exists()).isTrue();
+        try (InputStream in = resource.getInputStream()) {
+            ParseResult<WordRow> result = parser.parse(in);
+            // Sheet "New Word" trong Update.xlsx thực tế chỉ chứa dòng tiêu đề (0 dòng dữ liệu)
+            assertThat(result.isSuccess()).isTrue();
+            assertThat(result.errors()).isEmpty();
+            assertThat(result.rows()).isEmpty();
         }
     }
 

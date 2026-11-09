@@ -11,6 +11,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ClassPathResource;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -141,17 +142,17 @@ class KanjiSheetParserTest {
     }
 
     @Test
-    @DisplayName("Kiểm tra trực tiếp với file Update.xlsx thực tế trong repo")
+    @DisplayName("Kiểm tra trực tiếp với file Update.xlsx thực tế trong static/template")
     void testWithActualUpdateXlsxFile() throws IOException {
-        Path path = Path.of("Update.xlsx");
-        if (Files.exists(path)) {
-            try (InputStream in = new FileInputStream(path.toFile())) {
-                ParseResult<KanjiRow> result = parser.parse(in);
+        ClassPathResource resource = new ClassPathResource("static/template/Update.xlsx");
+        assertThat(resource.exists()).isTrue();
+        try (InputStream in = resource.getInputStream()) {
+            ParseResult<KanjiRow> result = parser.parse(in);
 
-                assertThat(result.isSuccess()).isTrue();
-                assertThat(result.errors()).isEmpty();
-                List<KanjiRow> list = result.rows();
-                assertThat(list).hasSize(14);
+            assertThat(result.isSuccess()).isTrue();
+            assertThat(result.errors()).isEmpty();
+            List<KanjiRow> list = result.rows();
+            assertThat(list).hasSize(14);
                 // Kiểm tra 14 Kanji
                 assertThat(list.get(0).kanji()).isEqualTo("酒");
                 assertThat(list.get(1).kanji()).isEqualTo("作");
@@ -189,7 +190,6 @@ class KanjiSheetParserTest {
                 int totalWords = list.stream().mapToInt(k -> k.words().size()).sum();
                 assertThat(totalWords).isEqualTo(34);
             }
-        }
     }
 
     @Test

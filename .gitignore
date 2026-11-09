@@ -52,4 +52,16 @@ secrets/
 application-secret*.properties
 application-secret*.yml
 
+### Logs, Database Dumps & Temporary Files ###
+*.log
+*.bak
+*.tmp
+*.swp
+*.dump
+~$*.xlsx
+.DS_Store
+Thumbs.db
+.idea/
+
+
 

@@ -18,6 +18,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.ByteArrayInputStream;
@@ -25,6 +26,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
@@ -71,15 +73,12 @@ class EndToEndImportFlowTest {
     @Test
     @DisplayName("E2E-1: Luồng hoàn chỉnh với Update.xlsx (Preview -> Commit -> DB Check -> Re-import No Duplicates)")
     void testEndToEndImportWithUpdateExcel() throws IOException {
-        File templateFile = new File("src/main/resources/static/template/Update.xlsx");
-        if (!templateFile.exists()) {
-            templateFile = new File("Update.xlsx");
-        }
-        assertThat(templateFile).exists();
+        ClassPathResource resource = new ClassPathResource("static/template/Update.xlsx");
+        assertThat(resource.exists()).isTrue();
 
         byte[] fileBytes;
-        try (FileInputStream fis = new FileInputStream(templateFile)) {
-            fileBytes = fis.readAllBytes();
+        try (InputStream in = resource.getInputStream()) {
+            fileBytes = in.readAllBytes();
         }
 
         MockMultipartFile multipartFile = new MockMultipartFile(
