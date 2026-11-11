@@ -245,5 +245,61 @@ class PracticeChoiceControllerTest {
                 .andExpect(redirectedUrl("/practice/choice?topicId=1&direction=JA_VI"))
                 .andExpect(flash().attribute("errorMessage", containsString("Câu hỏi đã hết hạn")));
     }
+
+    @Test
+    @DisplayName("Chuỗi 10 câu trắc nghiệm liên tiếp: hoàn thành câu hỏi và ghi nhận tiến độ đầy đủ")
+    void testTenQuestionsStreakFlow() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute(CsrfInterceptor.CSRF_SESSION_ATTR, CSRF_TOKEN);
+
+        for (int i = 1; i <= 10; i++) {
+            Long vocabId = (long) i;
+            PracticeChoiceOptionDto opt1 = PracticeChoiceOptionDto.builder().vocabId(vocabId).displayText("Nghĩa " + i).build();
+            PracticeChoiceOptionDto opt2 = PracticeChoiceOptionDto.builder().vocabId(vocabId + 100).displayText("Nhiễu 1").build();
+            PracticeChoiceOptionDto opt3 = PracticeChoiceOptionDto.builder().vocabId(vocabId + 200).displayText("Nhiễu 2").build();
+            PracticeChoiceOptionDto opt4 = PracticeChoiceOptionDto.builder().vocabId(vocabId + 300).displayText("Nhiễu 3").build();
+
+            PracticeChoiceQuestionDto q = PracticeChoiceQuestionDto.builder()
+                    .vocabId(vocabId)
+                    .questionPrompt("Từ " + i)
+                    .direction("JA_VI")
+                    .options(List.of(opt1, opt2, opt3, opt4))
+                    .build();
+
+            when(practiceService.getChoiceQuestion(isNull(), eq("JA_VI"), any())).thenReturn(Optional.of(q));
+
+            // 1. Nhận câu hỏi
+            mockMvc.perform(get("/practice/choice/question")
+                            .param("direction", "JA_VI")
+                            .session(session))
+                    .andExpect(status().isOk());
+
+            // 2. Nộp câu trả lời (luân phiên 7 câu đúng, 3 câu sai)
+            boolean isCorrect = (i <= 7);
+            Long choiceId = isCorrect ? vocabId : (vocabId + 100);
+
+            PracticeChoiceResultDto res = PracticeChoiceResultDto.builder()
+                    .vocabId(vocabId)
+                    .selectedVocabId(choiceId)
+                    .correct(isCorrect)
+                    .direction("JA_VI")
+                    .correctJapaneseText("Từ " + i)
+                    .correctMeaningVi("Nghĩa " + i)
+                    .feedbackMessage(isCorrect ? "Chính xác!" : "Chưa chính xác!")
+                    .build();
+
+            when(practiceService.checkChoiceAnswer(any(), any())).thenReturn(res);
+
+            mockMvc.perform(post("/practice/choice/check")
+                            .param("_csrf", CSRF_TOKEN)
+                            .param("vocabId", vocabId.toString())
+                            .param("choiceVocabId", choiceId.toString())
+                            .param("direction", "JA_VI")
+                            .session(session))
+                    .andExpect(status().isOk())
+                    .andExpect(view().name("practice/choice-result"))
+                    .andExpect(model().attributeExists("result"));
+        }
+    }
 }
 
