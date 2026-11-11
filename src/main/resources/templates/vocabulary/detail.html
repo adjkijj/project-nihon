@@ -7,6 +7,7 @@
     <link rel="stylesheet" th:href="@{/css/vocabulary-list.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
     <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
 </head>
 <body>
@@ -29,7 +30,10 @@
     <main>
         <div class="page-header">
             <div class="page-title">
-                <h1 th:title="${vocab.japaneseText}"><th:block th:replace="~{fragments/furigana :: rubyWord(${vocab.japaneseText}, ${vocab.reading})}"></th:block></h1>
+                <h1 th:title="${vocab.japaneseText}">
+                    <th:block th:replace="~{fragments/furigana :: rubyWord(${vocab.japaneseText}, ${vocab.reading})}"></th:block>
+                    <th:block th:replace="~{fragments/speech :: speakerBtn(${vocab.speechText})}"></th:block>
+                </h1>
                 <p>Thông tin chi tiết từ vựng, các chủ đề chứa từ và chữ Kanji thành phần</p>
             </div>
             <div class="actions-cell">
@@ -49,7 +53,10 @@
             <div class="vocab-detail-grid">
                 <div class="vocab-detail-item">
                     <span class="vocab-detail-label">Tiếng Nhật</span>
-                    <strong class="vocab-detail-jp" th:title="${vocab.japaneseText}"><th:block th:replace="~{fragments/furigana :: rubyWord(${vocab.japaneseText}, ${vocab.reading})}"></th:block></strong>
+                    <strong class="vocab-detail-jp" th:title="${vocab.japaneseText}">
+                        <th:block th:replace="~{fragments/furigana :: rubyWord(${vocab.japaneseText}, ${vocab.reading})}"></th:block>
+                        <th:block th:replace="~{fragments/speech :: speakerBtn(${vocab.speechText})}"></th:block>
+                    </strong>
                 </div>
                 <div class="vocab-detail-item">
                     <span class="vocab-detail-label">Cách đọc (Hiragana/Katakana)</span>
@@ -125,6 +132,7 @@
         </section>
     </main>
     <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+    <th:block th:replace="~{fragments/speech :: scripts}"></th:block>
 </body>
 </html>
 

@@ -42,6 +42,13 @@ public class VocabularyDetailDto {
     private List<KanjiInWordDto> kanjis = Collections.emptyList();
 
     /**
+     * Chuỗi văn bản phục vụ phát âm tiếng Nhật qua Web Speech API.
+     */
+    public String getSpeechText() {
+        return com.nihon.service.SpeechHelper.resolveSpeechText(this.japaneseText, this.reading);
+    }
+
+    /**
      * Thông tin một chữ Kanji trích xuất từ japaneseText của từ vựng.
      */
     @Getter

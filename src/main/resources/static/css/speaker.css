@@ -1,0 +1,60 @@
+/* ==========================================================================
+   CSS CHO NÚT LOA PHÁT ÂM TIẾNG NHẬT (WEB SPEECH API)
+   ========================================================================== */
+
+.btn-speaker {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--border-color, #334155);
+    border-radius: var(--radius-sm, 6px);
+    color: var(--text-secondary, #94a3b8);
+    padding: 0.25rem 0.45rem;
+    font-size: 0.9rem;
+    line-height: 1;
+    cursor: pointer;
+    vertical-align: middle;
+    margin-left: 0.4rem;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.btn-speaker:hover {
+    background-color: var(--bg-card, #1e293b);
+    border-color: var(--accent, #38bdf8);
+    color: var(--accent, #38bdf8);
+    transform: translateY(-1px);
+}
+
+.btn-speaker:focus-visible {
+    outline: 2px solid var(--accent, #38bdf8);
+    outline-offset: 2px;
+}
+
+/* Trạng thái đang phát âm: đổi màu viền và sáng nhẹ, không nhấp nháy mạnh */
+.btn-speaker.is-speaking {
+    background-color: rgba(56, 189, 248, 0.15);
+    border-color: var(--accent, #38bdf8);
+    color: var(--accent, #38bdf8);
+    box-shadow: 0 0 6px rgba(56, 189, 248, 0.4);
+}
+
+.speaker-icon {
+    display: inline-block;
+    font-size: 0.95rem;
+    pointer-events: none;
+}
+
+/* Thông báo nhỏ một lần khi thiết bị chưa có giọng đọc tiếng Nhật */
+.speech-device-notice {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.2rem 0.5rem;
+    background-color: rgba(234, 179, 8, 0.12);
+    border: 1px solid rgba(234, 179, 8, 0.3);
+    border-radius: var(--radius-sm, 6px);
+    color: #eab308;
+    font-size: 0.75rem;
+}
+

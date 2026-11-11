@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <!-- Fragment khai báo CSS cho nút phát âm tiếng Nhật -->
+    <th:block th:fragment="headAssets">
+        <link rel="stylesheet" th:href="@{/css/speaker.css}">
+    </th:block>
+</head>
+<body>
+    <!-- Fragment nút loa phát âm tự động nhận speechText đã tính toán -->
+    <th:block th:fragment="speakerBtn(speechText)">
+        <button type="button"
+                class="btn-speaker"
+                aria-label="Nghe phát âm"
+                th:title="'Nghe phát âm tiếng Nhật'"
+                th:data-speech-text="${speechText}">
+            <span class="speaker-icon" aria-hidden="true">🔊</span>
+        </button>
+    </th:block>
+
+    <!-- Bí danh hỗ trợ truyền trực tiếp speechText -->
+    <th:block th:fragment="speakerBtnDirect(speechText)">
+        <button type="button"
+                class="btn-speaker"
+                aria-label="Nghe phát âm"
+                th:title="'Nghe phát âm tiếng Nhật'"
+                th:data-speech-text="${speechText}">
+            <span class="speaker-icon" aria-hidden="true">🔊</span>
+        </button>
+    </th:block>
+
+    <!-- Fragment nút loa với speechText trực tiếp -->
+    <th:block th:fragment="speakerBtnDirect(speechText)">
+        <button type="button"
+                class="btn-speaker"
+                aria-label="Nghe phát âm"
+                th:title="'Nghe phát âm tiếng Nhật'"
+                th:data-speech-text="${speechText}">
+            <span class="speaker-icon" aria-hidden="true">🔊</span>
+        </button>
+    </th:block>
+
+    <!-- Fragment nạp script nihon-speech.js ở cuối body -->
+    <th:block th:fragment="scripts">
+        <script th:src="@{/js/nihon-speech.js}" defer></script>
+    </th:block>
+</body>
+</html>
+

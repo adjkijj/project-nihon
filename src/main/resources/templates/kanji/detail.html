@@ -7,6 +7,7 @@
     <link rel="stylesheet" th:href="@{/css/kanji-detail.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
     <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
 </head>
 <body>
@@ -149,6 +150,7 @@
                         <tr th:each="v : ${relatedVocabularies}">
                             <td class="vocab-jp" th:title="${v.japaneseText}">
                                 <th:block th:replace="~{fragments/furigana :: rubyWord(${v.japaneseText}, ${v.reading})}"></th:block>
+                                <th:block th:replace="~{fragments/speech :: speakerBtn(${v.speechText})}"></th:block>
                             </td>
                             <td th:text="${(v.reading != null && !v.reading.isBlank()) ? v.reading : '-'}">さかな</td>
                             <td class="vocab-romaji" th:text="${(v.romaji != null && !v.romaji.isBlank()) ? v.romaji : '-'}">sakana</td>
@@ -182,5 +184,6 @@
         <p>&copy; 2026 Project Nihon. Khu vực Kanji chuyên biệt.</p>
     </footer>
     <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+    <th:block th:replace="~{fragments/speech :: scripts}"></th:block>
 </body>
 </html>

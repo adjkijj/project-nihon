@@ -8,6 +8,7 @@
     <link rel="stylesheet" th:href="@{/css/vocabulary-list.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
     <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
 </head>
 
@@ -149,6 +150,7 @@
                                th:title="${v.japaneseText}">
                                 <th:block th:replace="~{fragments/furigana :: rubyWord(${v.japaneseText}, ${v.reading})}"></th:block>
                             </a>
+                            <th:block th:replace="~{fragments/speech :: speakerBtn(${v.speechText})}"></th:block>
                         </td>
                         <td>
                             <span th:if="${v.reading != null}" class="reading-badge" th:text="${v.reading}">わたし</span>
@@ -205,6 +207,7 @@
         </section>
     </main>
     <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+    <th:block th:replace="~{fragments/speech :: scripts}"></th:block>
 </body>
 
 </html>
