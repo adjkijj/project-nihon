@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+
+    <!-- Fragment: headAssets (CSS cho navbar & UI enhancements) -->
+    <th:block th:fragment="headAssets">
+        <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    </th:block>
+
+    <!-- Fragment: scripts (JS cho navbar & UI enhancements) -->
+    <th:block th:fragment="scripts">
+        <script th:src="@{/js/ui-enhance.js}" defer></script>
+    </th:block>
+
+    <!-- Fragment: headerNav(navItem) - Thanh điều hướng dùng chung toàn hệ thống -->
+    <header th:fragment="headerNav(navItem)" 
+            th:with="currentNav=${navItem != null and !navItem.isEmpty() ? navItem : (activeNav != null ? activeNav : '')}"
+            class="app-header">
+        <a href="/" class="brand">
+            <span class="brand-badge">日</span>
+            <span class="brand-title">Project Nihon</span>
+        </a>
+
+        <!-- Hamburger button cho màn hình di động (< 768px) -->
+        <button type="button" 
+                class="nav-toggle" 
+                id="navToggle" 
+                aria-label="Mở menu điều hướng" 
+                aria-controls="navDrawer" 
+                aria-expanded="false">
+            <span class="hamburger-bar"></span>
+            <span class="hamburger-bar"></span>
+            <span class="hamburger-bar"></span>
+        </button>
+
+        <!-- Lớp phủ mờ nền khi mở ngăn kéo di động -->
+        <div class="nav-backdrop" id="navBackdrop" aria-hidden="true"></div>
+
+        <!-- Ngăn kéo điều hướng (Desktop là thanh ngang, Mobile là drawer trượt vào) -->
+        <nav class="main-nav" id="navDrawer" aria-label="Điều hướng chính" aria-hidden="false">
+            <div class="nav-drawer-header">
+                <span class="drawer-title">Menu</span>
+                <button type="button" class="nav-drawer-close" id="navDrawerClose" aria-label="Đóng menu điều hướng">&times;</button>
+            </div>
+
+            <div class="nav-links">
+                <a href="/" th:classappend="${currentNav == 'home' or currentNav == '/' ? 'active' : ''}">Trang chủ</a>
+                <a href="/vocabulary" th:classappend="${currentNav == 'vocabulary' ? 'active' : ''}">Từ vựng</a>
+                <a href="/topics" th:classappend="${currentNav == 'topics' ? 'active' : ''}">Chủ đề</a>
+                <a href="/kanji" th:classappend="${currentNav == 'kanji' ? 'active' : ''}">Kanji</a>
+                <a href="/flashcards" th:classappend="${currentNav == 'flashcards' ? 'active' : ''}">Thẻ học</a>
+
+                <!-- Nhóm menu thả xuống "Luyện tập" -->
+                <div class="nav-dropdown" id="practiceDropdown">
+                    <button type="button" 
+                            class="nav-dropdown-toggle" 
+                            id="practiceDropdownToggle" 
+                            aria-haspopup="true" 
+                            aria-expanded="false" 
+                            th:classappend="${currentNav == 'practice' ? 'active' : ''}">
+                        <span>Luyện tập</span>
+                        <span class="dropdown-caret" aria-hidden="true">▾</span>
+                    </button>
+                    <div class="nav-dropdown-menu" id="practiceDropdownMenu" role="menu" aria-labelledby="practiceDropdownToggle">
+                        <a href="/practice" role="menuitem">🇯🇵 → 🇻🇳 Nhật → Việt</a>
+                        <a href="/practice/vi-ja" role="menuitem">🇻🇳 → 🇯🇵 Việt → Nhật</a>
+                        <a href="/practice/choice" role="menuitem">🎯 Trắc nghiệm 4 lựa chọn</a>
+                    </div>
+                </div>
+
+                <a href="/stats" th:classappend="${currentNav == 'stats' ? 'active' : ''}">Thống kê</a>
+                <a href="/import" th:classappend="${currentNav == 'import' ? 'active' : ''}">Nhập Excel</a>
+            </div>
+
+            <!-- Nút bật/tắt phiên âm Furigana -->
+            <div class="nav-extra">
+                <th:block th:replace="~{fragments/furigana :: toggleBtn}"></th:block>
+            </div>
+        </nav>
+
+        <!-- Hộp thoại xác nhận thao tác cho F04 (tương thích data-confirm) -->
+        <dialog id="nihonConfirmDialog" class="nihon-dialog" aria-modal="true" aria-labelledby="nihonDialogTitle">
+            <div class="dialog-card">
+                <div class="dialog-header">
+                    <h3 id="nihonDialogTitle" class="dialog-title">Xác nhận</h3>
+                    <button type="button" class="dialog-close-btn" id="nihonDialogCloseBtn" aria-label="Đóng hộp thoại">&times;</button>
+                </div>
+                <div class="dialog-body" id="nihonDialogMessage">
+                    Bạn có chắc chắn muốn thực hiện thao tác này?
+                </div>
+                <div class="dialog-actions">
+                    <button type="button" class="btn btn-secondary" id="nihonDialogCancelBtn">Hủy</button>
+                    <button type="button" class="btn btn-danger" id="nihonDialogConfirmBtn">Xác nhận</button>
+                </div>
+            </div>
+        </dialog>
+    </header>
+
+</body>
+</html>
+

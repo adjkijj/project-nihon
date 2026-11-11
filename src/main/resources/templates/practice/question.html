@@ -5,26 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${retryWrongOnly ? 'Ôn lại từ làm sai - Project Nihon' : 'Câu hỏi kiểm tra - Project Nihon'}">Câu hỏi kiểm tra - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/practice-question.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
     <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
     <script th:src="@{/js/practice-question.js}" defer></script>
 </head>
 <body>
-    <header>
-        <a href="/" class="brand">
-            <span class="brand-badge">日</span>
-            <span>Project Nihon</span>
-        </a>
-        <nav>
-            <a href="/">Trang chủ</a>
-            <a href="/vocabulary">Từ vựng</a>
-            <a href="/topics">Chủ đề</a>
-            <a href="/kanji">Kanji</a>
-            <a href="/practice" class="active">Luyện tập</a>
-            <a href="/stats">Thống kê</a>
-            <th:block th:replace="~{fragments/furigana :: toggleBtn}"></th:block>
-        </nav>
-    </header>
+    <header th:replace="~{fragments/navbar :: headerNav('practice')}"></header>
 
     <main>
         <div th:if="${errorMessage}" class="warning-notice">

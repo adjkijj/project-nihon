@@ -6,31 +6,17 @@
     <title th:text="${title}">Project Nihon - Học Từ Vựng Tiếng Nhật</title>
     <link rel="stylesheet" th:href="@{/css/index.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
     <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
 </head>
 <body>
-    <header>
-        <a href="/" class="brand">
-            <span class="brand-badge">日</span>
-            <span class="brand-name">Project Nihon</span>
-        </a>
-        <nav class="u-7dbd1ca1">
-            <a class="u-067a41e6" href="/">Trang chủ</a>
-            <a class="u-e0368358" href="/vocabulary">Từ vựng</a>
-            <a class="u-e0368358" href="/topics">Chủ đề</a>
-            <a class="u-e0368358" href="/kanji">Kanji</a>
-            <a class="u-e0368358" href="/flashcards">Thẻ học</a>
-            <a class="u-e0368358" href="/practice">Luyện tập</a>
-            <a class="u-e0368358" href="/stats">Thống kê</a>
-            <a class="u-e0368358" href="/import">Nhập Excel</a>
-            <th:block th:replace="~{fragments/furigana :: toggleBtn}"></th:block>
-        </nav>
-        <div class="env-badge">Java 21 • Spring Boot 3.4.3</div>
-    </header>
+    <header th:replace="~{fragments/navbar :: headerNav('home')}"></header>
 
     <main>
         <section class="hero">
+            <div class="env-badge">Java 21 • Spring Boot 3.4.3</div>
             <h1>Hệ Thống Ghi Nhớ Từ Vựng Tiếng Nhật</h1>
             <p>Nền tảng học và kiểm tra phản xạ từ vựng tiếng Nhật hai chiều, phân tích theo chủ đề và khu vực tra cứu Kanji chuyên biệt.</p>
             <div class="status-pill">

@@ -10,6 +10,9 @@
     document.addEventListener('submit', function (event) {
         var form = event.target;
         if (form && form.matches && form.matches('form[data-confirm]')) {
+            if (form.getAttribute('data-nihon-confirmed') === 'true') {
+                return;
+            }
             if (!window.confirm(form.getAttribute('data-confirm'))) {
                 event.preventDefault();
             }

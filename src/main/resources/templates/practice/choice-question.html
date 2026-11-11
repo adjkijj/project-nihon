@@ -8,27 +8,14 @@
     <link rel="stylesheet" th:href="@{/css/practice-index.css}">
     <link rel="stylesheet" th:href="@{/css/practice-choice.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
     <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
 </head>
 
 <body>
-    <header>
-        <a href="/" class="brand">
-            <span class="brand-badge">日</span>
-            <span>Project Nihon</span>
-        </a>
-        <nav>
-            <a href="/">Trang chủ</a>
-            <a href="/vocabulary">Từ vựng</a>
-            <a href="/topics">Chủ đề</a>
-            <a href="/kanji">Kanji</a>
-            <a href="/flashcards">Thẻ học</a>
-            <a href="/practice" class="active">Luyện tập</a>
-            <a href="/stats">Thống kê</a>
-            <th:block th:replace="~{fragments/furigana :: toggleBtn}"></th:block>
-        </nav>
-    </header>
+    <header th:replace="~{fragments/navbar :: headerNav('practice')}"></header>
 
     <main>
         <div class="choice-question-stage">
