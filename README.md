@@ -4,6 +4,10 @@
 
 **Project Nihon** là ứng dụng web quản lý học liệu và luyện tập tiếng Nhật (Từ vựng & Hán tự Kanji) được xây dựng trên nền tảng **Java 21**, **Spring Boot 3.4**, **Spring Data JPA**, **Thymeleaf** và **Apache POI**. Hệ thống tuân thủ chặt chẽ các nguyên tắc bảo mật **OWASP Top 10** và **PCI-DSS v4.0**.
 
+> [!IMPORTANT]
+> **Mô hình định danh & Xác thực hạ tầng:**
+> Ứng dụng hiện tại không lưu tài khoản người dùng cá nhân; các chức năng quản trị nội dung (tạo, sửa, xóa tại `/topics`, `/vocabulary`, `/kanji`) mở cho người dùng ứng dụng và được bảo vệ nghiêm ngặt chống tấn công CSRF thông qua `CsrfInterceptor`. Khi triển khai ra môi trường công khai (Production), bắt buộc đặt ứng dụng phía sau lớp xác thực của hạ tầng (Reverse Proxy, API Gateway, Cloudflare Access hoặc VPN nội bộ) để bảo vệ các tuyến đường quản trị nội dung.
+
 ### 1.1. Quản lý Chủ đề (`/topics`)
 - **Cây chủ đề 2 cấp:** Chỉ cho phép chủ đề gốc (`parent == null`) làm cha của chủ đề con; chặn vòng lặp và chặn chuyển chủ đề đang có con thành chủ đề con.
 - **Đồng bộ nhánh Kanji (`kanjiSection`):** Chủ đề con luôn kế thừa trạng thái `kanjiSection` của chủ đề gốc; khi đổi `kanjiSection` ở chủ đề gốc, toàn bộ chủ đề con được cập nhật đồng bộ trong cùng một giao dịch.
