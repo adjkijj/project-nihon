@@ -65,8 +65,10 @@
                     <label for="mode">Chế độ kiểm tra</label>
                     <select id="mode" name="mode" class="form-control">
                         <option value="ALL" th:selected="${selectedMode == null or selectedMode == 'ALL'}">-- Tất cả chế độ --</option>
-                        <option value="JA_VI" th:selected="${selectedMode == 'JA_VI'}">🇯🇵 → 🇻🇳 Nhật → Việt</option>
-                        <option value="VI_JA" th:selected="${selectedMode == 'VI_JA'}">🇻🇳 → 🇯🇵 Việt → Nhật</option>
+                        <option value="JA_VI" th:selected="${selectedMode == 'JA_VI'}">🇯🇵 → 🇻🇳 Nhật → Việt (Tự luận)</option>
+                        <option value="VI_JA" th:selected="${selectedMode == 'VI_JA'}">🇻🇳 → 🇯🇵 Việt → Nhật (Tự luận)</option>
+                        <option value="MC_JA_VI" th:selected="${selectedMode == 'MC_JA_VI'}">🎯 Trắc nghiệm Nhật → Việt</option>
+                        <option value="MC_VI_JA" th:selected="${selectedMode == 'MC_VI_JA'}">🎯 Trắc nghiệm Việt → Nhật</option>
                     </select>
                 </div>
 
@@ -178,6 +180,7 @@
                             <td class="u-text-align-right">
                                 <a th:if="${item.mode == 'JA_VI'}" th:href="@{/practice/question(topicId=${item.topicId})}" class="btn-sm u-96b36b49" title="Ôn tập chủ đề này">Ôn tập ↺</a>
                                 <a th:if="${item.mode == 'VI_JA'}" th:href="@{/practice/vi-ja/question(topicId=${item.topicId})}" class="btn-sm u-96b36b49" title="Ôn tập chủ đề này">Ôn tập ↺</a>
+                                <a th:if="${item.mode == 'MC_JA_VI' or item.mode == 'MC_VI_JA'}" th:href="@{/practice/choice/question(topicId=${item.topicId})}" class="btn-sm u-96b36b49" title="Ôn tập chủ đề này">Ôn tập ↺</a>
                             </td>
                         </tr>
                     </tbody>
@@ -215,6 +218,8 @@
                             <td>
                                 <span th:if="${r.mode == 'JA_VI'}" class="badge-mode badge-mode-ja-vi">Nhật → Việt</span>
                                 <span th:if="${r.mode == 'VI_JA'}" class="badge-mode badge-mode-vi-ja">Việt → Nhật</span>
+                                <span th:if="${r.mode == 'MC_JA_VI'}" class="badge-mode badge-mode-ja-vi">Trắc nghiệm (Nhật → Việt)</span>
+                                <span th:if="${r.mode == 'MC_VI_JA'}" class="badge-mode badge-mode-vi-ja">Trắc nghiệm (Việt → Nhật)</span>
                             </td>
                             <td>
                                 <strong th:text="${(r.questionPrompt != null && !r.questionPrompt.isBlank()) ? r.questionPrompt : '-'}">Từ vựng</strong>

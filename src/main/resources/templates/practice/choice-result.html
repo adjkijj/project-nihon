@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết quả trắc nghiệm - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/practice-index.css}">
+    <link rel="stylesheet" th:href="@{/css/practice-choice.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+</head>
+
+<body>
+    <header>
+        <a href="/" class="brand">
+            <span class="brand-badge">日</span>
+            <span>Project Nihon</span>
+        </a>
+        <nav>
+            <a href="/">Trang chủ</a>
+            <a href="/vocabulary">Từ vựng</a>
+            <a href="/topics">Chủ đề</a>
+            <a href="/kanji">Kanji</a>
+            <a href="/flashcards">Thẻ học</a>
+            <a href="/practice" class="active">Luyện tập</a>
+            <a href="/stats">Thống kê</a>
+            <th:block th:replace="~{fragments/furigana :: toggleBtn}"></th:block>
+        </nav>
+    </header>
+
+    <main>
+        <div class="choice-result-stage">
+            <div class="choice-result-card" th:classappend="${result.correct ? 'is-correct' : 'is-incorrect'}">
+                <!-- Banner kết quả -->
+                <div class="result-header-banner">
+                    <span class="result-icon" th:text="${result.correct ? '🎉' : '❌'}">✓</span>
+                    <div>
+                        <h2 class="result-title" th:text="${result.correct ? 'Chính xác!' : 'Chưa chính xác!'}">Kết quả</h2>
+                        <p class="toolbar-label" th:text="${result.feedbackMessage}">Thông điệp đánh giá</p>
+                    </div>
+                </div>
+
+                <!-- Chi tiết đối chiếu đáp án -->
+                <div class="result-detail-grid">
+                    <div class="result-detail-box">
+                        <div class="result-box-label">Từ vựng tiếng Nhật:</div>
+                        <div class="result-box-value is-accent">
+                            <th:block th:replace="~{fragments/furigana :: rubyWord(japaneseText=${result.correctJapaneseText}, reading=${result.correctReading})}"></th:block>
+                            <th:block th:replace="~{fragments/speech :: speakerBtn(speechText=${result.speechText})}"></th:block>
+                        </div>
+                        <div th:if="${result.correctRomaji != null and !result.correctRomaji.isBlank()}"
+                             class="choice-sub-text"
+                             th:text="${result.correctRomaji}">
+                            romaji
+                        </div>
+                    </div>
+
+                    <div class="result-detail-box">
+                        <div class="result-box-label">Nghĩa tiếng Việt:</div>
+                        <div class="result-box-value" th:text="${result.correctMeaningVi}">
+                            Nghĩa tiếng Việt
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nếu trả lời sai: hiện rõ lựa chọn của người học -->
+                <div th:unless="${result.correct}" class="result-detail-box">
+                    <div class="result-box-label">Lựa chọn của bạn:</div>
+                    <div class="result-box-value u-color-f87171" th:text="${result.selectedAnswerText}">
+                        Lựa chọn của bạn
+                    </div>
+                </div>
+
+                <!-- Mini tiến độ học tập phiên hiện tại -->
+                <div th:if="${sessionStats != null and sessionStats.totalAnswered > 0}" class="mini-stats-bar">
+                    <div class="mini-stats-item">
+                        Đã làm: <strong th:text="${sessionStats.totalAnswered}">0</strong> câu
+                    </div>
+                    <div class="mini-stats-item">
+                        Đúng: <strong th:text="${sessionStats.correctCount}" class="u-color-4ade80">0</strong>
+                    </div>
+                    <div class="mini-stats-item">
+                        Sai: <strong th:text="${sessionStats.incorrectCount}" class="u-color-f87171">0</strong>
+                    </div>
+                    <div class="mini-stats-item">
+                        Độ chính xác: <strong th:text="${sessionStats.accuracyPercentage + '%'}">0%</strong>
+                    </div>
+                </div>
+
+                <!-- Nút điều hướng câu hỏi tiếp theo -->
+                <div class="result-action-controls">
+                    <a id="btn-next-question"
+                       th:href="@{/practice/choice/question(topicId=${result.topicId}, direction=${result.direction}, excludeId=${result.vocabId})}"
+                       class="btn btn-primary btn-card-flip">
+                        Câu tiếp theo (Space) →
+                    </a>
+                    <a th:href="@{/practice/choice(topicId=${result.topicId}, direction=${result.direction})}"
+                       class="btn btn-secondary">
+                        Đổi chủ đề / Hướng làm bài
+                    </a>
+                    <a href="/stats" class="btn btn-secondary">
+                        Xem thống kê
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Chế độ luyện tập trắc nghiệm 4 lựa chọn.</p>
+    </footer>
+
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+    <th:block th:replace="~{fragments/speech :: scripts}"></th:block>
+    <script th:src="@{/js/practice-choice.js}" defer></script>
+</body>
+</html>
+

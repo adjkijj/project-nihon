@@ -1,5 +1,6 @@
 package com.nihon.service;
 
+import com.nihon.dto.PracticeChoiceResultDto;
 import com.nihon.dto.PracticeRecordDto;
 import com.nihon.dto.PracticeResultDto;
 import com.nihon.dto.PracticeViJaResultDto;
@@ -298,5 +299,48 @@ class StudyProgressServiceTest {
         assertThat(history).hasSize(StudyProgressService.MAX_SESSION_RECORDS);
         assertThat(history.get(0).getQuestionPrompt()).isEqualTo("Từ #" + (StudyProgressService.MAX_SESSION_RECORDS + 25));
         assertThat(history.get(history.size() - 1).getQuestionPrompt()).isEqualTo("Từ #26");
+    }
+
+    @Test
+    @DisplayName("Ghi nhận và lọc chính xác các bài trắc nghiệm MC_JA_VI và MC_VI_JA")
+    void testChoiceAttemptRecordingAndFiltering() {
+        PracticeChoiceResultDto mcJaVi = PracticeChoiceResultDto.builder()
+                .vocabId(1L)
+                .direction("JA_VI")
+                .questionPrompt("食べる")
+                .selectedAnswerText("ăn")
+                .correctAnswerText("ăn")
+                .correct(true)
+                .feedbackMessage("Chính xác!")
+                .build();
+        studyProgressService.recordChoiceAttempt(session, mcJaVi, 10L);
+
+        PracticeChoiceResultDto mcViJa = PracticeChoiceResultDto.builder()
+                .vocabId(2L)
+                .direction("VI_JA")
+                .questionPrompt("uống")
+                .selectedAnswerText("たべる")
+                .correctAnswerText("のむ")
+                .correct(false)
+                .feedbackMessage("Chưa chính xác!")
+                .build();
+        studyProgressService.recordChoiceAttempt(session, mcViJa, 10L);
+
+        // Lọc theo MC_JA_VI
+        StudyProgressSummaryDto jaViSummary = studyProgressService.getSummary(session, "MC_JA_VI", null);
+        assertThat(jaViSummary.getTotalAnswered()).isEqualTo(1);
+        assertThat(jaViSummary.getCorrectCount()).isEqualTo(1);
+        assertThat(jaViSummary.getCurrentModeFilter()).isEqualTo("MC_JA_VI");
+
+        // Lọc theo MC_VI_JA
+        StudyProgressSummaryDto viJaSummary = studyProgressService.getSummary(session, "MC_VI_JA", null);
+        assertThat(viJaSummary.getTotalAnswered()).isEqualTo(1);
+        assertThat(viJaSummary.getCorrectCount()).isEqualTo(0);
+        assertThat(viJaSummary.getCurrentModeFilter()).isEqualTo("MC_VI_JA");
+
+        // Tổng hợp ALL
+        StudyProgressSummaryDto allSummary = studyProgressService.getSummary(session, "ALL", null);
+        assertThat(allSummary.getTotalAnswered()).isEqualTo(2);
+        assertThat(allSummary.getCorrectCount()).isEqualTo(1);
     }
 }

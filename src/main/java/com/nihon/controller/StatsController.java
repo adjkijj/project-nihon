@@ -131,7 +131,9 @@ public class StatsController {
             return "ALL";
         }
         String trimmedUpper = mode.strip().toUpperCase(Locale.ROOT);
-        if ("JA_VI".equals(trimmedUpper) || "VI_JA".equals(trimmedUpper) || "ALL".equals(trimmedUpper)) {
+        if ("JA_VI".equals(trimmedUpper) || "VI_JA".equals(trimmedUpper)
+                || "MC_JA_VI".equals(trimmedUpper) || "MC_VI_JA".equals(trimmedUpper)
+                || "ALL".equals(trimmedUpper)) {
             return trimmedUpper;
         }
         return "ALL";

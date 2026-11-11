@@ -1,6 +1,10 @@
 package com.nihon.service;
 
 import com.nihon.dto.PracticeAnswerForm;
+import com.nihon.dto.PracticeChoiceAnswerForm;
+import com.nihon.dto.PracticeChoiceOptionDto;
+import com.nihon.dto.PracticeChoiceQuestionDto;
+import com.nihon.dto.PracticeChoiceResultDto;
 import com.nihon.dto.PracticeQuestionDto;
 import com.nihon.dto.PracticeResultDto;
 import com.nihon.dto.PracticeViJaAnswerForm;
@@ -15,6 +19,7 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -380,6 +385,260 @@ public class PracticeService {
 
     private boolean containsKanji(String text) {
         return text.codePoints().anyMatch(cp -> Character.UnicodeScript.of(cp) == Character.UnicodeScript.HAN);
+    }
+
+    /**
+     * Sinh câu hỏi trắc nghiệm 4 lựa chọn phía máy chủ.
+     * Chọn 1 từ ngẫu nhiên theo chủ đề (tránh lặp excludeVocabId).
+     * Tạo 3 đáp án nhiễu từ cùng chủ đề, thiếu thì bổ sung từ toàn bộ từ vựng hệ thống.
+     * Loại bỏ các đáp án nhiễu trùng nội dung đáp án đúng, trùng nhau hoặc rỗng.
+     * Nếu toàn hệ thống không đủ 4 lựa chọn khác biệt thì trả về Optional.empty().
+     */
+    public Optional<PracticeChoiceQuestionDto> getChoiceQuestion(Long topicId, String direction, Long excludeVocabId) {
+        String safeDirection = "VI_JA".equalsIgnoreCase(direction) ? "VI_JA" : "JA_VI";
+
+        // 1. Lấy danh sách từ vựng đủ điều kiện trong chủ đề chỉ định (hoặc toàn bộ)
+        List<Vocabulary> topicVocabs = (topicId != null && topicId > 0)
+                ? vocabularyRepository.findByTopicIdOrderBySourceLineAsc(topicId)
+                : vocabularyRepository.findAll();
+
+        List<Vocabulary> eligibleTargetCandidates = topicVocabs.stream()
+                .filter(this::isEligibleForChoice)
+                .toList();
+
+        if (eligibleTargetCandidates.isEmpty()) {
+            return Optional.empty();
+        }
+
+        // Tránh lặp lại câu hỏi vừa hỏi nếu có nhiều hơn 1 từ
+        List<Vocabulary> targetPool = eligibleTargetCandidates;
+        if (eligibleTargetCandidates.size() > 1 && excludeVocabId != null) {
+            List<Vocabulary> filtered = eligibleTargetCandidates.stream()
+                    .filter(v -> !v.getId().equals(excludeVocabId))
+                    .toList();
+            if (!filtered.isEmpty()) {
+                targetPool = filtered;
+            }
+        }
+
+        Vocabulary target = targetPool.get(ThreadLocalRandom.current().nextInt(targetPool.size()));
+
+        // 2. Tìm 3 đáp án nhiễu khác biệt
+        List<Vocabulary> distractors = new ArrayList<>();
+        Set<String> usedKeys = new HashSet<>();
+
+        // Đăng ký khóa của đáp án đúng để chống trùng lặp
+        String targetMeaningKey = getMeaningKey(target.getMeaningVi());
+        String targetJapaneseKey = getJapaneseKey(target.getJapaneseText());
+        usedKeys.add(targetMeaningKey);
+        usedKeys.add(targetJapaneseKey);
+
+        // Quét lần 1: Tìm đáp án nhiễu trong cùng chủ đề
+        List<Vocabulary> shuffledTopic = new ArrayList<>(topicVocabs);
+        Collections.shuffle(shuffledTopic);
+        for (Vocabulary v : shuffledTopic) {
+            if (tryAddDistractor(v, target, safeDirection, distractors, usedKeys)) {
+                if (distractors.size() == 3) {
+                    break;
+                }
+            }
+        }
+
+        // Quét lần 2: Nếu chưa đủ 3 đáp án nhiễu, bổ sung từ toàn bộ từ vựng hệ thống
+        if (distractors.size() < 3) {
+            List<Vocabulary> allVocabs = new ArrayList<>(vocabularyRepository.findAll());
+            Collections.shuffle(allVocabs);
+            for (Vocabulary v : allVocabs) {
+                if (tryAddDistractor(v, target, safeDirection, distractors, usedKeys)) {
+                    if (distractors.size() == 3) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Nếu vẫn không đủ 3 đáp án nhiễu hợp lệ (tổng cộng không đủ 4 lựa chọn khác nhau)
+        if (distractors.size() < 3) {
+            return Optional.empty();
+        }
+
+        // 3. Đóng gói 4 lựa chọn (1 đúng + 3 nhiễu) và xáo trộn ngẫu nhiên
+        List<PracticeChoiceOptionDto> options = new ArrayList<>();
+        options.add(buildChoiceOptionDto(target, safeDirection));
+        for (Vocabulary d : distractors) {
+            options.add(buildChoiceOptionDto(d, safeDirection));
+        }
+        Collections.shuffle(options);
+
+        // 4. Xây dựng DTO câu hỏi gửi ra ngoài (không chứa cờ đúng/sai)
+        String prompt;
+        if ("VI_JA".equals(safeDirection)) {
+            prompt = target.getMeaningVi();
+        } else {
+            prompt = target.getJapaneseText();
+        }
+
+        String baseJp = FuriganaHelper.extractBaseText(target.getJapaneseText());
+        String speech = SpeechHelper.resolveSpeechText(target.getJapaneseText(), target.getReading());
+
+        return Optional.of(PracticeChoiceQuestionDto.builder()
+                .vocabId(target.getId())
+                .questionPrompt(prompt)
+                .baseJapaneseText(baseJp)
+                .reading(target.getReading())
+                .speechText(speech)
+                .direction(safeDirection)
+                .topicId(topicId)
+                .topicName(target.getTopic() != null ? target.getTopic().getName() : "Tất cả chủ đề")
+                .options(options)
+                .build());
+    }
+
+    /**
+     * Chấm câu trả lời trắc nghiệm phía máy chủ.
+     * Chặn choiceVocabId không nằm trong bộ lựa chọn đã sinh của câu hỏi hiện tại.
+     */
+    public PracticeChoiceResultDto checkChoiceAnswer(PracticeChoiceAnswerForm form, List<Long> validOptionIds) {
+        if (form.getVocabId() == null || form.getChoiceVocabId() == null) {
+            throw new IllegalArgumentException("Dữ liệu câu trả lời không đầy đủ.");
+        }
+
+        if (validOptionIds == null || !validOptionIds.contains(form.getChoiceVocabId())) {
+            throw new IllegalArgumentException("Lựa chọn không hợp lệ hoặc câu hỏi đã hết hạn.");
+        }
+
+        Vocabulary target = vocabularyRepository.findById(form.getVocabId())
+                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy câu hỏi với mã: " + form.getVocabId()));
+
+        Vocabulary selected = vocabularyRepository.findById(form.getChoiceVocabId())
+                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy phương án với mã: " + form.getChoiceVocabId()));
+
+        String safeDirection = form.getSafeDirection();
+        boolean correct = form.getVocabId().equals(form.getChoiceVocabId());
+
+        String selectedAnswerText;
+        String correctAnswerText;
+        if ("VI_JA".equals(safeDirection)) {
+            selectedAnswerText = selected.getJapaneseText() + (selected.getReading() != null && !selected.getReading().isBlank() ? " (" + selected.getReading().strip() + ")" : "");
+            correctAnswerText = target.getJapaneseText() + (target.getReading() != null && !target.getReading().isBlank() ? " (" + target.getReading().strip() + ")" : "");
+        } else {
+            selectedAnswerText = selected.getMeaningVi();
+            correctAnswerText = target.getMeaningVi();
+        }
+
+        String feedbackMessage;
+        if (correct) {
+            feedbackMessage = "Chính xác! Bạn đã chọn đáp án đúng.";
+        } else {
+            feedbackMessage = "Chưa chính xác! Bạn đã chọn: " + selectedAnswerText + ". Đáp án đúng là: " + correctAnswerText + ".";
+        }
+
+        String baseJp = FuriganaHelper.extractBaseText(target.getJapaneseText());
+        String speech = SpeechHelper.resolveSpeechText(target.getJapaneseText(), target.getReading());
+
+        return PracticeChoiceResultDto.builder()
+                .vocabId(target.getId())
+                .selectedVocabId(selected.getId())
+                .correct(correct)
+                .direction(safeDirection)
+                .topicId(form.getTopicId())
+                .topicName(target.getTopic() != null ? target.getTopic().getName() : "Tất cả chủ đề")
+                .questionPrompt("VI_JA".equals(safeDirection) ? target.getMeaningVi() : target.getJapaneseText())
+                .selectedAnswerText(selectedAnswerText)
+                .correctAnswerText(correctAnswerText)
+                .correctJapaneseText(target.getJapaneseText())
+                .baseJapaneseText(baseJp)
+                .correctReading(target.getReading())
+                .correctMeaningVi(target.getMeaningVi())
+                .correctRomaji(target.getRomaji())
+                .speechText(speech)
+                .feedbackMessage(feedbackMessage)
+                .build();
+    }
+
+    private boolean isEligibleForChoice(Vocabulary v) {
+        return v != null
+                && v.getId() != null
+                && v.getJapaneseText() != null && !v.getJapaneseText().isBlank()
+                && v.getMeaningVi() != null && !v.getMeaningVi().isBlank();
+    }
+
+    private boolean tryAddDistractor(Vocabulary candidate, Vocabulary target, String direction,
+                                     List<Vocabulary> distractors, Set<String> usedKeys) {
+        if (!isEligibleForChoice(candidate)) {
+            return false;
+        }
+
+        if (candidate.getId().equals(target.getId())) {
+            return false;
+        }
+
+        String candidateMeaningKey = getMeaningKey(candidate.getMeaningVi());
+        String candidateJpKey = getJapaneseKey(candidate.getJapaneseText());
+
+        // Kiểm tra trùng nghĩa (hai từ khác nhau nhưng cùng nghĩa không được làm đáp án nhiễu của nhau)
+        if (usedKeys.contains(candidateMeaningKey)) {
+            return false;
+        }
+
+        // Kiểm tra trùng tiếng Nhật
+        if (usedKeys.contains(candidateJpKey)) {
+            return false;
+        }
+
+        // Đảm bảo không trùng các nghĩa thành phần với đáp án đúng
+        List<String> targetMeanings = parseAcceptedMeanings(target.getMeaningVi());
+        List<String> candidateMeanings = parseAcceptedMeanings(candidate.getMeaningVi());
+        for (String tm : targetMeanings) {
+            String tmKey = getMeaningKey(tm);
+            for (String cm : candidateMeanings) {
+                if (tmKey.equals(getMeaningKey(cm))) {
+                    return false;
+                }
+            }
+        }
+
+        // Thêm vào danh sách đáp án nhiễu hợp lệ
+        distractors.add(candidate);
+        usedKeys.add(candidateMeaningKey);
+        usedKeys.add(candidateJpKey);
+        return true;
+    }
+
+    private PracticeChoiceOptionDto buildChoiceOptionDto(Vocabulary v, String direction) {
+        String baseJp = FuriganaHelper.extractBaseText(v.getJapaneseText());
+        String speech = SpeechHelper.resolveSpeechText(v.getJapaneseText(), v.getReading());
+
+        String display;
+        if ("VI_JA".equals(direction)) {
+            display = v.getJapaneseText();
+        } else {
+            display = v.getMeaningVi();
+        }
+
+        return PracticeChoiceOptionDto.builder()
+                .vocabId(v.getId())
+                .displayText(display)
+                .baseJapaneseText(baseJp)
+                .reading(v.getReading())
+                .romaji(v.getRomaji())
+                .speechText(speech)
+                .build();
+    }
+
+    private String getMeaningKey(String meaning) {
+        if (meaning == null) {
+            return "";
+        }
+        return normalizeMeaningInput(meaning).replaceAll("[\\s,;:.!?-]+", "").toLowerCase(Locale.ROOT);
+    }
+
+    private String getJapaneseKey(String jp) {
+        if (jp == null) {
+            return "";
+        }
+        String base = FuriganaHelper.extractBaseText(jp);
+        return normalizeJapaneseInput(base != null ? base : jp).replaceAll("\\s+", "");
     }
 }
 

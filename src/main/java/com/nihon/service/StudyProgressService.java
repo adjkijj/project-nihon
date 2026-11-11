@@ -1,5 +1,6 @@
 package com.nihon.service;
 
+import com.nihon.dto.PracticeChoiceResultDto;
 import com.nihon.dto.PracticeRecordDto;
 import com.nihon.dto.PracticeResultDto;
 import com.nihon.dto.PracticeViJaResultDto;
@@ -112,6 +113,33 @@ public class StudyProgressService {
         addRecordToSession(session, record);
     }
 
+    /**
+     * Ghi nhận kết quả câu hỏi trắc nghiệm 4 lựa chọn vào tiến độ của session.
+     */
+    public synchronized void recordChoiceAttempt(HttpSession session, PracticeChoiceResultDto result, Long topicId) {
+        if (session == null || result == null) {
+            return;
+        }
+
+        String mode = "MC_" + (result.getDirection() != null ? result.getDirection().toUpperCase(java.util.Locale.ROOT) : "JA_VI");
+
+        PracticeRecordDto record = PracticeRecordDto.builder()
+                .id(UUID.randomUUID().toString())
+                .vocabId(result.getVocabId())
+                .topicId(topicId)
+                .topicName(result.getTopicName() != null ? result.getTopicName() : "Tất cả chủ đề")
+                .mode(mode)
+                .questionPrompt(result.getQuestionPrompt())
+                .userAnswer(result.getSelectedAnswerText() != null ? result.getSelectedAnswerText() : "")
+                .expectedAnswer(result.getCorrectAnswerText() != null ? result.getCorrectAnswerText() : "")
+                .correct(result.isCorrect())
+                .feedbackMessage(result.getFeedbackMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        addRecordToSession(session, record);
+    }
+
     private void addRecordToSession(HttpSession session, PracticeRecordDto record) {
         List<PracticeRecordDto> list = getOrCreateHistoryList(session);
         synchronized (list) {
@@ -135,7 +163,7 @@ public class StudyProgressService {
     }
 
     /**
-     * Chuẩn hóa tham số chế độ kiểm tra: chỉ nhận ALL, JA_VI, VI_JA (không phân biệt hoa thường).
+     * Chuẩn hóa tham số chế độ kiểm tra: chỉ nhận ALL, JA_VI, VI_JA, MC_JA_VI, MC_VI_JA (không phân biệt hoa thường).
      * Mọi giá trị khác coi như ALL.
      */
     public String normalizeMode(String modeFilter) {
@@ -143,7 +171,9 @@ public class StudyProgressService {
             return "ALL";
         }
         String trimmedUpper = modeFilter.strip().toUpperCase(java.util.Locale.ROOT);
-        if ("JA_VI".equals(trimmedUpper) || "VI_JA".equals(trimmedUpper) || "ALL".equals(trimmedUpper)) {
+        if ("JA_VI".equals(trimmedUpper) || "VI_JA".equals(trimmedUpper)
+                || "MC_JA_VI".equals(trimmedUpper) || "MC_VI_JA".equals(trimmedUpper)
+                || "ALL".equals(trimmedUpper)) {
             return trimmedUpper;
         }
         return "ALL";

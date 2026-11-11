@@ -23,6 +23,7 @@ import java.util.List;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -137,6 +138,32 @@ class StatsControllerTest {
                 .andExpect(view().name("stats"))
                 .andExpect(model().attribute("totalVocab", 0L))
                 .andExpect(content().string(containsString("Chưa có dữ liệu làm bài trong phạm vi đã chọn")));
+    }
+
+    @Test
+    void testStatsWithMultipleChoiceModes() throws Exception {
+        when(vocabularyRepository.count()).thenReturn(10L);
+        when(topicRepository.count()).thenReturn(1L);
+        when(kanjiEntryRepository.count()).thenReturn(2L);
+        when(topicRepository.findAllByOrderBySortOrderAsc()).thenReturn(List.of());
+
+        StudyProgressSummaryDto summary = StudyProgressSummaryDto.builder()
+                .totalAnswered(10)
+                .correctCount(8)
+                .incorrectCount(2)
+                .accuracyPercentage(80)
+                .records(Collections.emptyList())
+                .incorrectRecords(Collections.emptyList())
+                .currentModeFilter("MC_JA_VI")
+                .build();
+
+        when(studyProgressService.getSummary(any(), eq("MC_JA_VI"), isNull())).thenReturn(summary);
+
+        mockMvc.perform(get("/stats").param("mode", "MC_JA_VI"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("stats"))
+                .andExpect(model().attribute("selectedMode", "MC_JA_VI"))
+                .andExpect(content().string(containsString("Trắc nghiệm Nhật → Việt")));
     }
 
     @Test
