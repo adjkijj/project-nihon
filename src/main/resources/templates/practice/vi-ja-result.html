@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kết quả kiểm tra Việt → Nhật - Project Nihon</title>
+    <title th:text="${retryWrongOnly ? 'Ôn lại từ làm sai - Kết quả Việt → Nhật - Project Nihon' : 'Kết quả kiểm tra Việt → Nhật - Project Nihon'}">Kết quả kiểm tra Việt → Nhật - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/practice-vi-ja-result.css}">
     <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
@@ -85,11 +85,43 @@
                 </div>
             </div>
 
+            <!-- Congratulations Banner when retry is completed -->
+            <div th:if="${retryWrongOnly and retryCompleted}" class="retry-congrats-banner">
+                <div class="congrats-icon">🎉</div>
+                <div class="congrats-content">
+                    <h3 class="congrats-title">Chúc mừng! Bạn đã hoàn thành ôn lại tất cả các từ làm sai!</h3>
+                    <p class="congrats-text">Tất cả các từ vựng làm sai trong phiên này đã được trả lời chính xác.</p>
+                </div>
+            </div>
+
             <!-- Action Button to Next Word -->
-            <a th:href="@{/practice/vi-ja/question(topicId=${result.topicId}, excludeId=${result.vocabId})}"
-               class="btn-next" id="btnNext" autofocus>
-                Chuyển sang từ tiếp theo (Enter) ➔
-            </a>
+            <div th:if="${retryWrongOnly and retryCompleted}" class="result-actions">
+                <a th:href="@{/practice/vi-ja(topicId=${result.topicId})}"
+                   class="btn-next" id="btnNext" autofocus>
+                    Quay về trang luyện tập ➔
+                </a>
+            </div>
+
+            <div th:unless="${retryWrongOnly and retryCompleted}" class="result-actions">
+                <a th:href="@{/practice/vi-ja/question(topicId=${result.topicId}, excludeId=${result.vocabId}, retryWrongOnly=${retryWrongOnly})}"
+                   class="btn-next" id="btnNext" autofocus>
+                    Chuyển sang từ tiếp theo (Enter) ➔
+                </a>
+            </div>
+
+            <div class="retry-action-box">
+                <a th:if="${wrongCount > 0}"
+                   th:href="@{/practice/vi-ja/question(topicId=${result.topicId}, retryWrongOnly=true)}"
+                   class="btn-retry-link">
+                    <span>🔄</span> Ôn lại từ làm sai (<span th:text="${wrongCount}">0</span>)
+                </a>
+                <button th:unless="${wrongCount > 0}"
+                        type="button"
+                        class="btn-retry-link disabled"
+                        disabled>
+                    <span>🔄</span> Ôn lại từ làm sai (0)
+                </button>
+            </div>
 
             <div class="card-footer-nav">
                 <a th:href="@{/practice/vi-ja(topicId=${result.topicId})}" class="btn-link">← Đổi chủ đề khác</a>

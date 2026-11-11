@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kiểm tra: Việt → Nhật - Project Nihon</title>
+    <title th:text="${retryWrongOnly ? 'Ôn lại từ làm sai - Project Nihon' : 'Kiểm tra: Việt → Nhật - Project Nihon'}">Kiểm tra: Việt → Nhật - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/practice-vi-ja-question.css}">
     <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
@@ -34,7 +34,8 @@
         <div class="question-card">
             <div class="topic-indicator">
                 <span class="topic-badge" th:text="${question.topicName}">Chủ đề</span>
-                <span>Kiểm tra: Việt → Nhật</span>
+                <span th:if="${retryWrongOnly}" class="retry-badge">🔄 Ôn lại từ làm sai</span>
+                <span th:unless="${retryWrongOnly}">Kiểm tra: Việt → Nhật</span>
             </div>
 
             <!-- Meaning Display Box -->
@@ -50,6 +51,7 @@
                 <input type="hidden" name="_csrf" th:value="${_csrf}">
                 <input type="hidden" th:field="*{vocabId}">
                 <input type="hidden" th:field="*{topicId}">
+                <input type="hidden" th:field="*{retryWrongOnly}">
 
                 <div class="form-group">
                     <label for="userJapanese">Từ tiếng Nhật (Kanji/Kana) <span class="required">*</span></label>
@@ -70,7 +72,7 @@
 
             <div class="card-actions">
                 <a th:href="@{/practice/vi-ja(topicId=${question.topicId})}" class="btn-link">← Đổi chủ đề khác</a>
-                <a th:href="@{/practice/vi-ja/question(topicId=${question.topicId}, excludeId=${question.vocabId})}" class="btn-link">Bỏ qua từ này ↷</a>
+                <a th:href="@{/practice/vi-ja/question(topicId=${question.topicId}, excludeId=${question.vocabId}, retryWrongOnly=${retryWrongOnly})}" class="btn-link">Bỏ qua từ này ↷</a>
             </div>
         </div>
     </main>

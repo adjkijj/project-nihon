@@ -69,7 +69,20 @@
                     </select>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Bắt đầu kiểm tra Việt → Nhật →</button>
+                <div class="practice-action-buttons">
+                    <button type="submit" class="btn btn-primary">Bắt đầu kiểm tra Việt → Nhật →</button>
+                    <a th:if="${wrongCount > 0}"
+                       th:href="@{/practice/vi-ja/question(topicId=${selectedTopicId}, retryWrongOnly=true)}"
+                       class="btn btn-retry">
+                        <span>🔄</span> Ôn lại từ làm sai (<span th:text="${wrongCount}">0</span>)
+                    </a>
+                    <button th:unless="${wrongCount > 0}"
+                            type="button"
+                            class="btn btn-retry disabled"
+                            disabled>
+                        <span>🔄</span> Ôn lại từ làm sai (0)
+                    </button>
+                </div>
             </form>
         </div>
     </main>

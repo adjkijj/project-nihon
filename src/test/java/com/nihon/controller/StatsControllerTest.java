@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
@@ -223,5 +224,34 @@ class StatsControllerTest {
                 .andExpect(model().attribute("errorMessage", "Chủ đề không tồn tại"))
                 .andExpect(content().string(containsString("Chủ đề không tồn tại")))
                 .andExpect(content().string(containsString("Chưa có dữ liệu làm bài trong phạm vi đã chọn")));
+    }
+
+    @Test
+    void testStatsWithWrongWords_displaysRetryWrongButton() throws Exception {
+        when(vocabularyRepository.count()).thenReturn(10L);
+        when(topicRepository.count()).thenReturn(1L);
+        when(kanjiEntryRepository.count()).thenReturn(5L);
+        when(vocabularyRepository.countByHasKanjiTrue()).thenReturn(5L);
+        when(vocabularyRepository.countByHasKanjiFalse()).thenReturn(5L);
+        when(topicRepository.findAllByOrderBySortOrderAsc()).thenReturn(List.of());
+
+        when(studyProgressService.getSummary(any(), eq("ALL"), eq(null))).thenReturn(
+                StudyProgressSummaryDto.builder()
+                        .totalAnswered(3)
+                        .correctCount(1)
+                        .incorrectCount(2)
+                        .accuracyPercentage(33)
+                        .records(Collections.emptyList())
+                        .incorrectRecords(Collections.emptyList())
+                        .currentModeFilter("ALL")
+                        .build()
+        );
+        when(studyProgressService.getWrongVocabIds(any(), eq("ALL"), isNull())).thenReturn(Set.of(1L, 2L));
+
+        mockMvc.perform(get("/stats"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("stats"))
+                .andExpect(model().attribute("wrongCount", 2))
+                .andExpect(content().string(containsString("Ôn lại từ làm sai (<span>2</span>)")));
     }
 }

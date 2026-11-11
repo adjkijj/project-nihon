@@ -48,9 +48,23 @@ public class PracticeService {
      * Tránh lặp lại câu hỏi vừa làm nếu chủ đề có nhiều hơn 1 từ.
      */
     public Optional<PracticeQuestionDto> getNextQuestion(Long topicId, Long excludeVocabId) {
+        return getNextQuestion(topicId, excludeVocabId, null);
+    }
+
+    /**
+     * Lấy một câu hỏi từ vựng ngẫu nhiên theo chủ đề, giới hạn trong tập id cho phép (ví dụ tập từ làm sai).
+     */
+    public Optional<PracticeQuestionDto> getNextQuestion(Long topicId, Long excludeVocabId, Set<Long> allowedIds) {
         List<Long> ids = vocabularyRepository.findIdsByTopicId(topicId);
         if (ids.isEmpty()) {
             return Optional.empty();
+        }
+
+        if (allowedIds != null) {
+            ids = ids.stream().filter(allowedIds::contains).toList();
+            if (ids.isEmpty()) {
+                return Optional.empty();
+            }
         }
 
         List<Long> candidates = ids;
@@ -253,9 +267,23 @@ public class PracticeService {
      * Chỉ trả về nghĩa tiếng Việt và tiêu đề chủ đề, không trả về từ tiếng Nhật.
      */
     public Optional<PracticeViJaQuestionDto> getReverseQuestion(Long topicId, Long excludeVocabId) {
+        return getReverseQuestion(topicId, excludeVocabId, null);
+    }
+
+    /**
+     * Lấy một câu hỏi từ vựng ngẫu nhiên cho chế độ Việt → Nhật, giới hạn trong tập id cho phép.
+     */
+    public Optional<PracticeViJaQuestionDto> getReverseQuestion(Long topicId, Long excludeVocabId, Set<Long> allowedIds) {
         List<Long> ids = vocabularyRepository.findIdsByTopicId(topicId);
         if (ids.isEmpty()) {
             return Optional.empty();
+        }
+
+        if (allowedIds != null) {
+            ids = ids.stream().filter(allowedIds::contains).toList();
+            if (ids.isEmpty()) {
+                return Optional.empty();
+            }
         }
 
         List<Long> candidates = ids;

@@ -11,7 +11,11 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -219,6 +223,79 @@ public class StudyProgressService {
                 .currentModeFilter(normalizedMode)
                 .currentTopicFilter(topicIdFilter)
                 .build();
+    }
+
+    /**
+     * Chuẩn hóa tham số chế độ cho chức năng lấy từ sai: whitelist JA_VI, VI_JA, ALL.
+     * Mọi giá trị khác (hoặc rỗng/null) coi như ALL.
+     */
+    public String normalizeWrongMode(String mode) {
+        if (mode == null || mode.isBlank()) {
+            return "ALL";
+        }
+        String upper = mode.strip().toUpperCase(Locale.ROOT);
+        if ("JA_VI".equals(upper) || "VI_JA".equals(upper)) {
+            return upper;
+        }
+        return "ALL";
+    }
+
+    /**
+     * Lấy tập vocabId của các từ đang ở trạng thái "sai" trong phiên làm việc hiện tại:
+     * từ có bản ghi gần nhất là sai. Nếu từ đó được trả lời đúng ở lần sau thì không còn trong tập.
+     *
+     * @param session Phiên làm việc HttpSession
+     * @param mode    Chế độ kiểm tra (JA_VI, VI_JA, hoặc ALL theo whitelist)
+     * @param topicId Mã chủ đề tùy chọn (null nếu lấy tất cả chủ đề)
+     * @return Tập các vocabId đang ở trạng thái sai
+     */
+    public Set<Long> getWrongVocabIds(HttpSession session, String mode, Long topicId) {
+        List<PracticeRecordDto> history = getHistory(session);
+        if (history.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        String safeMode = normalizeWrongMode(mode);
+        Set<Long> seenVocabs = new HashSet<>();
+        Set<Long> wrongVocabIds = new LinkedHashSet<>();
+
+        synchronized (history) {
+            for (PracticeRecordDto record : history) {
+                if (record == null || record.getVocabId() == null) {
+                    continue;
+                }
+
+                // Lọc theo chế độ whitelist (JA_VI, VI_JA, ALL)
+                if (!"ALL".equals(safeMode)) {
+                    if (record.getMode() == null || !safeMode.equalsIgnoreCase(record.getMode())) {
+                        continue;
+                    }
+                }
+
+                // Lọc theo topicId nếu có truyền
+                if (topicId != null && (record.getTopicId() == null || !topicId.equals(record.getTopicId()))) {
+                    continue;
+                }
+
+                Long vocabId = record.getVocabId();
+                // Vì history lưu mới nhất ở index 0, bản ghi đầu tiên thấy của vocabId là lần làm gần nhất
+                if (seenVocabs.add(vocabId)) {
+                    if (!record.isCorrect()) {
+                        wrongVocabIds.add(vocabId);
+                    }
+                }
+            }
+        }
+
+        return wrongVocabIds;
+    }
+
+    public Set<Long> getWrongVocabIds(HttpSession session, String mode) {
+        return getWrongVocabIds(session, mode, null);
+    }
+
+    public Set<Long> getWrongVocabIds(HttpSession session) {
+        return getWrongVocabIds(session, "ALL", null);
     }
 
     /**

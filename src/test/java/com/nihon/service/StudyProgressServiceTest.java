@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpSession;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -342,5 +343,72 @@ class StudyProgressServiceTest {
         StudyProgressSummaryDto allSummary = studyProgressService.getSummary(session, "ALL", null);
         assertThat(allSummary.getTotalAnswered()).isEqualTo(2);
         assertThat(allSummary.getCorrectCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Test 1: Làm sai 3 từ, đúng 1 trong số đó ở lần sau: tập còn 2")
+    void testWrongVocabTracking_3Wrong_1Corrected_Leaves2() {
+        // Làm sai từ 1, 2, 3 trong JA_VI
+        studyProgressService.recordJaViAttempt(session, PracticeResultDto.builder()
+                .vocabId(1L)
+                .overallCorrect(false)
+                .build(), 10L);
+        studyProgressService.recordJaViAttempt(session, PracticeResultDto.builder()
+                .vocabId(2L)
+                .overallCorrect(false)
+                .build(), 10L);
+        studyProgressService.recordJaViAttempt(session, PracticeResultDto.builder()
+                .vocabId(3L)
+                .overallCorrect(false)
+                .build(), 10L);
+
+        Set<Long> wrongInitial = studyProgressService.getWrongVocabIds(session, "JA_VI", null);
+        assertThat(wrongInitial).containsExactlyInAnyOrder(1L, 2L, 3L);
+
+        // Trả lời đúng từ 2 ở lần sau
+        studyProgressService.recordJaViAttempt(session, PracticeResultDto.builder()
+                .vocabId(2L)
+                .overallCorrect(true)
+                .build(), 10L);
+
+        Set<Long> wrongAfterCorrection = studyProgressService.getWrongVocabIds(session, "JA_VI", null);
+        assertThat(wrongAfterCorrection).hasSize(2)
+                .containsExactlyInAnyOrder(1L, 3L)
+                .doesNotContain(2L);
+    }
+
+    @Test
+    @DisplayName("Test 2: Tập theo mode: từ sai ở JA_VI không lẫn vào tập VI_JA")
+    void testWrongVocabTracking_ModeIsolation_JaViVsViJa() {
+        // Làm sai từ 10 ở JA_VI
+        studyProgressService.recordJaViAttempt(session, PracticeResultDto.builder()
+                .vocabId(10L)
+                .overallCorrect(false)
+                .build(), 1L);
+
+        // Làm sai từ 20 ở VI_JA
+        studyProgressService.recordViJaAttempt(session, PracticeViJaResultDto.builder()
+                .vocabId(20L)
+                .correct(false)
+                .build(), 1L);
+
+        Set<Long> jaViWrong = studyProgressService.getWrongVocabIds(session, "JA_VI", null);
+        Set<Long> viJaWrong = studyProgressService.getWrongVocabIds(session, "VI_JA", null);
+        Set<Long> allWrong = studyProgressService.getWrongVocabIds(session, "ALL", null);
+
+        assertThat(jaViWrong).containsExactly(10L).doesNotContain(20L);
+        assertThat(viJaWrong).containsExactly(20L).doesNotContain(10L);
+        assertThat(allWrong).containsExactlyInAnyOrder(10L, 20L);
+    }
+
+    @Test
+    @DisplayName("Chuẩn hóa chế độ normalizeWrongMode tuân theo whitelist JA_VI, VI_JA, ALL")
+    void testNormalizeWrongModeWhitelist() {
+        assertThat(studyProgressService.normalizeWrongMode("ja_vi")).isEqualTo("JA_VI");
+        assertThat(studyProgressService.normalizeWrongMode("VI_JA")).isEqualTo("VI_JA");
+        assertThat(studyProgressService.normalizeWrongMode("ALL")).isEqualTo("ALL");
+        assertThat(studyProgressService.normalizeWrongMode(null)).isEqualTo("ALL");
+        assertThat(studyProgressService.normalizeWrongMode("")).isEqualTo("ALL");
+        assertThat(studyProgressService.normalizeWrongMode("abc")).isEqualTo("ALL");
     }
 }

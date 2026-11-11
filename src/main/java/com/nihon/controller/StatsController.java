@@ -100,6 +100,7 @@ public class StatsController {
                 model.addAttribute("progress", emptyProgress);
                 model.addAttribute("selectedMode", safeMode);
                 model.addAttribute("selectedTopicId", topicId);
+                model.addAttribute("wrongCount", 0);
                 model.addAttribute("activeNav", "stats");
                 return "stats";
             }
@@ -118,9 +119,12 @@ public class StatsController {
                     .currentTopicFilter(effectiveTopicId)
                     .build();
         }
+        int wrongCount = studyProgressService.getWrongVocabIds(session, safeMode, effectiveTopicId).size();
+
         model.addAttribute("progress", progress);
         model.addAttribute("selectedMode", safeMode);
         model.addAttribute("selectedTopicId", effectiveTopicId);
+        model.addAttribute("wrongCount", wrongCount);
         model.addAttribute("activeNav", "stats");
 
         return "stats";

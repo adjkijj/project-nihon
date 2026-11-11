@@ -17,9 +17,11 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
@@ -244,5 +246,44 @@ class PracticeViJaControllerTest {
                 .andExpect(view().name("practice/vi-ja-result"));
 
         verify(studyProgressService).recordViJaAttempt(any(), eq(mismatchedResult), isNull());
+    }
+
+    @Test
+    @DisplayName("Test 3: retryWrongOnly=true khi tập rỗng chuyển hướng về /practice/vi-ja kèm thông báo")
+    void testShowQuestionRetryWrongOnly_emptySet_redirectsWithMessage() throws Exception {
+        when(studyProgressService.getWrongVocabIds(any(), eq("VI_JA"), any())).thenReturn(Collections.emptySet());
+
+        mockMvc.perform(get("/practice/vi-ja/question")
+                        .param("retryWrongOnly", "true")
+                        .param("topicId", "1"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/practice/vi-ja?topicId=1"))
+                .andExpect(flash().attribute("errorMessage", "Bạn chưa có từ nào làm sai trong phiên này."));
+    }
+
+    @Test
+    @DisplayName("Test 4: retryWrongOnly=abc không gây 500 ở VI->JA (dùng false)")
+    void testShowQuestionRetryWrongOnly_invalidString_treatedAsFalse() throws Exception {
+        when(practiceService.getReverseQuestion(any(), any())).thenReturn(Optional.of(questionDto));
+
+        mockMvc.perform(get("/practice/vi-ja/question")
+                        .param("retryWrongOnly", "abc"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("practice/vi-ja-question"))
+                .andExpect(model().attribute("retryWrongOnly", false));
+    }
+
+    @Test
+    @DisplayName("retryWrongOnly=true khi có từ sai ở VI->JA -> hiển thị câu hỏi và tiêu đề Ôn lại từ làm sai")
+    void testShowQuestionRetryWrongOnly_hasWrongVocabs_displaysRetryQuestion() throws Exception {
+        when(studyProgressService.getWrongVocabIds(any(), eq("VI_JA"), any())).thenReturn(Set.of(10L));
+        when(practiceService.getReverseQuestion(any(), any(), eq(Set.of(10L)))).thenReturn(Optional.of(questionDto));
+
+        mockMvc.perform(get("/practice/vi-ja/question")
+                        .param("retryWrongOnly", "true"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("practice/vi-ja-question"))
+                .andExpect(model().attribute("retryWrongOnly", true))
+                .andExpect(content().string(containsString("Ôn lại từ làm sai")));
     }
 }
