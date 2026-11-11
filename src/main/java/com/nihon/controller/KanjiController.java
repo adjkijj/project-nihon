@@ -61,11 +61,14 @@ public class KanjiController {
     }
 
     /**
-     * Trang danh sách Kanji riêng biệt: hiển thị thẻ/lưới Kanji, tìm kiếm đa tiêu chí và lọc theo chủ đề bài học.
+     * Trang danh sách Kanji riêng biệt: hiển thị thẻ/lưới Kanji, tìm kiếm đa tiêu chí, lọc theo âm On/Kun, bài học có nhóm cha, chỉ từ cần nhớ và sắp xếp.
      */
     @GetMapping
     public String list(@RequestParam(value = "keyword", required = false) String keyword,
+                       @RequestParam(value = "reading", required = false) String reading,
                        @RequestParam(value = "topicId", required = false) Long topicId,
+                       @RequestParam(value = "hasWordsOnly", defaultValue = "false") boolean hasWordsOnly,
+                       @RequestParam(value = "sort", defaultValue = "SOURCE_LINE") String sort,
                        @RequestParam(value = "page", defaultValue = "0") int page,
                        @RequestParam(value = "size", defaultValue = "" + DEFAULT_PAGE_SIZE) int size,
                        Model model) {
@@ -79,8 +82,12 @@ public class KanjiController {
         }
 
         String safeKeyword = sanitizeKeyword(keyword);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("sourceLine").ascending());
+        String safeReading = sanitizeKeyword(reading);
+        com.nihon.dto.KanjiSortOption sortOption = com.nihon.dto.KanjiSortOption.fromString(sort);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortOption.getPropertyName()).ascending());
+
         List<Topic> topics = kanjiService.getKanjiTopics();
+        List<com.nihon.dto.TopicGroupDto> topicGroups = kanjiService.getKanjiTopicGroups();
 
         Long effectiveTopicId = topicId;
         if (topicId != null && topicId <= 0) {
@@ -94,20 +101,36 @@ public class KanjiController {
                 Page<KanjiDetailDto> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
                 model.addAttribute("kanjiPage", emptyPage);
                 model.addAttribute("topics", topics);
+                model.addAttribute("topicGroups", topicGroups);
                 model.addAttribute("selectedTopicId", topicId);
                 model.addAttribute("keyword", safeKeyword);
+                model.addAttribute("reading", safeReading);
+                model.addAttribute("hasWordsOnly", hasWordsOnly);
+                model.addAttribute("sort", sortOption.name());
                 model.addAttribute("totalCount", kanjiService.countTotal());
                 model.addAttribute("activeNav", "kanji");
                 return "kanji/list";
             }
         }
 
-        Page<KanjiDetailDto> kanjiPage = kanjiService.search(effectiveTopicId, safeKeyword, pageable);
+        Page<KanjiDetailDto> kanjiPage;
+        if ((safeReading == null || safeReading.isBlank()) && !hasWordsOnly) {
+            kanjiPage = kanjiService.search(effectiveTopicId, safeKeyword, pageable);
+        } else {
+            kanjiPage = kanjiService.search(effectiveTopicId, safeKeyword, safeReading, hasWordsOnly, pageable);
+        }
+        if (kanjiPage == null) {
+            kanjiPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
+        }
 
         model.addAttribute("kanjiPage", kanjiPage);
         model.addAttribute("topics", topics);
+        model.addAttribute("topicGroups", topicGroups);
         model.addAttribute("selectedTopicId", effectiveTopicId);
         model.addAttribute("keyword", safeKeyword);
+        model.addAttribute("reading", safeReading);
+        model.addAttribute("hasWordsOnly", hasWordsOnly);
+        model.addAttribute("sort", sortOption.name());
         model.addAttribute("totalCount", kanjiService.countTotal());
         model.addAttribute("activeNav", "kanji");
 

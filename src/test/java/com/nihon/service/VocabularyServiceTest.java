@@ -591,4 +591,102 @@ class VocabularyServiceTest {
         Page<VocabularyRowDto> blankPage = vocabularyService.findWordsContainingKanji("", 0, 20);
         assertThat(blankPage.getContent()).isEmpty();
     }
+
+    @Test
+    @DisplayName("25. F21: search với VocabQuickFilter lọc chính xác (HAS_KANJI, NO_READING, NO_MEANING)")
+    void search_withQuickFilters_filtersCorrectly() {
+        // Từ 1: có Kanji, có reading, có meaning
+        Vocabulary v1 = new Vocabulary();
+        v1.setTopic(topicA);
+        v1.setJapaneseText("私（わたし）");
+        v1.setReading("わたし");
+        v1.setRomaji("watashi");
+        v1.setMeaningVi("Tôi");
+        v1.setHasKanji(true);
+        v1.setSourceLine(1);
+        em.persistAndFlush(v1);
+
+        // Từ 2: không có Kanji (chỉ kana), có reading, có meaning
+        Vocabulary v2 = new Vocabulary();
+        v2.setTopic(topicA);
+        v2.setJapaneseText("ここ");
+        v2.setReading("ここ");
+        v2.setRomaji("koko");
+        v2.setMeaningVi("Ở đây");
+        v2.setHasKanji(false);
+        v2.setSourceLine(2);
+        em.persistAndFlush(v2);
+
+        // Từ 3: có Kanji, thiếu reading
+        Vocabulary v3 = new Vocabulary();
+        v3.setTopic(topicA);
+        v3.setJapaneseText("東京");
+        v3.setReading(null);
+        v3.setRomaji("toukyou");
+        v3.setMeaningVi("Tokyo");
+        v3.setHasKanji(true);
+        v3.setSourceLine(3);
+        em.persistAndFlush(v3);
+
+        // Từ 4: có Kanji, thiếu meaning
+        Vocabulary v4 = new Vocabulary();
+        v4.setTopic(topicA);
+        v4.setJapaneseText("京都（きょうと）");
+        v4.setReading("きょうと");
+        v4.setRomaji("kyouto");
+        v4.setMeaningVi(null);
+        v4.setHasKanji(true);
+        v4.setSourceLine(4);
+        em.persistAndFlush(v4);
+
+        // Test filter ALL
+        Page<VocabularyRowDto> allPage = vocabularyService.search(topicA.getId(), null, com.nihon.dto.VocabQuickFilter.ALL, com.nihon.dto.VocabViewMode.COMPACT, PageRequest.of(0, 20));
+        assertThat(allPage.getTotalElements()).isEqualTo(4);
+
+        // Test filter HAS_KANJI
+        Page<VocabularyRowDto> hasKanjiPage = vocabularyService.search(topicA.getId(), null, com.nihon.dto.VocabQuickFilter.HAS_KANJI, com.nihon.dto.VocabViewMode.COMPACT, PageRequest.of(0, 20));
+        assertThat(hasKanjiPage.getTotalElements()).isEqualTo(3);
+        assertThat(hasKanjiPage.getContent()).allMatch(VocabularyRowDto::isHasKanji);
+
+        // Test filter NO_READING
+        Page<VocabularyRowDto> noReadingPage = vocabularyService.search(topicA.getId(), null, com.nihon.dto.VocabQuickFilter.NO_READING, com.nihon.dto.VocabViewMode.COMPACT, PageRequest.of(0, 20));
+        assertThat(noReadingPage.getTotalElements()).isEqualTo(1);
+        assertThat(noReadingPage.getContent().get(0).getJapaneseText()).isEqualTo("東京");
+
+        // Test filter NO_MEANING
+        Page<VocabularyRowDto> noMeaningPage = vocabularyService.search(topicA.getId(), null, com.nihon.dto.VocabQuickFilter.NO_MEANING, com.nihon.dto.VocabViewMode.COMPACT, PageRequest.of(0, 20));
+        assertThat(noMeaningPage.getTotalElements()).isEqualTo(1);
+        assertThat(noMeaningPage.getContent().get(0).getJapaneseText()).isEqualTo("京都（きょうと）");
+    }
+
+    @Test
+    @DisplayName("26. F21: search với viewMode=FULL nạp đầy đủ thông tin Kanji cấu thành và âm Hán Việt")
+    void search_withViewModeFull_populatesConstituentKanji() {
+        // Tạo KanjiEntry trong bảng kanji_entry
+        KanjiEntry kanjiFish = new KanjiEntry();
+        kanjiFish.setTopic(topicA);
+        kanjiFish.setCharacter("魚");
+        kanjiFish.setHanViet("NGƯ");
+        kanjiFish.setOnyomi("ギョ");
+        kanjiFish.setKunyomi("さかな");
+        kanjiFish.setMeaningVi("Cá");
+        kanjiFish.setSourceLine(10);
+        em.persistAndFlush(kanjiFish);
+
+        createVocab(topicA, "魚（さかな）", "さかな", "sakana", "Con cá", 101);
+
+        // Khi viewMode = COMPACT, constituentKanji rỗng
+        Page<VocabularyRowDto> compactPage = vocabularyService.search(topicA.getId(), "魚", com.nihon.dto.VocabQuickFilter.ALL, com.nihon.dto.VocabViewMode.COMPACT, PageRequest.of(0, 20));
+        assertThat(compactPage.getContent().get(0).getConstituentKanji()).isEmpty();
+
+        // Khi viewMode = FULL, constituentKanji được nạp thông tin âm Hán Việt từ kanji_entry
+        Page<VocabularyRowDto> fullPage = vocabularyService.search(topicA.getId(), "魚", com.nihon.dto.VocabQuickFilter.ALL, com.nihon.dto.VocabViewMode.FULL, PageRequest.of(0, 20));
+        assertThat(fullPage.getContent().get(0).getConstituentKanji()).isNotEmpty();
+
+        com.nihon.dto.ConstituentKanjiDto kDto = fullPage.getContent().get(0).getConstituentKanji().get(0);
+        assertThat(kDto.getCharacter()).isEqualTo("魚");
+        assertThat(kDto.getHanViet()).isEqualTo("NGƯ");
+        assertThat(kDto.isExistsInKanjiEntry()).isTrue();
+        assertThat(fullPage.getContent().get(0).getConstituentHanVietDisplay()).isEqualTo("NGƯ");
+    }
 }

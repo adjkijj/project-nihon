@@ -11,6 +11,7 @@
         initDropdown();
         initAccessibleConfirm();
         initGlobalKeyboardNav();
+        initVocabViewPersistence();
     });
 
     /* ==========================================================================
@@ -384,6 +385,77 @@
                 }
             }
         });
+    }
+
+    /* ==========================================================================
+       5. Vocabulary View Mode Persistence (F21)
+       ========================================================================== */
+    function initVocabViewPersistence() {
+        var storageKey = 'nihon_vocab_view';
+        var pathname = window.location.pathname;
+
+        // Xử lý khi đang ở trang /vocabulary
+        if (pathname === '/vocabulary' || pathname.endsWith('/vocabulary')) {
+            var urlParams = new URLSearchParams(window.location.search);
+            var currentView = urlParams.get('view');
+
+            if (currentView === 'FULL' || currentView === 'COMPACT') {
+                try {
+                    localStorage.setItem(storageKey, currentView);
+                } catch (e) {
+                    // Trình duyệt bật private mode hoặc chặn localStorage
+                }
+            } else {
+                try {
+                    var savedView = localStorage.getItem(storageKey);
+                    if (savedView === 'FULL') {
+                        urlParams.set('view', 'FULL');
+                        window.location.replace(window.location.pathname + '?' + urlParams.toString());
+                        return;
+                    }
+                } catch (e) {
+                    // Bỏ qua lỗi truy cập storage
+                }
+            }
+
+            // Gắn sự kiện click cho nút đổi view
+            var compactBtn = document.getElementById('view-compact-btn');
+            if (compactBtn) {
+                compactBtn.addEventListener('click', function () {
+                    try {
+                        localStorage.setItem(storageKey, 'COMPACT');
+                    } catch (e) {}
+                });
+            }
+
+            var fullBtn = document.getElementById('view-full-btn');
+            if (fullBtn) {
+                fullBtn.addEventListener('click', function () {
+                    try {
+                        localStorage.setItem(storageKey, 'FULL');
+                    } catch (e) {}
+                });
+            }
+        }
+
+        // Tự động gắn tham số view vào mọi liên kết trỏ tới /vocabulary trên trang
+        try {
+            var activeView = localStorage.getItem(storageKey);
+            if (activeView === 'FULL' || activeView === 'COMPACT') {
+                var vocabLinks = document.querySelectorAll('a[href]');
+                vocabLinks.forEach(function (link) {
+                    var href = link.getAttribute('href');
+                    if (href && (href === '/vocabulary' || href.startsWith('/vocabulary?'))) {
+                        if (!href.includes('view=')) {
+                            var separator = href.includes('?') ? '&' : '?';
+                            link.setAttribute('href', href + separator + 'view=' + activeView);
+                        }
+                    }
+                });
+            }
+        } catch (e) {
+            // Bỏ qua lỗi
+        }
     }
 
 })();

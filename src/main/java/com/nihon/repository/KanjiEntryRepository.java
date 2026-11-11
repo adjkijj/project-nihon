@@ -42,13 +42,26 @@ public interface KanjiEntryRepository extends JpaRepository<KanjiEntry, Long> {
         "       LOWER(k.hanViet) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
         "       LOWER(k.meaningVi) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
         "       k.onyomi LIKE CONCAT('%', :keyword, '%') OR " +
-        "       k.kunyomi LIKE CONCAT('%', :keyword, '%'))"
+        "       k.kunyomi LIKE CONCAT('%', :keyword, '%')) " +
+        "  AND (:readingHiragana IS NULL OR :readingHiragana = '' OR " +
+        "       k.onyomi LIKE CONCAT('%', :readingKatakana, '%') OR " +
+        "       k.onyomi LIKE CONCAT('%', :readingHiragana, '%') OR " +
+        "       k.kunyomi LIKE CONCAT('%', :readingHiragana, '%') OR " +
+        "       k.kunyomi LIKE CONCAT('%', :readingKatakana, '%')) " +
+        "  AND (:hasWordsOnly = false OR EXISTS (SELECT 1 FROM Vocabulary v WHERE v.japaneseText LIKE CONCAT('%', k.character, '%')))"
     )
     Page<KanjiEntry> search(
         @Param("topicId") Long topicId,
         @Param("keyword") String keyword,
+        @Param("readingHiragana") String readingHiragana,
+        @Param("readingKatakana") String readingKatakana,
+        @Param("hasWordsOnly") boolean hasWordsOnly,
         Pageable pageable
     );
+
+    default Page<KanjiEntry> search(Long topicId, String keyword, Pageable pageable) {
+        return search(topicId, keyword, null, null, false, pageable);
+    }
 
     @Query("SELECT COALESCE(MAX(k.sourceLine), 0) FROM KanjiEntry k")
     Integer findMaxSourceLine();

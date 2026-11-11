@@ -2,6 +2,8 @@ package com.nihon.controller;
 
 import com.nihon.config.ClientIpResolver;
 import com.nihon.dto.ExportTextFormat;
+import com.nihon.dto.VocabQuickFilter;
+import com.nihon.dto.VocabViewMode;
 import com.nihon.dto.VocabularyForm;
 import com.nihon.dto.VocabularyRowDto;
 import com.nihon.entity.Topic;
@@ -85,6 +87,8 @@ public class VocabularyController {
     @GetMapping
     public String list(@RequestParam(value = "topicId", required = false) Long topicId,
                        @RequestParam(value = "keyword", required = false) String keyword,
+                       @RequestParam(value = "filter", defaultValue = "ALL") String filter,
+                       @RequestParam(value = "view", defaultValue = "COMPACT") String view,
                        @RequestParam(value = "page", defaultValue = "0") int page,
                        @RequestParam(value = "size", defaultValue = "20") int size,
                        Model model) {
@@ -93,6 +97,8 @@ public class VocabularyController {
         Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by("id").descending());
 
         String safeKeyword = sanitizeKeyword(keyword);
+        VocabViewMode viewMode = VocabViewMode.fromString(view);
+        VocabQuickFilter quickFilter = VocabQuickFilter.fromString(filter);
         List<Topic> topics = topicService.findAllOrdered();
 
         Long effectiveTopicId = topicId;
@@ -109,11 +115,22 @@ public class VocabularyController {
                 model.addAttribute("topics", topics);
                 model.addAttribute("selectedTopicId", topicId);
                 model.addAttribute("keyword", safeKeyword);
+                model.addAttribute("filter", quickFilter.name());
+                model.addAttribute("view", viewMode.name());
+                model.addAttribute("quickFilters", VocabQuickFilter.values());
                 return "vocabulary/list";
             }
         }
 
-        Page<VocabularyRowDto> vocabPage = vocabularyService.search(effectiveTopicId, safeKeyword, pageable);
+        Page<VocabularyRowDto> vocabPage;
+        if (quickFilter == VocabQuickFilter.ALL && viewMode == VocabViewMode.COMPACT) {
+            vocabPage = vocabularyService.search(effectiveTopicId, safeKeyword, pageable);
+        } else {
+            vocabPage = vocabularyService.search(effectiveTopicId, safeKeyword, quickFilter, viewMode, pageable);
+        }
+        if (vocabPage == null) {
+            vocabPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
+        }
 
         String selectedTopicName = null;
         if (effectiveTopicId != null) {
@@ -130,6 +147,9 @@ public class VocabularyController {
         model.addAttribute("selectedTopicId", effectiveTopicId);
         model.addAttribute("selectedTopicName", selectedTopicName);
         model.addAttribute("keyword", safeKeyword);
+        model.addAttribute("filter", quickFilter.name());
+        model.addAttribute("view", viewMode.name());
+        model.addAttribute("quickFilters", VocabQuickFilter.values());
 
         return "vocabulary/list";
     }

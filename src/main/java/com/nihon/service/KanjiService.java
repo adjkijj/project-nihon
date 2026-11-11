@@ -38,17 +38,31 @@ public class KanjiService {
     }
 
     /**
-     * Tìm kiếm và lọc Kanji theo chủ đề và từ khóa (ký tự Kanji, Hán Việt, ý nghĩa, âm On/Kun).
+     * Tìm kiếm và lọc Kanji đa tiêu chí: chủ đề, từ khóa, âm đọc On/Kun (hỗ trợ Hepburn romaji), chỉ Kanji có từ cần nhớ.
      */
-    public Page<KanjiDetailDto> search(Long topicId, String keyword, Pageable pageable) {
+    public Page<KanjiDetailDto> search(Long topicId, String keyword, String reading, boolean hasWordsOnly, Pageable pageable) {
         String sanitizedKeyword = sanitizeKeyword(keyword);
-        Page<KanjiEntry> page = kanjiEntryRepository.search(topicId, sanitizedKeyword, pageable);
+        String readingHiragana = null;
+        String readingKatakana = null;
+        if (reading != null && !reading.isBlank()) {
+            String safeReading = sanitizeKeyword(reading);
+            readingHiragana = RomajiConverter.toHiragana(safeReading);
+            readingKatakana = RomajiConverter.toKatakana(readingHiragana);
+        }
+        Page<KanjiEntry> page = kanjiEntryRepository.search(topicId, sanitizedKeyword, readingHiragana, readingKatakana, hasWordsOnly, pageable);
         return page.map(entity -> {
             KanjiDetailDto dto = KanjiDetailDto.fromEntity(entity);
             Long tId = entity.getTopic() != null ? entity.getTopic().getId() : null;
             dto.setWords(getWordsForKanji(tId, entity.getCharacter()));
             return dto;
         });
+    }
+
+    /**
+     * Tìm kiếm và lọc Kanji theo chủ đề và từ khóa (giữ tương thích ngược).
+     */
+    public Page<KanjiDetailDto> search(Long topicId, String keyword, Pageable pageable) {
+        return search(topicId, keyword, null, false, pageable);
     }
 
     /**
@@ -98,6 +112,37 @@ public class KanjiService {
      */
     public List<Topic> getKanjiTopics() {
         return topicRepository.findByKanjiSectionTrueOrderBySortOrderAsc();
+    }
+
+    /**
+     * Lấy danh sách các chủ đề bài học Kanji gom nhóm theo chủ đề cha để hiển thị optgroup.
+     */
+    public List<com.nihon.dto.TopicGroupDto> getKanjiTopicGroups() {
+        List<Topic> allKanjiTopics = topicRepository.findByKanjiSectionTrueOrderBySortOrderAsc();
+        java.util.Map<String, List<Topic>> groups = new java.util.LinkedHashMap<>();
+
+        for (Topic t : allKanjiTopics) {
+            if (t.getParent() != null) {
+                String parentName = t.getParent().getName();
+                groups.computeIfAbsent(parentName, k -> new java.util.ArrayList<>()).add(t);
+            }
+        }
+
+        List<Topic> standalone = new java.util.ArrayList<>();
+        for (Topic t : allKanjiTopics) {
+            if (t.getParent() == null && !groups.containsKey(t.getName())) {
+                standalone.add(t);
+            }
+        }
+        if (!standalone.isEmpty()) {
+            groups.put("Khác", standalone);
+        }
+
+        List<com.nihon.dto.TopicGroupDto> result = new java.util.ArrayList<>();
+        for (java.util.Map.Entry<String, List<Topic>> entry : groups.entrySet()) {
+            result.add(new com.nihon.dto.TopicGroupDto(entry.getKey(), entry.getValue()));
+        }
+        return result;
     }
 
     /**
