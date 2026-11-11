@@ -83,6 +83,8 @@ class KanjiControllerTest {
                 .topicId(5L)
                 .topicName("Kanji Lesson 5")
                 .sourceLine(1244)
+                .strokeFileName("09b5a.svg")
+                .hasStrokeData(true)
                 .build();
 
         kanjiSchoolMissingKun = KanjiDetailDto.builder()
@@ -95,6 +97,8 @@ class KanjiControllerTest {
                 .topicId(5L)
                 .topicName("Kanji Lesson 5")
                 .sourceLine(1800)
+                .strokeFileName(null)
+                .hasStrokeData(false)
                 .build();
 
         when(vocabularyService.findWordsContainingKanji(any(), anyInt(), anyInt()))
@@ -543,5 +547,35 @@ class KanjiControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("kanji/detail"))
                 .andExpect(model().attributeExists("vocabContainingPage"));
+    }
+
+    @Test
+    @DisplayName("F19: Trang chi tiết Kanji hiển thị khung thứ tự nét và các nút khi hasStrokeData == true")
+    void testDetail_withStrokeData_rendersButtonsAndStrokeBox() throws Exception {
+        when(kanjiService.findDetailById(1L)).thenReturn(Optional.of(kanjiFish));
+        when(kanjiService.getRelatedVocabulary("魚", 5L)).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/kanji/1"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("kanji/detail"))
+                .andExpect(content().string(containsString("id=\"stroke-order-box\"")))
+                .andExpect(content().string(containsString("data-stroke-url=\"/kanjivg/09b5a.svg\"")))
+                .andExpect(content().string(containsString("btn-stroke-play")))
+                .andExpect(content().string(containsString("btn-stroke-replay")))
+                .andExpect(content().string(containsString("btn-stroke-numbers")))
+                .andExpect(content().string(containsString("Dữ liệu thứ tự nét: <a href=\"https://kanjivg.tagaini.net/\"")));
+    }
+
+    @Test
+    @DisplayName("F19: Trang chi tiết Kanji ẩn khung thứ tự nét và các nút khi hasStrokeData == false")
+    void testDetail_withoutStrokeData_hidesStrokeBoxAndButtons() throws Exception {
+        when(kanjiService.findDetailById(2L)).thenReturn(Optional.of(kanjiSchoolMissingKun));
+        when(kanjiService.getRelatedVocabulary("校", 5L)).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/kanji/2"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("kanji/detail"))
+                .andExpect(content().string(not(containsString("id=\"stroke-order-box\""))))
+                .andExpect(content().string(not(containsString("btn-stroke-play"))));
     }
 }

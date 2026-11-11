@@ -1,0 +1,156 @@
+/**
+ * CSS cho Trình phát hoạt ảnh thứ tự nét viết Kanji (KanjiVG Stroke Order Player - F19)
+ */
+
+.stroke-order-box {
+    width: 100%;
+    margin-top: 1.25rem;
+    margin-bottom: 1.25rem;
+    padding: 1rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.stroke-box-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+}
+
+.stroke-canvas-area {
+    width: 160px;
+    height: 160px;
+    background-color: #0b1120;
+    border: 2px dashed rgba(56, 189, 248, 0.3);
+    border-radius: var(--radius-md);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.85rem;
+    overflow: hidden;
+}
+
+.stroke-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Các đường nét mờ chỉ dẫn */
+.stroke-grid-line {
+    stroke: rgba(148, 163, 184, 0.15);
+    stroke-width: 1;
+    stroke-dasharray: 4, 4;
+}
+
+/* Nét nền chữ mờ */
+.stroke-ghost-path {
+    fill: none;
+    stroke: rgba(148, 163, 184, 0.2);
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Nét vẽ động chính */
+.stroke-path {
+    fill: none;
+    stroke: #38bdf8;
+    stroke-width: 4.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: stroke-dashoffset 0.5s ease-in-out;
+}
+
+.stroke-path.stroke-active {
+    stroke: #f59e0b;
+}
+
+.stroke-path.stroke-drawn {
+    stroke: #f8fafc;
+}
+
+/* Số thứ tự nét */
+.stroke-number {
+    font-size: 9px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-weight: 700;
+    fill: #f59e0b;
+    dominant-baseline: central;
+    text-anchor: middle;
+    pointer-events: none;
+    user-select: none;
+}
+
+.stroke-controls {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+}
+
+.btn-stroke {
+    font-size: 0.78rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: var(--radius-sm);
+    background-color: var(--border-color);
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.btn-stroke:hover:not(:disabled) {
+    background-color: var(--accent);
+    color: #0f172a;
+    border-color: var(--accent);
+}
+
+.btn-stroke:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.stroke-error-msg {
+    color: #f87171;
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+    text-align: center;
+}
+
+.stroke-attribution {
+    margin-top: 0.35rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.stroke-attribution a {
+    color: var(--accent);
+    text-decoration: underline;
+}
+
+.stroke-attribution a:hover {
+    color: var(--accent-hover);
+}
+
+/* Giảm chuyển động theo thiết lập người dùng */
+@media (prefers-reduced-motion: reduce) {
+    .stroke-path {
+        transition: none !important;
+        stroke-dashoffset: 0 !important;
+    }
+}
+

@@ -274,3 +274,11 @@ Dự án cung cấp tài liệu kỹ thuật chi tiết tại thư mục [docs/]
 - **[docs/FIELD_LIMITS.md](docs/FIELD_LIMITS.md):** Bảng đối chiếu chi tiết toàn bộ độ dài trường giữa Database, Entity, Parser và Form DTO.
 - **[docs/SECURITY_IMPORT.md](docs/SECURITY_IMPORT.md):** Báo cáo đối chiếu an toàn hệ thống theo tiêu chuẩn an ninh thông tin **OWASP Top 10 (2021)** và **PCI-DSS v4.0**.
 - **[docs/HTTPS_DEV_GUIDE.md](docs/HTTPS_DEV_GUIDE.md):** Hướng dẫn tạo chứng chỉ số tự ký (PKCS12) và kích hoạt TLS/HTTPS trên môi trường cục bộ để kiểm thử chuyển hướng an toàn.
+
+---
+
+## 10. Giấy phép dữ liệu (Data Licenses)
+
+- **Dữ liệu thứ tự nét viết Kanji:** Được trích xuất và tham chiếu từ dự án mã nguồn mở [KanjiVG](https://kanjivg.tagaini.net/) (bản quyền © 2009-2023 Ulrich Apel và các cộng tác viên KanjiVG).
+- **Điều khoản giấy phép:** Phát hành theo giấy phép [Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)](https://creativecommons.org/licenses/by-sa/3.0/). Thông tin chi tiết giấy phép lưu tại [src/main/resources/static/kanjivg/LICENSE.txt](src/main/resources/static/kanjivg/LICENSE.txt).
+
