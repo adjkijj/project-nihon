@@ -74,6 +74,28 @@
                 <button type="submit" class="btn btn-primary">Tìm kiếm</button>
                 <a href="/vocabulary" class="btn btn-secondary">Đặt lại</a>
             </form>
+
+            <div class="export-panel">
+                <form th:action="@{/vocabulary/export-text}" method="get" class="export-form">
+                    <input type="hidden" name="topicId" th:value="${selectedTopicId}" th:if="${selectedTopicId != null}">
+                    <input type="hidden" name="keyword" th:value="${keyword}" th:if="${keyword != null}">
+                    <div class="export-controls">
+                        <label for="export-format" class="export-label">Định dạng xuất:</label>
+                        <select id="export-format" name="format" class="form-control export-select">
+                            <option value="TAB" selected>TAB (Phân cách tab cho Quizlet / Anki)</option>
+                            <option value="COLON">COLON (tiếng Nhật (cách đọc) : nghĩa)</option>
+                        </select>
+                        <button type="submit" class="btn btn-secondary" id="btn-export-text">Xuất cho Quizlet/Anki</button>
+                    </div>
+                </form>
+                <div class="export-direct-links">
+                    <span class="export-hint">Tải nhanh:</span>
+                    <a th:href="@{/vocabulary/export-text(topicId=${selectedTopicId}, keyword=${keyword}, format='TAB')}" class="export-link">Tệp TAB</a>
+                    <span class="export-divider">|</span>
+                    <a th:href="@{/vocabulary/export-text(topicId=${selectedTopicId}, keyword=${keyword}, format='COLON')}" class="export-link">Tệp COLON</a>
+                </div>
+                <p class="export-note">Tệp dùng để dán vào Quizlet hoặc nhập vào Anki.</p>
+            </div>
         </section>
 
         <section class="table-container">

@@ -66,6 +66,33 @@ public class VocabularyService {
 
     @Transactional(readOnly = true)
     public Page<VocabularyRowDto> search(Long topicId, String keyword, Pageable pageable) {
+        List<VocabularyRowDto> rows = findAllMatching(topicId, keyword);
+
+        int total = rows.size();
+        int page = Math.max(0, pageable.getPageNumber());
+        int size = Math.max(1, pageable.getPageSize());
+        long fromIndexLong = (long) page * (long) size;
+        List<VocabularyRowDto> pageContent;
+        if (fromIndexLong >= total || fromIndexLong < 0) {
+            pageContent = Collections.emptyList();
+        } else {
+            int fromIndex = (int) fromIndexLong;
+            int toIndex = (int) Math.min(fromIndexLong + size, total);
+            pageContent = rows.subList(fromIndex, toIndex);
+        }
+
+        return new PageImpl<>(pageContent, pageable, total);
+    }
+
+    /**
+     * Tìm kiếm và gom nhóm tất cả từ vựng khớp với tiêu chí lọc mà không phân trang (dùng cho xuất dữ liệu).
+     *
+     * @param topicId ID chủ đề cần lọc (tùy chọn)
+     * @param keyword Từ khóa tìm kiếm (tùy chọn)
+     * @return Danh sách toàn bộ từ vựng khớp tiêu chí lọc
+     */
+    @Transactional(readOnly = true)
+    public List<VocabularyRowDto> findAllMatching(Long topicId, String keyword) {
         // Tải toàn bộ từ vựng kèm Topic trong 1 câu SQL duy nhất (JOIN FETCH) để chống N+1
         List<Vocabulary> allVocabs = vocabularyRepository.findAllWithTopic();
         if (allVocabs.size() > LARGE_DATASET_WARN_THRESHOLD) {
@@ -136,20 +163,7 @@ public class VocabularyService {
                     .build());
         }
 
-        int total = rows.size();
-        int page = Math.max(0, pageable.getPageNumber());
-        int size = Math.max(1, pageable.getPageSize());
-        long fromIndexLong = (long) page * (long) size;
-        List<VocabularyRowDto> pageContent;
-        if (fromIndexLong >= total || fromIndexLong < 0) {
-            pageContent = Collections.emptyList();
-        } else {
-            int fromIndex = (int) fromIndexLong;
-            int toIndex = (int) Math.min(fromIndexLong + size, total);
-            pageContent = rows.subList(fromIndex, toIndex);
-        }
-
-        return new PageImpl<>(pageContent, pageable, total);
+        return rows;
     }
 
     public String sanitizeKeyword(String keyword) {

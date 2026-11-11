@@ -16,6 +16,7 @@
   - Khi xem tất cả chủ đề: thao tác xóa sẽ xóa trên toàn bộ các chủ đề trong nhóm (`allIds`); thao tác sửa nội dung văn bản cập nhật đồng bộ toàn nhóm để giữ tính nhất quán.
 - **Trang chi tiết từ vựng (`/vocabulary/{id}`):** Hiển thị đầy đủ chữ Nhật, cách đọc, Romaji, nghĩa tiếng Việt, danh sách mọi chủ đề chứa từ, ngày tạo/cập nhật, và danh sách các chữ Kanji xuất hiện trong từ (liên kết trực tiếp tới `/kanji/{id}`).
 - **Thao tác hàng loạt (`Bulk Actions`):** Hỗ trợ chọn nhiều dòng (tối đa **200 ID/lần**) để **Xóa hàng loạt** (`POST /vocabulary/bulk-delete`) hoặc **Chuyển hàng loạt sang chủ đề khác** (`POST /vocabulary/bulk-move`, tự động gộp nếu từ đã tồn tại ở chủ đề đích).
+- **Xuất tệp văn bản cho Quizlet & Anki (`GET /vocabulary/export-text`):** Xuất danh sách từ vựng đang xem/lọc ra định dạng `TAB` (ngăn cách bằng tab) hoặc `COLON` (`tiếng Nhật (cách đọc) : nghĩa`). Tệp đính kèm mã hóa UTF-8 có tiền tố BOM (`\uFEFF`), tên tệp cố định theo mẫu thời gian `nihon-vocabulary-yyyyMMdd-HHmm.txt`. Giới hạn tối đa **5000 dòng/lần**; trường hợp vượt quá 5000 dòng, hệ thống trả về mã lỗi **HTTP 400 Bad Request** với thông báo yêu cầu thu hẹp phạm vi tìm kiếm. Đồng thời áp dụng giới hạn tần suất theo địa chỉ IP tối đa **20 lần/phút**.
 
 ### 1.3. Quản lý Hán tự Kanji (`/kanji`)
 - **Thêm, sửa, xóa Kanji:** Quản lý Hán tự đơn, âm Hán Việt, ý nghĩa tiếng Việt, âm On (Onyomi) và âm Kun (Kunyomi) gắn với các chủ đề thuộc nhánh Kanji (`kanjiSection = true`).
