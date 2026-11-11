@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${retryWrongOnly ? 'Ôn lại từ làm sai - Kết quả - Project Nihon' : 'Kết quả kiểm tra - Project Nihon'}">Kết quả kiểm tra - Project Nihon</title>
+    <title
+        th:text="${retryWrongOnly ? 'Ôn lại từ làm sai - Kết quả - Project Nihon' : 'Kết quả kiểm tra - Project Nihon'}">
+        Kết quả kiểm tra - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/practice-result.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
     <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
@@ -11,6 +14,7 @@
     <script th:src="@{/js/app.js}" defer></script>
     <script th:src="@{/js/practice-next.js}" defer></script>
 </head>
+
 <body>
     <header>
         <a href="/" class="brand">
@@ -35,7 +39,8 @@
                 <div class="status-icon">✓</div>
                 <div>
                     <div class="status-title">Chính xác hoàn toàn!</div>
-                    <div class="status-desc" th:text="${result.feedbackMessage}">Bạn đã trả lời đúng tất cả tiêu chí.</div>
+                    <div class="status-desc" th:text="${result.feedbackMessage}">Bạn đã trả lời đúng tất cả tiêu chí.
+                    </div>
                 </div>
             </div>
 
@@ -43,14 +48,17 @@
                 <div class="status-icon">✗</div>
                 <div>
                     <div class="status-title">Chưa chính xác!</div>
-                    <div class="status-desc" th:text="${result.feedbackMessage}">Hãy đối chiếu với đáp án chuẩn bên dưới.</div>
+                    <div class="status-desc" th:text="${result.feedbackMessage}">Hãy đối chiếu với đáp án chuẩn bên
+                        dưới.</div>
                 </div>
             </div>
 
             <!-- Question Word Preview -->
             <div class="question-box">
                 <div class="question-word" th:title="${result.japaneseText}">
-                    <th:block th:replace="~{fragments/furigana :: rubyWord(${result.japaneseText}, ${result.expectedReading})}"></th:block>
+                    <th:block
+                        th:replace="~{fragments/furigana :: rubyWord(${result.japaneseText}, ${result.expectedReading})}">
+                    </th:block>
                     <th:block th:replace="~{fragments/speech :: speakerBtn(${result.speechText})}"></th:block>
                 </div>
                 <div class="question-topic" th:text="${'Chủ đề: ' + result.topicName}">Chủ đề</div>
@@ -69,7 +77,7 @@
                         <div class="answer-col">
                             <label>Câu trả lời của bạn</label>
                             <span th:text="${result.userReading.isEmpty() ? '(Để trống)' : result.userReading}"
-                                  th:classappend="${result.readingCorrect} ? 'user-val correct' : 'user-val wrong'">
+                                th:classappend="${result.readingCorrect} ? 'user-val correct' : 'user-val wrong'">
                                 watashi
                             </span>
                         </div>
@@ -101,13 +109,14 @@
                         <div class="answer-col">
                             <label>Câu trả lời của bạn</label>
                             <span th:text="${result.userMeaning.isEmpty() ? '(Để trống)' : result.userMeaning}"
-                                  th:classappend="${result.meaningCorrect} ? 'user-val correct' : 'user-val wrong'">
+                                th:classappend="${result.meaningCorrect} ? 'user-val correct' : 'user-val wrong'">
                                 Tôi
                             </span>
                         </div>
                         <div class="answer-col">
                             <label>Đáp án chuẩn trong dữ liệu</label>
-                            <span class="expected-val" th:text="${(result.expectedMeaning != null && !result.expectedMeaning.isEmpty()) ? result.expectedMeaning : '-'}">Tôi</span>
+                            <span class="expected-val"
+                                th:text="${(result.expectedMeaning != null && !result.expectedMeaning.isEmpty()) ? result.expectedMeaning : '-'}">Tôi</span>
                         </div>
                     </div>
                 </div>
@@ -124,29 +133,25 @@
 
             <!-- Action Button to Next Word -->
             <div th:if="${retryWrongOnly and retryCompleted}" class="result-actions">
-                <a th:href="@{/practice(topicId=${result.topicId})}"
-                   class="btn-next" id="btnNext" autofocus>
+                <a th:href="@{/practice(topicId=${result.topicId})}" class="btn-next" id="btnNext" autofocus>
                     Quay về trang luyện tập ➔
                 </a>
             </div>
 
             <div th:unless="${retryWrongOnly and retryCompleted}" class="result-actions">
                 <a th:href="@{/practice/question(topicId=${result.topicId}, excludeId=${result.vocabId}, retryWrongOnly=${retryWrongOnly})}"
-                   class="btn-next" id="btnNext" autofocus>
+                    class="btn-next" id="btnNext" autofocus>
                     Chuyển sang từ tiếp theo (Enter) ➔
                 </a>
             </div>
 
             <div class="retry-action-box">
                 <a th:if="${wrongCount > 0}"
-                   th:href="@{/practice/question(topicId=${result.topicId}, retryWrongOnly=true)}"
-                   class="btn-retry-link">
+                    th:href="@{/practice/question(topicId=${result.topicId}, retryWrongOnly=true)}"
+                    class="btn-retry-link">
                     <span>🔄</span> Ôn lại từ làm sai (<span th:text="${wrongCount}">0</span>)
                 </a>
-                <button th:unless="${wrongCount > 0}"
-                        type="button"
-                        class="btn-retry-link disabled"
-                        disabled>
+                <button th:unless="${wrongCount > 0}" type="button" class="btn-retry-link disabled" disabled>
                     <span>🔄</span> Ôn lại từ làm sai (0)
                 </button>
             </div>
@@ -164,4 +169,5 @@
     <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
     <th:block th:replace="~{fragments/speech :: scripts}"></th:block>
 </body>
+
 </html>
