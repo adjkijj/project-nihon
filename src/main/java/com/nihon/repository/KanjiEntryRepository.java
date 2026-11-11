@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,6 +18,9 @@ public interface KanjiEntryRepository extends JpaRepository<KanjiEntry, Long> {
     List<KanjiEntry> findByTopicIdOrderBySourceLineAsc(Long topicId);
 
     Optional<KanjiEntry> findByCharacter(String character);
+
+    @Query("SELECT k FROM KanjiEntry k WHERE k.character IN :characters")
+    List<KanjiEntry> findByCharacterIn(@Param("characters") Collection<String> characters);
 
     boolean existsByCharacter(String character);
 

@@ -557,4 +557,38 @@ class VocabularyServiceTest {
         assertThat(deleteResult.skippedCount()).isEqualTo(2);
         assertThat(vocabularyRepository.findById(v1.getId())).isEmpty();
     }
+
+    @Test
+    @DisplayName("24. F58: findWordsContainingKanji gộp từ trùng qua nhiều chủ đề và phân trang an toàn")
+    void findWordsContainingKanji_deduplicatesAcrossTopics_andPaginatesSafely() {
+        // v1 và v2 là cùng một từ "先生（せんせい）" ở 2 chủ đề khác nhau
+        createVocab(topicA, "先生（せんせい）", "せんせい", "sensei", "Giáo viên", 101);
+        createVocab(topicB, "先生（せんせい）", "せんせい", "sensei", "Giáo viên", 201);
+
+        // v3 là từ khác "先輩（せんぱい）" chỉ ở chủ đề A
+        createVocab(topicA, "先輩（せんぱい）", "せんぱい", "senpai", "Tiền bối", 102);
+
+        // v4 là từ không chứa chữ "先": "水（みず）"
+        createVocab(topicC, "水（みず）", "みず", "mizu", "Nước", 301);
+
+        Page<VocabularyRowDto> page = vocabularyService.findWordsContainingKanji("先", 0, 20);
+
+        assertThat(page.getTotalElements()).isEqualTo(2);
+        assertThat(page.getContent()).hasSize(2);
+
+        VocabularyRowDto first = page.getContent().stream()
+                .filter(r -> "先生（せんせい）".equals(r.getJapaneseText()))
+                .findFirst().orElseThrow();
+        assertThat(first.getTopics()).extracting(Topic::getName)
+                .containsExactly("Chủ đề A", "Chủ đề B");
+
+        // Test phân trang biên hợp lệ
+        Page<VocabularyRowDto> emptyPage = vocabularyService.findWordsContainingKanji("先", 100, 20);
+        assertThat(emptyPage.getContent()).isEmpty();
+        assertThat(emptyPage.getTotalElements()).isEqualTo(2);
+
+        // Test ký tự rỗng/null
+        Page<VocabularyRowDto> blankPage = vocabularyService.findWordsContainingKanji("", 0, 20);
+        assertThat(blankPage.getContent()).isEmpty();
+    }
 }

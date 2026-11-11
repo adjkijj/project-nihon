@@ -162,6 +162,83 @@
             </div>
         </section>
 
+        <!-- All Vocabulary Containing this Kanji Section -->
+        <section class="related-section vocab-containing-section">
+            <div class="section-header">
+                <div class="section-header-row">
+                    <div>
+                        <h2><span>📖</span> Các từ chứa chữ này (<span th:text="${vocabContainingPage != null ? vocabContainingPage.totalElements : 0}">0</span>)</h2>
+                        <p>Toàn bộ từ vựng trong hệ thống chứa ký tự chữ Hán này (gộp theo từ và hiển thị danh sách chủ đề).</p>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${vocabContainingPage == null || vocabContainingPage.empty}" class="missing-notice">
+                Không có từ vựng nào khác trong hệ thống chứa chữ Hán này.
+            </div>
+
+            <div th:if="${vocabContainingPage != null && !vocabContainingPage.empty}">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Từ vựng tiếng Nhật</th>
+                                <th>Cách đọc</th>
+                                <th>Romaji</th>
+                                <th>Nghĩa tiếng Việt</th>
+                                <th>Chủ đề liên kết</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="v : ${vocabContainingPage.content}">
+                                <td class="vocab-jp" th:title="${v.japaneseText}">
+                                    <a th:href="@{'/vocabulary/' + ${v.id}}" class="vocab-detail-link">
+                                        <th:block th:replace="~{fragments/furigana :: rubyWord(${v.japaneseText}, ${v.reading})}"></th:block>
+                                    </a>
+                                    <th:block th:replace="~{fragments/speech :: speakerBtn(${v.speechText})}"></th:block>
+                                </td>
+                                <td th:text="${(v.reading != null && !v.reading.isBlank()) ? v.reading : '-'}">さかな</td>
+                                <td class="vocab-romaji" th:text="${(v.romaji != null && !v.romaji.isBlank()) ? v.romaji : '-'}">sakana</td>
+                                <td th:text="${(v.meaningVi != null && !v.meaningVi.isBlank()) ? v.meaningVi : '-'}">Cá</td>
+                                <td>
+                                    <div class="topic-badges-list">
+                                        <a th:each="t : ${v.topics}"
+                                           th:href="@{/vocabulary(topicId=${t.id})}"
+                                           class="badge-topic vocab-topic-link"
+                                           th:text="${t.name}">Chủ đề 1</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Phân trang 20 dòng mỗi trang -->
+                <nav class="pagination" th:if="${vocabContainingPage.totalPages > 1}" aria-label="Phân trang từ vựng chứa Kanji">
+                    <a th:if="${vocabContainingPage.hasPrevious()}"
+                       th:href="@{'/kanji/' + ${kanji.id}(vocabPage=${vocabContainingPage.number - 1})}"
+                       class="page-link"
+                       aria-label="Trang trước">«</a>
+                    <span th:unless="${vocabContainingPage.hasPrevious()}"
+                          class="page-link disabled"
+                          aria-disabled="true">«</span>
+
+                    <span class="page-indicator"
+                          th:text="${'Trang ' + (vocabContainingPage.number + 1) + ' / ' + vocabContainingPage.totalPages}">
+                        Trang 1 / 1
+                    </span>
+
+                    <a th:if="${vocabContainingPage.hasNext()}"
+                       th:href="@{'/kanji/' + ${kanji.id}(vocabPage=${vocabContainingPage.number + 1})}"
+                       class="page-link"
+                       aria-label="Trang sau">»</a>
+                    <span th:unless="${vocabContainingPage.hasNext()}"
+                          class="page-link disabled"
+                          aria-disabled="true">»</span>
+                </nav>
+            </div>
+        </section>
+
         <!-- Actions -->
         <div class="actions-bar">
             <a th:href="@{/kanji}" class="btn btn-secondary">← Quay lại danh sách Kanji</a>

@@ -659,7 +659,9 @@ class VocabularyControllerTest {
                 .andExpect(content().string(containsString("先生（せんせい）")))
                 .andExpect(content().string(containsString("1. Chào hỏi")))
                 .andExpect(content().string(containsString("2. Trường học")))
-                .andExpect(content().string(containsString("/kanji/5")));
+                .andExpect(content().string(containsString("/kanji/5")))
+                .andExpect(content().string(containsString("Chữ Kanji trong từ")))
+                .andExpect(content().string(containsString("chưa có trong danh sách Kanji")));
 
         // ID không hợp lệ hoặc không tồn tại -> chuyển hướng kèm thông báo lỗi
         mockMvc.perform(get("/vocabulary/-1"))

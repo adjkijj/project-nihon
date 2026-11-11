@@ -2,11 +2,14 @@ package com.nihon.controller;
 
 import com.nihon.dto.KanjiDetailDto;
 import com.nihon.dto.KanjiForm;
+import com.nihon.dto.VocabularyRowDto;
 import com.nihon.entity.KanjiEntry;
 import com.nihon.entity.Topic;
 import com.nihon.entity.Vocabulary;
 import com.nihon.service.KanjiService;
+import com.nihon.service.VocabularyService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -40,9 +43,16 @@ public class KanjiController {
     private static final int MAX_KEYWORD_LENGTH = 50;
 
     private final KanjiService kanjiService;
+    private final VocabularyService vocabularyService;
 
     public KanjiController(KanjiService kanjiService) {
+        this(kanjiService, null);
+    }
+
+    @Autowired
+    public KanjiController(KanjiService kanjiService, VocabularyService vocabularyService) {
         this.kanjiService = kanjiService;
+        this.vocabularyService = vocabularyService;
     }
 
     @InitBinder("form")
@@ -120,6 +130,7 @@ public class KanjiController {
      */
     @GetMapping("/{id}")
     public String detail(@PathVariable("id") Long id,
+                         @RequestParam(value = "vocabPage", required = false) String vocabPage,
                          Model model,
                          RedirectAttributes redirectAttributes) {
         if (id == null || id <= 0) {
@@ -135,8 +146,31 @@ public class KanjiController {
         KanjiDetailDto kanji = kanjiOpt.get();
         List<Vocabulary> relatedVocabularies = kanjiService.getRelatedVocabulary(kanji.getCharacter(), kanji.getTopicId());
 
+        int safeVocabPage = 0;
+        if (vocabPage != null && !vocabPage.isBlank()) {
+            try {
+                safeVocabPage = Integer.parseInt(vocabPage.trim());
+            } catch (NumberFormatException e) {
+                safeVocabPage = 0;
+            }
+        }
+        if (safeVocabPage < 0) {
+            safeVocabPage = 0;
+        } else if (safeVocabPage > MAX_PAGE) {
+            safeVocabPage = MAX_PAGE;
+        }
+
+        Page<VocabularyRowDto> vocabContainingPage;
+        if (vocabularyService != null) {
+            vocabContainingPage = vocabularyService.findWordsContainingKanji(kanji.getCharacter(), safeVocabPage, 20);
+        } else {
+            vocabContainingPage = new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 20), 0);
+        }
+
         model.addAttribute("kanji", kanji);
         model.addAttribute("relatedVocabularies", relatedVocabularies);
+        model.addAttribute("vocabContainingPage", vocabContainingPage);
+        model.addAttribute("vocabPage", safeVocabPage);
         model.addAttribute("activeNav", "kanji");
 
         return "kanji/detail";

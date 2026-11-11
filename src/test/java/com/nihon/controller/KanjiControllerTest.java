@@ -8,6 +8,7 @@ import com.nihon.entity.KanjiEntry;
 import com.nihon.entity.Topic;
 import com.nihon.entity.Vocabulary;
 import com.nihon.service.KanjiService;
+import com.nihon.service.VocabularyService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -30,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -55,6 +58,9 @@ class KanjiControllerTest {
 
     @MockitoBean
     private KanjiService kanjiService;
+
+    @MockitoBean
+    private VocabularyService vocabularyService;
 
     private KanjiDetailDto kanjiFish;
     private KanjiDetailDto kanjiSchoolMissingKun;
@@ -90,6 +96,9 @@ class KanjiControllerTest {
                 .topicName("Kanji Lesson 5")
                 .sourceLine(1800)
                 .build();
+
+        when(vocabularyService.findWordsContainingKanji(any(), anyInt(), anyInt()))
+                .thenReturn(new PageImpl<>(Collections.emptyList()));
     }
 
     @Test
@@ -493,5 +502,46 @@ class KanjiControllerTest {
         ArgumentCaptor<KanjiForm> captor = ArgumentCaptor.forClass(KanjiForm.class);
         verify(kanjiService).create(captor.capture());
         assertThat(captor.getValue().getId()).isNull();
+    }
+
+    @Test
+    @DisplayName("F58: Chi tiết Kanji hiển thị mục 'Các từ chứa chữ này' kèm liên kết /vocabulary/{id}")
+    void testDetailWithWordsContainingKanji() throws Exception {
+        when(kanjiService.findDetailById(1L)).thenReturn(Optional.of(kanjiFish));
+        when(kanjiService.getRelatedVocabulary("魚", 5L)).thenReturn(Collections.emptyList());
+
+        com.nihon.dto.VocabularyRowDto rowDto = com.nihon.dto.VocabularyRowDto.builder()
+                .id(202L)
+                .japaneseText("金魚（きんぎょ）")
+                .reading("きんぎょ")
+                .romaji("kingyo")
+                .meaningVi("Cá vàng")
+                .topics(List.of(kanjiTopic))
+                .build();
+
+        when(vocabularyService.findWordsContainingKanji(eq("魚"), eq(0), eq(20)))
+                .thenReturn(new PageImpl<>(List.of(rowDto), org.springframework.data.domain.PageRequest.of(0, 20), 1));
+
+        mockMvc.perform(get("/kanji/1"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("kanji/detail"))
+                .andExpect(model().attributeExists("vocabContainingPage"))
+                .andExpect(content().string(containsString("Các từ chứa chữ này")))
+                .andExpect(content().string(containsString("金魚（きんぎょ）")))
+                .andExpect(content().string(containsString("きんぎょ")))
+                .andExpect(content().string(containsString("/vocabulary/202")));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"abc", "-5", "9999999999999999", "   "})
+    @DisplayName("F58: Tham số vocabPage lạ không gây lỗi 500, fallback an toàn")
+    void testDetailWithInvalidVocabPage(String invalidPage) throws Exception {
+        when(kanjiService.findDetailById(1L)).thenReturn(Optional.of(kanjiFish));
+        when(kanjiService.getRelatedVocabulary("魚", 5L)).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/kanji/1").param("vocabPage", invalidPage))
+                .andExpect(status().isOk())
+                .andExpect(view().name("kanji/detail"))
+                .andExpect(model().attributeExists("vocabContainingPage"));
     }
 }

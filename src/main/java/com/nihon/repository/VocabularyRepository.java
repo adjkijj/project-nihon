@@ -36,6 +36,13 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
     @Query("SELECT v FROM Vocabulary v WHERE v.japaneseText LIKE CONCAT('%', :character, '%') ORDER BY v.id ASC")
     List<Vocabulary> findWordsByCharacter(@Param("character") String character);
 
+    @Query(value = "SELECT v FROM Vocabulary v JOIN FETCH v.topic t WHERE v.japaneseText LIKE CONCAT('%', :escapedKanji, '%') ESCAPE '\\'",
+           countQuery = "SELECT COUNT(v) FROM Vocabulary v WHERE v.japaneseText LIKE CONCAT('%', :escapedKanji, '%') ESCAPE '\\'")
+    Page<Vocabulary> findByJapaneseTextContainingKanji(@Param("escapedKanji") String escapedKanji, Pageable pageable);
+
+    @Query("SELECT v FROM Vocabulary v JOIN FETCH v.topic t WHERE v.japaneseText LIKE CONCAT('%', :escapedKanji, '%') ESCAPE '\\' ORDER BY v.japaneseText ASC, v.id ASC")
+    List<Vocabulary> findAllByJapaneseTextContainingKanji(@Param("escapedKanji") String escapedKanji);
+
     @Query("SELECT v FROM Vocabulary v WHERE " +
            "(:topicId IS NULL OR v.topic.id = :topicId) AND " +
            "(:keyword IS NULL OR :keyword = '' OR " +

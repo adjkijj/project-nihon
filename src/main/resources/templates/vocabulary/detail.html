@@ -104,7 +104,7 @@
 
         <!-- Danh sách các chữ Kanji có trong từ -->
         <section class="vocab-detail-card vocab-detail-section">
-            <h2 class="vocab-section-title">Các chữ Kanji trong từ</h2>
+            <h2 class="vocab-section-title">Chữ Kanji trong từ</h2>
             <div th:if="${#lists.isEmpty(vocab.kanjis)}" class="empty-state">
                 Từ này không chứa ký tự chữ Hán (Kanji).
             </div>
@@ -124,7 +124,7 @@
                             <a th:href="@{'/kanji/' + ${k.kanjiId}}" class="vocab-kanji-detail-link">Xem chi tiết Kanji →</a>
                         </div>
                         <div th:if="${k.kanjiId == null}" class="vocab-kanji-missing">
-                            Chưa có trong danh mục Kanji
+                            chưa có trong danh sách Kanji
                         </div>
                     </div>
                 </div>
