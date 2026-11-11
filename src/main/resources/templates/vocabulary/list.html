@@ -23,6 +23,7 @@
             <a href="/vocabulary" class="active">Từ vựng</a>
             <a href="/topics">Chủ đề</a>
             <a href="/kanji">Kanji</a>
+            <a href="/flashcards">Thẻ học</a>
             <a href="/practice">Luyện tập</a>
             <a href="/stats">Thống kê</a>
             <th:block th:replace="~{fragments/furigana :: toggleBtn}"></th:block>
@@ -35,7 +36,10 @@
                 <h1>Quản lý từ vựng</h1>
                 <p>Xem, tìm kiếm, lọc và quản lý kho từ vựng tiếng Nhật</p>
             </div>
-            <a href="/vocabulary/new" class="btn btn-primary">+ Thêm từ mới</a>
+            <div class="action-buttons">
+                <a th:href="@{/flashcards(topicId=${selectedTopicId})}" class="btn btn-secondary" title="Học từ vựng qua thẻ lật Flashcards">🎴 Học thẻ</a>
+                <a href="/vocabulary/new" class="btn btn-primary">+ Thêm từ mới</a>
+            </div>
         </div>
 
         <div th:if="${successMessage}" class="alert alert-success">

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Học từ vựng qua Thẻ lật (Flashcards) - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/vocabulary-list.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/flashcards.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+</head>
+
+<body>
+    <header>
+        <a href="/" class="brand">
+            <span class="brand-badge">日</span>
+            <span>Project Nihon</span>
+        </a>
+        <nav class="u-7dbd1ca1">
+            <a href="/">Trang chủ</a>
+            <a href="/vocabulary">Từ vựng</a>
+            <a href="/topics">Chủ đề</a>
+            <a href="/kanji">Kanji</a>
+            <a href="/flashcards" class="active">Thẻ học</a>
+            <a href="/practice">Luyện tập</a>
+            <a href="/stats">Thống kê</a>
+            <th:block th:replace="~{fragments/furigana :: toggleBtn}"></th:block>
+        </nav>
+    </header>
+
+    <main class="flashcards-main">
+        <div class="page-header">
+            <div class="page-title">
+                <h1>Học qua Thẻ lật (Flashcards)</h1>
+                <p>Ghi nhớ từ vựng tiếng Nhật hai chiều, phát âm giọng chuẩn Tokyo và phản xạ nhanh</p>
+            </div>
+            <div class="toolbar-group">
+                <a th:href="@{/vocabulary(topicId=${selectedTopicId})}" class="btn btn-secondary">📋 Danh sách từ</a>
+            </div>
+        </div>
+
+        <!-- Thông báo lỗi nếu có -->
+        <div th:if="${errorMessage}" class="alert alert-error">
+            <span>⚠️</span>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi.</span>
+        </div>
+
+        <!-- Thông báo số từ bị bỏ qua vì thiếu nghĩa tiếng Việt -->
+        <div th:if="${skippedCount > 0}" class="flashcard-alert alert-info-skipped">
+            <span>ℹ️</span>
+            <span>Đã tự động lọc bỏ <strong th:text="${skippedCount}">0</strong> từ vựng chưa có nghĩa tiếng Việt.</span>
+        </div>
+
+        <!-- Thanh công cụ: Chọn chủ đề, Đổi mặt trước, Xáo trộn bài -->
+        <section class="flashcards-toolbar">
+            <form th:action="@{/flashcards}" method="get" class="toolbar-group">
+                <input type="hidden" name="side" th:value="${side}">
+                <input type="hidden" name="shuffle" th:value="${shuffle}">
+                <label for="topicSelect" class="toolbar-label">Chủ đề:</label>
+                <select id="topicSelect" name="topicId" class="toolbar-select">
+                    <option value="">-- Tất cả chủ đề --</option>
+                    <option th:each="t : ${topics}" th:value="${t.id}"
+                        th:text="${t.parent != null ? '↳ ' + t.name : t.name}"
+                        th:selected="${selectedTopicId != null and selectedTopicId == t.id}">
+                    </option>
+                </select>
+                <noscript>
+                    <button type="submit" class="btn btn-secondary">Lọc</button>
+                </noscript>
+            </form>
+
+            <div class="toolbar-group">
+                <!-- Nút đổi chiều mặt trước thẻ (JA <-> VI) -->
+                <a th:if="${side == 'JA'}"
+                   th:href="@{/flashcards(topicId=${selectedTopicId}, side='VI', shuffle=${shuffle}, page=${currentPage})}"
+                   class="btn btn-secondary"
+                   title="Đổi mặt trước hiển thị Nghĩa tiếng Việt">
+                    🔄 Mặt trước: 🇯🇵 Nhật
+                </a>
+                <a th:if="${side == 'VI'}"
+                   th:href="@{/flashcards(topicId=${selectedTopicId}, side='JA', shuffle=${shuffle}, page=${currentPage})}"
+                   class="btn btn-secondary"
+                   title="Đổi mặt trước hiển thị Tiếng Nhật">
+                    🔄 Mặt trước: 🇻🇳 Việt
+                </a>
+
+                <!-- Nút xáo trộn bài -->
+                <a th:if="${shuffle}"
+                   th:href="@{/flashcards(topicId=${selectedTopicId}, side=${side}, shuffle=true, newSeed=true, page=0)}"
+                   class="btn btn-primary"
+                   title="Tạo thứ tự ngẫu nhiên mới">
+                    🎲 Xáo lại bài
+                </a>
+                <a th:if="${shuffle}"
+                   th:href="@{/flashcards(topicId=${selectedTopicId}, side=${side}, shuffle=false, page=0)}"
+                   class="btn btn-secondary"
+                   title="Quay về thứ tự gốc">
+                    Thứ tự gốc
+                </a>
+                <a th:unless="${shuffle}"
+                   th:href="@{/flashcards(topicId=${selectedTopicId}, side=${side}, shuffle=true, page=0)}"
+                   class="btn btn-secondary"
+                   title="Xáo trộn thứ tự từ vựng">
+                    🎲 Xáo bài
+                </a>
+            </div>
+        </section>
+
+        <!-- Trạng thái chủ đề rỗng -->
+        <div th:if="${cards.empty}" class="empty-state-box">
+            <div class="empty-state-icon">🎴</div>
+            <h2 class="empty-state-title">Chưa có thẻ từ vựng nào</h2>
+            <p class="empty-state-desc" th:if="${selectedTopicName != null}">
+                Chủ đề "[[${selectedTopicName}]]" hiện không có từ vựng nào đủ điều kiện học thẻ (yêu cầu có nghĩa tiếng Việt).
+            </p>
+            <p class="empty-state-desc" th:unless="${selectedTopicName != null}">
+                Hệ thống chưa có từ vựng nào đủ điều kiện học thẻ.
+            </p>
+            <div class="toolbar-group u-justify-center">
+                <a href="/flashcards" class="btn btn-primary" th:if="${selectedTopicId != null}">Xem tất cả chủ đề</a>
+                <a href="/vocabulary" class="btn btn-secondary">Quản lý từ vựng</a>
+            </div>
+        </div>
+
+        <!-- Khung học thẻ Flashcard khi có dữ liệu -->
+        <section th:unless="${cards.empty}" id="flashcard-stage" class="flashcard-stage" th:data-side="${side}">
+            <!-- Chỉ báo số thẻ -->
+            <div class="card-header-status">
+                <div>
+                    <span class="card-counter">
+                        Thẻ <span id="card-current-num" class="card-counter-accent">1</span> / <span id="card-total-num" th:text="${cards.size()}">50</span>
+                    </span>
+                    <span th:if="${totalPages > 1}" class="toolbar-label">
+                        (Trang <strong th:text="${currentPage + 1}">1</strong> / <strong th:text="${totalPages}">1</strong>)
+                    </span>
+                </div>
+                <div>
+                    <span class="badge-tag" th:if="${shuffle}">Đang xáo bài 🎲</span>
+                    <span class="badge-tag" th:unless="${shuffle}">Thứ tự gốc</span>
+                </div>
+            </div>
+
+            <!-- Khung 3D Flashcard Scene -->
+            <div class="flashcard-scene">
+                <div id="flashcard-card" class="flashcard-card" tabindex="0" role="button" aria-label="Thẻ ghi nhớ từ vựng, nhấn để lật" aria-expanded="false">
+                    
+                    <!-- Mặt trước -->
+                    <div class="card-face card-front">
+                        <div class="face-meta">
+                            <span class="face-badge" th:text="${side == 'VI' ? 'MẶT TRƯỚC: TIẾNG VIỆT' : 'MẶT TRƯỚC: TIẾNG NHẬT'}">MẶT TRƯỚC</span>
+                            <div class="face-speaker-wrapper" id="front-speaker-btn" th:if="${side == 'JA'}">
+                                <th:block th:replace="~{fragments/speech :: speakerBtn(speechText=${cards[0].speechText})}"></th:block>
+                            </div>
+                        </div>
+
+                        <div class="face-body">
+                            <!-- Khi side == 'JA' -->
+                            <div th:if="${side == 'JA'}" id="front-japanese-wrapper" class="word-japanese">
+                                <th:block th:replace="~{fragments/furigana :: rubyWord(japaneseText=${cards[0].japaneseText}, reading=${cards[0].reading})}"></th:block>
+                            </div>
+                            <!-- Khi side == 'VI' -->
+                            <div th:if="${side == 'VI'}" id="front-meaning-wrapper" class="word-meaning" th:text="${cards[0].meaningVi}">
+                                Nghĩa tiếng Việt
+                            </div>
+                            <!-- Placeholder cho đổi mặt động bằng JS -->
+                            <div th:if="${side == 'JA'}" id="front-meaning-wrapper" class="word-meaning u-display-none"></div>
+                            <div th:if="${side == 'VI'}" id="front-japanese-wrapper" class="word-japanese u-display-none"></div>
+                        </div>
+
+                        <div class="face-hint">
+                            <span>👆 Nhấn vào thẻ hoặc bấm phím Space để lật</span>
+                        </div>
+                    </div>
+
+                    <!-- Mặt sau -->
+                    <div class="card-face card-back">
+                        <div class="face-meta">
+                            <span class="face-badge" th:text="${side == 'VI' ? 'MẶT SAU: TIẾNG NHẬT' : 'MẶT SAU: TIẾNG VIỆT'}">MẶT SAU</span>
+                            <div class="face-speaker-wrapper" id="back-speaker-btn">
+                                <th:block th:replace="~{fragments/speech :: speakerBtn(speechText=${cards[0].speechText})}"></th:block>
+                            </div>
+                        </div>
+
+                        <div class="face-body">
+                            <!-- Khi side == 'JA': Mặt sau hiện Nghĩa + Romaji -->
+                            <div th:if="${side == 'JA'}" id="back-meaning-wrapper" class="word-meaning" th:text="${cards[0].meaningVi}">
+                                Nghĩa tiếng Việt
+                            </div>
+                            <div th:if="${side == 'JA'}" id="back-romaji-wrapper" class="word-romaji" th:text="${cards[0].romaji}">
+                                romaji
+                            </div>
+
+                            <!-- Khi side == 'VI': Mặt sau hiện Tiếng Nhật + Romaji -->
+                            <div th:if="${side == 'VI'}" id="back-japanese-wrapper" class="word-japanese">
+                                <th:block th:replace="~{fragments/furigana :: rubyWord(japaneseText=${cards[0].japaneseText}, reading=${cards[0].reading})}"></th:block>
+                            </div>
+                            <div th:if="${side == 'VI'}" id="back-romaji-wrapper" class="word-romaji" th:text="${cards[0].romaji}">
+                                romaji
+                            </div>
+
+                            <!-- Placeholder cho đổi mặt động bằng JS -->
+                            <div th:if="${side == 'JA'}" id="back-japanese-wrapper" class="word-japanese u-display-none"></div>
+                            <div th:if="${side == 'VI'}" id="back-meaning-wrapper" class="word-meaning u-display-none"></div>
+                        </div>
+
+                        <div class="face-hint">
+                            <span>👆 Nhấn vào thẻ hoặc bấm phím Space để lật lại</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Bộ nút điều khiển Thẻ Trước / Lật Thẻ / Thẻ Sau -->
+            <div class="card-nav-controls">
+                <button type="button" id="btn-prev-card" class="btn btn-secondary btn-card-nav" disabled>
+                    ◀ Trước (←)
+                </button>
+                <button type="button" id="btn-flip-card" class="btn btn-primary btn-card-flip">
+                    🔄 Lật thẻ (Space)
+                </button>
+                <button type="button" id="btn-next-card" class="btn btn-secondary btn-card-nav" th:disabled="${cards.size() <= 1}">
+                    Sau (→) ▶
+                </button>
+            </div>
+
+            <!-- Phím tắt gợi ý -->
+            <div class="shortcuts-hint">
+                <kbd>Space</kbd> Lật thẻ • <kbd>←</kbd> Thẻ trước • <kbd>→</kbd> Thẻ sau
+            </div>
+
+            <!-- Dữ liệu ẩn chứa danh sách thẻ của trang hiện tại (không dùng inline JSON trong script) -->
+            <div id="flashcard-data-list" class="u-display-none">
+                <div th:each="card, iter : ${cards}"
+                     class="flashcard-data-item"
+                     th:data-index="${iter.index}"
+                     th:data-japanese="${card.japaneseText}"
+                     th:data-base-japanese="${card.baseJapaneseText}"
+                     th:data-reading="${card.reading}"
+                     th:data-romaji="${card.romaji}"
+                     th:data-meaning="${card.meaningVi}"
+                     th:data-speech-text="${card.speechText}">
+                </div>
+            </div>
+
+            <!-- Phân trang liên kết bình thường giữa các trang 50 thẻ nếu có nhiều trang -->
+            <nav th:if="${totalPages > 1}" class="flashcards-pagination" aria-label="Phân trang thẻ học">
+                <a th:if="${currentPage > 0}"
+                   th:href="@{/flashcards(topicId=${selectedTopicId}, side=${side}, shuffle=${shuffle}, page=${currentPage - 1})}"
+                   class="btn btn-secondary">
+                    « Trang trước
+                </a>
+
+                <span class="pagination-info">
+                    Trang <strong th:text="${currentPage + 1}">1</strong> / <strong th:text="${totalPages}">1</strong>
+                    (<span th:text="${totalElements}">50</span> từ)
+                </span>
+
+                <a th:if="${currentPage + 1 < totalPages}"
+                   th:href="@{/flashcards(topicId=${selectedTopicId}, side=${side}, shuffle=${shuffle}, page=${currentPage + 1})}"
+                   class="btn btn-secondary">
+                    Trang sau »
+                </a>
+            </nav>
+        </section>
+    </main>
+
+    <!-- Nạp scripts ở cuối body -->
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+    <th:block th:replace="~{fragments/speech :: scripts}"></th:block>
+    <script th:src="@{/js/flashcards.js}" defer></script>
+</body>
+
+</html>
+

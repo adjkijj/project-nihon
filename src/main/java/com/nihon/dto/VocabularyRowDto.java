@@ -67,4 +67,11 @@ public class VocabularyRowDto {
     public String getSpeechText() {
         return com.nihon.service.SpeechHelper.resolveSpeechText(this.japaneseText, this.reading);
     }
+
+    /**
+     * Chuỗi tiếng Nhật đã loại bỏ phần ngoặc cách đọc (nếu có).
+     */
+    public String getBaseJapaneseText() {
+        return com.nihon.service.FuriganaHelper.extractBaseText(this.japaneseText);
+    }
 }
