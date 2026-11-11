@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kiểm tra phản xạ từ vựng Nhật → Việt - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/practice-index.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
 </head>
 <body>
@@ -20,6 +21,7 @@
             <a href="/kanji">Kanji</a>
             <a href="/practice" class="active">Luyện tập</a>
             <a href="/stats">Thống kê</a>
+            <th:block th:replace="~{fragments/furigana :: toggleBtn}"></th:block>
         </nav>
     </header>
 
@@ -74,5 +76,6 @@
     <footer>
         <p>&copy; 2026 Project Nihon. Chế độ kiểm tra phản xạ Nhật → Việt.</p>
     </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
 </body>
 </html>

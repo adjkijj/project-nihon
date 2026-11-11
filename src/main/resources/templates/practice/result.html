@@ -6,6 +6,7 @@
     <title>Kết quả kiểm tra - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/practice-result.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
     <script th:src="@{/js/practice-next.js}" defer></script>
 </head>
@@ -22,6 +23,7 @@
             <a href="/kanji">Kanji</a>
             <a href="/practice" class="active">Luyện tập</a>
             <a href="/stats">Thống kê</a>
+            <th:block th:replace="~{fragments/furigana :: toggleBtn}"></th:block>
         </nav>
     </header>
 
@@ -46,7 +48,9 @@
 
             <!-- Question Word Preview -->
             <div class="question-box">
-                <div class="question-word" th:text="${result.japaneseText}">私（わたし）</div>
+                <div class="question-word" th:title="${result.japaneseText}">
+                    <th:block th:replace="~{fragments/furigana :: rubyWord(${result.japaneseText}, ${result.expectedReading})}"></th:block>
+                </div>
                 <div class="question-topic" th:text="${'Chủ đề: ' + result.topicName}">Chủ đề</div>
             </div>
 
@@ -123,5 +127,6 @@
     <footer>
         <p>&copy; 2026 Project Nihon. Chế độ kiểm tra phản xạ Nhật → Việt.</p>
     </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
 </body>
 </html>

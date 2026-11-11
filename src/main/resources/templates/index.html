@@ -6,6 +6,7 @@
     <title th:text="${title}">Project Nihon - Học Từ Vựng Tiếng Nhật</title>
     <link rel="stylesheet" th:href="@{/css/index.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
 </head>
 <body>
@@ -22,6 +23,7 @@
             <a class="u-e0368358" href="/practice">Luyện tập</a>
             <a class="u-e0368358" href="/stats">Thống kê</a>
             <a class="u-e0368358" href="/import">Nhập Excel</a>
+            <th:block th:replace="~{fragments/furigana :: toggleBtn}"></th:block>
         </nav>
         <div class="env-badge">Java 21 • Spring Boot 3.4.3</div>
     </header>
@@ -84,5 +86,6 @@
     <footer>
         <p>&copy; 2026 Project Nihon. Phát triển với Spring Boot 3.4.3, Thymeleaf &amp; Spring Data JPA.</p>
     </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
 </body>
 </html>

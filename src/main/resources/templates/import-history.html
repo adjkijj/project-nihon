@@ -6,6 +6,7 @@
     <title>Lịch Sử Import Excel - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/import.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
 </head>
 <body>
@@ -22,6 +23,7 @@
             <a href="/practice">Luyện tập</a>
             <a href="/stats">Thống kê</a>
             <a href="/import" class="active">Nhập Excel</a>
+            <th:block th:replace="~{fragments/furigana :: toggleBtn}"></th:block>
         </nav>
     </header>
 
@@ -139,6 +141,7 @@
     <footer>
         <p>&copy; 2026 Project Nihon. Hệ thống ghi nhớ từ vựng tiếng Nhật.</p>
     </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
 </body>
 </html>
 

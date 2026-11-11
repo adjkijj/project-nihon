@@ -6,6 +6,7 @@
     <title th:text="${'Chi tiết chữ ' + kanji.character + (kanji.hanViet != null && !kanji.hanViet.isBlank() ? ' (' + kanji.hanViet + ')' : '') + ' - Project Nihon'}">Chi tiết Kanji - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/kanji-detail.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
 </head>
 <body>
@@ -21,6 +22,7 @@
             <a href="/kanji" class="active">Kanji</a>
             <a href="/practice">Luyện tập</a>
             <a href="/stats">Thống kê</a>
+            <th:block th:replace="~{fragments/furigana :: toggleBtn}"></th:block>
         </nav>
     </header>
 
@@ -145,7 +147,9 @@
                     </thead>
                     <tbody>
                         <tr th:each="v : ${relatedVocabularies}">
-                            <td class="vocab-jp" th:text="${(v.japaneseText != null && !v.japaneseText.isBlank()) ? v.japaneseText : '-'}">魚（さかな）</td>
+                            <td class="vocab-jp" th:title="${v.japaneseText}">
+                                <th:block th:replace="~{fragments/furigana :: rubyWord(${v.japaneseText}, ${v.reading})}"></th:block>
+                            </td>
                             <td th:text="${(v.reading != null && !v.reading.isBlank()) ? v.reading : '-'}">さかな</td>
                             <td class="vocab-romaji" th:text="${(v.romaji != null && !v.romaji.isBlank()) ? v.romaji : '-'}">sakana</td>
                             <td th:text="${(v.meaningVi != null && !v.meaningVi.isBlank()) ? v.meaningVi : '-'}">Cá</td>
@@ -177,5 +181,6 @@
     <footer>
         <p>&copy; 2026 Project Nihon. Khu vực Kanji chuyên biệt.</p>
     </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
 </body>
 </html>

@@ -6,6 +6,7 @@
     <title>Khu vực Kanji - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/kanji-list.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
 </head>
 <body>
@@ -21,6 +22,7 @@
             <a href="/kanji" class="active">Kanji</a>
             <a href="/practice">Luyện tập</a>
             <a href="/stats">Thống kê</a>
+            <th:block th:replace="~{fragments/furigana :: toggleBtn}"></th:block>
         </nav>
     </header>
 
@@ -146,7 +148,9 @@
                     <div th:if="${k.words == null || k.words.isEmpty()}" class="tag-missing">-</div>
                     <ul th:unless="${k.words == null || k.words.isEmpty()}" class="kanji-words-list">
                         <li th:each="w : ${k.words}">
-                            <span class="kw-jp" th:text="${(w.japaneseText != null && !w.japaneseText.isBlank()) ? w.japaneseText : '-'}">お酒（おさけ）</span>
+                            <span class="kw-jp" th:title="${w.japaneseText}">
+                                <th:block th:replace="~{fragments/furigana :: rubyWord(${w.japaneseText}, ${w.reading})}"></th:block>
+                            </span>
                             <span class="kw-meta">
                                 <span class="kw-romaji" th:text="${(w.romaji != null && !w.romaji.isBlank()) ? w.romaji : '-'}">osake</span> •
                                 <span class="kw-meaning" th:text="${(w.meaningVi != null && !w.meaningVi.isBlank()) ? w.meaningVi : '-'}">Rượu</span>
@@ -191,5 +195,6 @@
     <footer>
         <p>&copy; 2026 Project Nihon. Khu vực Kanji chuyên biệt.</p>
     </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
 </body>
 </html>

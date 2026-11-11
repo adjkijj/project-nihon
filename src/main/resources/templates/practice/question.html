@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Câu hỏi kiểm tra - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/practice-question.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
     <script th:src="@{/js/practice-question.js}" defer></script>
 </head>
@@ -21,6 +22,7 @@
             <a href="/kanji">Kanji</a>
             <a href="/practice" class="active">Luyện tập</a>
             <a href="/stats">Thống kê</a>
+            <th:block th:replace="~{fragments/furigana :: toggleBtn}"></th:block>
         </nav>
     </header>
 
@@ -36,9 +38,9 @@
                 <span>Kiểm tra: Nhật → Việt</span>
             </div>
 
-            <!-- Japanese Word Display -->
-            <div class="japanese-display-box">
-                <div class="japanese-word" th:text="${question.japaneseText}">私（わたし）</div>
+            <!-- Japanese Word Display (Không hiển thị phần đọc hoặc thẻ rt để bảo mật đáp án khi hỏi cách đọc) -->
+            <div class="japanese-display-box" th:attr="data-raw-japanese=${question.japaneseText}">
+                <div class="japanese-word" th:text="${T(com.nihon.service.FuriganaHelper).extractBaseText(question.japaneseText)}">私</div>
                 <div class="kanji-notice" th:if="${question.hasKanji}">
                     <span>✦ Từ có chứa chữ Hán (Kanji)</span>
                 </div>
@@ -96,5 +98,6 @@
     <footer>
         <p>&copy; 2026 Project Nihon. Chế độ kiểm tra phản xạ Nhật → Việt.</p>
     </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
 </body>
 </html>

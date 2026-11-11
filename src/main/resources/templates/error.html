@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${errorTitle != null ? errorTitle : (status != null ? status + ' - ' + (error != null ? error : 'Lỗi') : 'Đã xảy ra lỗi - Project Nihon')}">Thông báo lỗi - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/error.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
 </head>
 <body>
     <header>
@@ -19,6 +20,7 @@
             <a href="/kanji">Kanji</a>
             <a href="/practice">Luyện tập</a>
             <a href="/stats">Thống kê</a>
+            <th:block th:replace="~{fragments/furigana :: toggleBtn}"></th:block>
         </nav>
     </header>
 
@@ -36,5 +38,6 @@
     <footer>
         <p>&copy; 2026 Project Nihon. Hệ thống ghi nhớ từ vựng tiếng Nhật.</p>
     </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
 </body>
 </html>

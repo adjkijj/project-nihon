@@ -6,6 +6,7 @@
     <title th:text="${isEdit ? 'Chỉnh sửa chủ đề' : 'Tạo chủ đề mới'} + ' - Project Nihon'">Tạo/Sửa chủ đề</title>
     <link rel="stylesheet" th:href="@{/css/topics-form.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
 </head>
 <body>
@@ -21,6 +22,7 @@
             <a href="/kanji">Kanji</a>
             <a href="/practice">Luyện tập</a>
             <a href="/stats">Thống kê</a>
+            <th:block th:replace="~{fragments/furigana :: toggleBtn}"></th:block>
         </nav>
     </header>
 
@@ -75,5 +77,6 @@
             </form>
         </div>
     </main>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
 </body>
 </html>
