@@ -14,23 +14,61 @@
 - **Tạo, sửa, xóa theo ngữ cảnh:**
   - Khi đang lọc theo một chủ đề: thao tác xóa chỉ xóa bản ghi trong chủ đề đó.
   - Khi xem tất cả chủ đề: thao tác xóa sẽ xóa trên toàn bộ các chủ đề trong nhóm (`allIds`); thao tác sửa nội dung văn bản cập nhật đồng bộ toàn nhóm để giữ tính nhất quán.
-- **Trang chi tiết từ vựng (`/vocabulary/{id}`):** Hiển thị đầy đủ chữ Nhật, cách đọc, Romaji, nghĩa tiếng Việt, danh sách mọi chủ đề chứa từ, ngày tạo/cập nhật, và danh sách các chữ Kanji xuất hiện trong từ (liên kết trực tiếp tới `/kanji/{id}`).
+- **Trang chi tiết từ vựng (`/vocabulary/{id}`):** Hiển thị đầy đủ chữ Nhật, cách đọc, Romaji, nghĩa tiếng Việt, danh sách mọi chủ đề chứa từ, ngày tạo/cập nhật, và danh sách các chữ Kanji cấu thành từ vựng (liên kết trực tiếp tới `/kanji/{id}` kèm âm Hán Việt và nghĩa ngắn).
 - **Thao tác hàng loạt (`Bulk Actions`):** Hỗ trợ chọn nhiều dòng (tối đa **200 ID/lần**) để **Xóa hàng loạt** (`POST /vocabulary/bulk-delete`) hoặc **Chuyển hàng loạt sang chủ đề khác** (`POST /vocabulary/bulk-move`, tự động gộp nếu từ đã tồn tại ở chủ đề đích).
-- **Xuất tệp văn bản cho Quizlet & Anki (`GET /vocabulary/export-text`):** Xuất danh sách từ vựng đang xem/lọc ra định dạng `TAB` (ngăn cách bằng tab) hoặc `COLON` (`tiếng Nhật (cách đọc) : nghĩa`). Tệp đính kèm mã hóa UTF-8 có tiền tố BOM (`\uFEFF`), tên tệp cố định theo mẫu thời gian `nihon-vocabulary-yyyyMMdd-HHmm.txt`. Giới hạn tối đa **5000 dòng/lần**; trường hợp vượt quá 5000 dòng, hệ thống trả về mã lỗi **HTTP 400 Bad Request** với thông báo yêu cầu thu hẹp phạm vi tìm kiếm. Đồng thời áp dụng giới hạn tần suất theo địa chỉ IP tối đa **20 lần/phút**.
+- **Xuất tệp văn bản cho Quizlet & Anki (`GET /vocabulary/export-text`):** Xuất danh sách từ vựng đang xem/lọc ra định dạng `TAB` (ngăn cách bằng tab) hoặc `COLON` (`tiếng Nhật (cách đọc) : nghĩa`). Tệp đính kèm mã hóa UTF-8 có tiền tố BOM (`\uFEFF`), tên tệp cố định theo mẫu thời gian `nihon-vocabulary-yyyyMMdd-HHmm.txt`. Giới hạn tối đa **5000 dòng/lần**; áp dụng rate limit tối đa **20 lần/phút/IP**.
+- **Phát âm giọng đọc tiếng Nhật tự nhiên (Web Speech API):** Tích hợp nút loa 🔊 nghe phát âm tiếng Nhật giọng Tokyo (`ja-JP`) trên bảng danh sách và trang chi tiết.
 
 ### 1.3. Quản lý Hán tự Kanji (`/kanji`)
 - **Thêm, sửa, xóa Kanji:** Quản lý Hán tự đơn, âm Hán Việt, ý nghĩa tiếng Việt, âm On (Onyomi) và âm Kun (Kunyomi) gắn với các chủ đề thuộc nhánh Kanji (`kanjiSection = true`).
-- **Liên kết Từ cần nhớ thống nhất:** Toàn bộ từ cần nhớ của Kanji được lưu trữ thống nhất trong bảng `vocabulary`. Trang chi tiết Kanji (`/kanji/{id}`) hiển thị danh sách từ cần nhớ và có nút **"Thêm từ cần nhớ"** dẫn sang `/vocabulary/new?topicId=...&japaneseText=...` (điền sẵn chủ đề và ký tự Kanji).
+- **Liên kết Từ cần nhớ & Từ chứa chữ Hán:**
+  - Danh sách từ cần nhớ khai báo trực tiếp trong bảng `vocabulary`.
+  - Mục **"Các từ chứa chữ này"**: Tự động truy vấn phân trang (tối đa 20 từ/trang) tất cả từ vựng trong hệ thống có chứa ký tự Kanji tương ứng.
+- **Trình phát thứ tự nét viết chữ Hán (KanjiVG Stroke Order Player):**
+  - Khung xem thứ tự nét viết chuẩn vector SVG được nhúng an toàn phía client.
+  - Các nút điều khiển: **▶ Phát hoạt ảnh nét**, **↻ Phát lại**, **🔢 Hiện/ẩn số thứ tự nét**.
+  - Dữ liệu nét vector từ dự án mở [KanjiVG](https://kanjivg.tagaini.net/) (giấy phép CC BY-SA 3.0).
 
-### 1.4. Nhập, Xuất, Lịch sử & Hoàn tác Excel (`/import`)
+### 1.4. Bật/Tắt Furigana Toàn Hệ Thống (Global Furigana Toggle)
+- Nút chuyển trạng thái **Furigana** trên thanh điều hướng chung (`navbar`) ở mọi trang.
+- Tự động hiển thị cách đọc Hiragana phía trên từ tiếng Nhật thông qua thẻ HTML5 `<ruby>` và `<rt>`.
+- Xử lý thông minh: tự động tách phần đọc trong ngoặc tròn nguồn (ví dụ: `私（わたし）` $\rightarrow$ chữ `私` kèm ruby `わたし`, không trùng lặp).
+- Lưu trạng thái bật/tắt vào `localStorage` của trình duyệt có bọc `try/catch` an toàn, mặc định bật. Khi tắt: gắn lớp `.hide-furigana` để ẩn toàn bộ ruby mà không làm vỡ cấu trúc bố cục trang.
+
+### 1.5. Thẻ Học Từ Vựng Flashcard 3D (`/flashcards`)
+- Màn hình học thẻ lật trực quan:
+  - Lật thẻ hai mặt Nhật ⇄ Việt bằng cách nhấn vào thẻ hoặc bấm phím **Space**.
+  - Chuyển thẻ tiếp theo / quay lại bằng phím **Mũi tên Trái / Phải**.
+  - Nút **Xáo bài (Shuffle)** tạo seed ngẫu nhiên ổn định trong phiên `HttpSession`, giúp đổi trang không bị trùng thẻ.
+  - Tự động bỏ qua các từ thiếu nghĩa tiếng Việt và thông báo số lượng từ bị bỏ qua.
+  - Tích hợp nút loa phát âm Web Speech API và chế độ hỗ trợ người nhạy cảm chuyển động (`prefers-reduced-motion`).
+
+### 1.6. Luyện Tập Phản Xạ & Ôn Lại Từ Làm Sai (`/practice`, `/practice/vi-ja`)
+- **Hai chiều tự luận gõ phím:**
+  - **Nhật → Việt (`/practice`):** Nhìn từ tiếng Nhật, gõ cách đọc Hiragana (đối với từ có Kanji) và nghĩa tiếng Việt. Chấm điểm chuẩn hóa NFC, chấp nhận các nghĩa tương đương khai báo trong nguồn.
+  - **Việt → Nhật (`/practice/vi-ja`):** Nhìn nghĩa tiếng Việt, gõ đúng cách viết tiếng Nhật (Kanji/Kana).
+- **Chế độ Ôn lại từ làm sai (Retry Wrong Words Mode):**
+  - Nút **"Ôn lại từ làm sai (N)"** tại trang chọn chủ đề, trang kết quả và trang thống kê ($N$ là số từ đang ở trạng thái sai). Nút tự động bị khóa khi $N = 0$.
+  - Khi bật chế độ ôn lại (`retryWrongOnly=true`): hệ thống chỉ chọn các từ vựng mà lần làm bài gần nhất của người học là sai. Từ nào được trả lời đúng ở lần sau sẽ tự động ra khỏi tập.
+  - Khi hoàn thành tất cả các từ làm sai, hệ thống hiển thị banner chúc mừng 🎉 và nút dẫn quay lại trang luyện tập.
+
+### 1.7. Luyện Tập Trắc Nghiệm 4 Lựa Chọn (`/practice/choice`)
+- **Hai hướng câu hỏi:** Nhật → Việt (`JA_VI`) và Việt → Nhật (`VI_JA`).
+- Hệ thống tự động tạo 3 đáp án nhiễu từ cùng chủ đề (hoặc toàn bộ kho từ vựng), loại trừ hoàn toàn đáp án trùng nhau hoặc trùng đáp án đúng.
+- Hỗ trợ phím tắt số **`1`**, **`2`**, **`3`**, **`4`** để chọn đáp án nhanh và phím **Enter** để chuyển câu tiếp theo.
+- Bảo mật phiên làm bài 100% tại máy chủ (`HttpSession`): không gửi đáp án đúng xuống client trước khi nộp bài, chống gian lận qua F12/Inspect.
+
+### 1.8. Nhập, Xuất, Lịch sử & Hoàn tác Excel (`/import`)
 - **Xem trước (`POST /import/preview`) & Xác nhận (`POST /import/commit`):** Thẩm định an toàn nhiều lớp, tạo mã phiên tạm `previewToken` thời hạn 10 phút, hỗ trợ 2 chế độ `SKIP_DUPLICATES` và `UPDATE_EXISTING` trong một giao dịch nguyên tử.
 - **Xuất dữ liệu (`GET /import/export`):** Kết xuất toàn bộ học liệu hiện có ra tệp `.xlsx` chuẩn gồm 2 sheet `New Word` và `Kanji` (sử dụng `SXSSFWorkbook`, tối đa 50.000 hàng/sheet, chống Formula Injection). Tệp xuất ra có thể chỉnh sửa và nhập lại trực tiếp.
 - **Lịch sử kiểm toán (`GET /import/history`):** Phân trang 20 dòng/trang (mới nhất trước), hiển thị thời điểm, tên tệp, mã băm SHA-256 rút gọn 12 ký tự, số bản ghi thêm/cập nhật/bỏ qua, kết quả và địa chỉ IP. Không cho phép sửa/xóa nhật ký kiểm toán.
 - **Hoàn tác lần import (`POST /import/history/{id}/undo`):** Xóa sạch từ vựng, Kanji và các chủ đề rỗng được tạo bởi một lần import (`import_batch_id`), giữ lại các chủ đề đã có dữ liệu mới thêm vào sau đó, cảnh báo số bản ghi đã chỉnh sửa sau import và ghi nhận vết hoàn tác (`undone_at` + dòng audit `UNDO`).
 
-### 1.5. Luyện tập (`/practice`, `/practice/vi-ja`) & Thống kê (`/stats`)
-- **Hai chiều luyện tập:** Kiểm tra **Nhật → Việt** (`/practice`) và **Việt → Nhật** (`/practice/vi-ja`), hỗ trợ lọc theo chủ đề bài học, chấm điểm 100% tại máy chủ.
-- **Thống kê kho dữ liệu & Tiến độ phiên học (`/stats`):** Thống kê tỷ lệ từ vựng có Kanji / thuần Kana theo từng chủ đề; theo dõi lịch sử trả lời đúng/sai trong phiên làm việc (`HttpSession`, giới hạn tối đa **500 bản ghi mới nhất** thông qua `StudyProgressService.MAX_SESSION_RECORDS` để bảo vệ bộ nhớ máy chủ).
+### 1.9. Thống Kê Tiến Độ Học Tập & Kho Dữ Liệu (`/stats`)
+- **Thống kê kho dữ liệu:** Tổng số từ vựng, chủ đề, Kanji, tỷ lệ phần trăm từ có Kanji / thuần Kana theo từng chủ đề.
+- **Tiến độ học tập phiên làm việc (`HttpSession`):** Thống kê số câu đã làm, số câu đúng/sai, tỷ lệ chính xác %, lọc theo chế độ (`JA_VI`, `VI_JA`, `MC_JA_VI`, `MC_VI_JA`, `ALL`) và chủ đề bài học.
+- Bảng danh sách câu làm sai cần ôn tập kèm nút **"Ôn lại từ làm sai (N)"**.
+- Giới hạn tối đa **500 bản ghi mới nhất** trong session để bảo vệ tài nguyên máy chủ. Có nút **Xóa tiến độ phiên** để người học bắt đầu lại từ đầu.
 
 ---
 
