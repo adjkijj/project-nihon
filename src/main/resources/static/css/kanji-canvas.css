@@ -1,0 +1,246 @@
+/**
+ * Kanji Handwriting Practice Canvas Styles (F20)
+ *
+ * Tuan thu nghiem ngat Content-Security-Policy (khong inline style).
+ * Ho tro Dark Theme, WCAG AA Contrast, Keyboard Focus Ring,
+ * va prefers-reduced-motion.
+ */
+
+.practice-canvas-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+}
+
+.practice-canvas-section .section-header {
+    margin-bottom: 1.25rem;
+}
+
+.practice-canvas-section .section-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.practice-canvas-section .section-header p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
+}
+
+/* Thong bao trang thai va ho tro */
+.canvas-notice {
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.25rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.canvas-notice-warning {
+    background-color: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    color: #fde68a;
+}
+
+.canvas-notice-info {
+    background-color: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    color: #bae6fd;
+}
+
+/* Khung chua bang ve va bang dieu khien */
+.practice-canvas-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    width: 100%;
+}
+
+@media (min-width: 768px) {
+    .practice-canvas-wrapper {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 2.5rem;
+    }
+}
+
+/* Khung chua canvas 300x300 */
+.canvas-board-container {
+    width: 300px;
+    height: 300px;
+    min-width: 300px;
+    min-height: 300px;
+    background-color: #0b1120;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Phan tu Canvas ve tay */
+.practice-canvas {
+    width: 300px;
+    height: 300px;
+    display: block;
+    touch-action: none; /* Ngan chan cuon trang tren thiet bi cam ung */
+    cursor: crosshair;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Bang dieu khien */
+.canvas-controls-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    width: 100%;
+    max-width: 320px;
+}
+
+.practice-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.control-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Nut dieu khien tuy chon (Do mo, do day) */
+.opacity-button-group,
+.thickness-button-group {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn-canvas-control {
+    flex: 1;
+    min-width: 60px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-canvas-control:hover {
+    border-color: var(--accent);
+    background-color: rgba(56, 189, 248, 0.08);
+    color: var(--accent);
+}
+
+.btn-canvas-control.active {
+    background-color: var(--accent);
+    color: #0f172a;
+    border-color: var(--accent);
+    font-weight: 700;
+    box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* Thanh truot do mo */
+.canvas-range-slider {
+    width: 100%;
+    accent-color: var(--accent);
+    cursor: pointer;
+    height: 6px;
+    background: var(--bg-primary);
+    border-radius: 3px;
+    outline: none;
+}
+
+/* Nhom nut hanh dong: Hoan tac va Xoa */
+.practice-action-group {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.btn-canvas-action {
+    flex: 1;
+    padding: 0.65rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-canvas-action.btn-undo {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.btn-canvas-action.btn-undo:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+    background-color: rgba(56, 189, 248, 0.08);
+}
+
+.btn-canvas-action.btn-clear {
+    background-color: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+}
+
+.btn-canvas-action.btn-clear:hover:not(:disabled) {
+    background-color: rgba(239, 68, 68, 0.25);
+    border-color: var(--crimson);
+    color: #ffffff;
+}
+
+.btn-canvas-action:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    border-color: var(--border-color);
+}
+
+/* Focus Ring cho Tro Nang Ban Phim (WCAG 2.1 AA) */
+.btn-canvas-control:focus-visible,
+.btn-canvas-action:focus-visible,
+.canvas-range-slider:focus-visible,
+.practice-canvas:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* Ho tro prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+    .btn-canvas-control,
+    .btn-canvas-action,
+    .canvas-range-slider {
+        transition: none !important;
+        animation: none !important;
+    }
+}

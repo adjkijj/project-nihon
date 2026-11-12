@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${'Chi tiết từ vựng: ' + vocab.japaneseText + ' - Project Nihon'}">Chi tiết từ vựng - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/vocabulary-list.css}">
+    <link rel="stylesheet" th:href="@{/css/kanji-stroke.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
     <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
     <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
     <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/kanji-stroke-player.js}" defer></script>
 </head>
 <body>
     <header th:replace="~{fragments/navbar :: headerNav('vocabulary')}"></header>
@@ -109,10 +111,22 @@
                         <div th:if="${k.kanjiId != null}">
                             <div class="vocab-kanji-hanviet" th:text="${(k.hanViet != null and !k.hanViet.isBlank()) ? k.hanViet : '-'}">TIÊN</div>
                             <div class="vocab-kanji-meaning" th:text="${(k.meaningVi != null and !k.meaningVi.isBlank()) ? k.meaningVi : '-'}">Trước</div>
-                            <a th:href="@{'/kanji/' + ${k.kanjiId}}" class="vocab-kanji-detail-link">Xem chi tiết Kanji →</a>
+                            <div class="vocab-kanji-actions">
+                                <a th:href="@{'/kanji/' + ${k.kanjiId}}" class="vocab-kanji-detail-link">Xem chi tiết Kanji →</a>
+                                <button type="button"
+                                        class="btn-stroke-view"
+                                        th:attr="data-kanji=${k.character}, data-hanviet=${k.hanViet != null ? k.hanViet : ''}, data-stroke-url=${k.strokeFileName != null ? '/kanjivg/' + k.strokeFileName : ''}"
+                                        title="Xem thứ tự nét viết">Xem nét</button>
+                            </div>
                         </div>
-                        <div th:if="${k.kanjiId == null}" class="vocab-kanji-missing">
-                            chưa có trong danh sách Kanji
+                        <div th:if="${k.kanjiId == null}">
+                            <div class="vocab-kanji-missing">chưa có trong danh sách Kanji</div>
+                            <div class="vocab-kanji-actions">
+                                <button type="button"
+                                        class="btn-stroke-view"
+                                        th:attr="data-kanji=${k.character}, data-hanviet=${k.hanViet != null ? k.hanViet : ''}, data-stroke-url=${k.strokeFileName != null ? '/kanjivg/' + k.strokeFileName : ''}"
+                                        title="Xem thứ tự nét viết">Xem nét</button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -16,7 +16,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -109,6 +111,65 @@ class KanjiStrokeStaticResourcesTest {
             assertThat(content).contains("CC BY-SA 3.0");
             assertThat(content).contains("https://kanjivg.tagaini.net/");
         }
+    }
+
+    @Test
+    @DisplayName("F20: File tĩnh CSS kanji-canvas.css tồn tại, phục vụ 200 và có touch-action none")
+    void testKanjiCanvasCss_servedAndHasTouchActionNone() throws Exception {
+        mockMvc.perform(get("/css/kanji-canvas.css"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("touch-action: none")))
+                .andExpect(content().string(containsString(".practice-canvas")))
+                .andExpect(content().string(containsString("prefers-reduced-motion")));
+    }
+
+    @Test
+    @DisplayName("F20: File tĩnh JS kanji-canvas.js tồn tại, phục vụ 200 và hỗ trợ Pointer Events và Path2D")
+    void testKanjiCanvasJs_servedAndHasPointerEventsLogic() throws Exception {
+        mockMvc.perform(get("/js/kanji-canvas.js"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("PointerEvent")))
+                .andExpect(content().string(containsString("pointerdown")))
+                .andExpect(content().string(containsString("pointermove")))
+                .andExpect(content().string(containsString("pointerup")))
+                .andExpect(content().string(containsString("setPointerCapture")))
+                .andExpect(content().string(containsString("Path2D")))
+                .andExpect(content().string(containsString("btn-canvas-undo")))
+                .andExpect(content().string(containsString("btn-canvas-clear")));
+    }
+
+    @Test
+    @DisplayName("F27 & F28: File tĩnh CSS kanji-stroke.css tồn tại, phục vụ 200 và hỗ trợ floating dialog, touch-action none và focus visible")
+    void testKanjiStrokeCss_servedAndHasFloatingDialogStyles() throws Exception {
+        mockMvc.perform(get("/css/kanji-stroke.css"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(".floating-stroke-dialog")))
+                .andExpect(content().string(containsString(".floating-stroke-header")))
+                .andExpect(content().string(containsString("touch-action: none")))
+                .andExpect(content().string(containsString("cursor: grab")))
+                .andExpect(content().string(containsString(".btn-stroke-view")))
+                .andExpect(content().string(containsString(":focus-visible")))
+                .andExpect(content().string(containsString("prefers-reduced-motion")));
+    }
+
+    @Test
+    @DisplayName("F27 & F28: File tĩnh JS kanji-stroke-player.js tồn tại, phục vụ 200 và có engine dùng chung, floating dialog kéo thả bằng Pointer Events, Escape key và fallback")
+    void testKanjiStrokePlayerJs_servedAndHasFloatingDialogAndEngineLogic() throws Exception {
+        mockMvc.perform(get("/js/kanji-stroke-player.js"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("createStrokePlayerEngine")))
+                .andExpect(content().string(containsString("floating-stroke-dialog")))
+                .andExpect(content().string(containsString("pointerdown")))
+                .andExpect(content().string(containsString("pointermove")))
+                .andExpect(content().string(containsString("pointerup")))
+                .andExpect(content().string(containsString("setPointerCapture")))
+                .andExpect(content().string(containsString("Escape")))
+                .andExpect(content().string(containsString(".btn-stroke-view")))
+                .andExpect(content().string(containsString("floating-stroke-error")))
+                .andDo(result -> {
+                    String body = new String(result.getResponse().getContentAsByteArray(), StandardCharsets.UTF_8);
+                    assertThat(body).contains("Không tìm thấy dữ liệu nét viết cho chữ này.");
+                });
     }
 }
 

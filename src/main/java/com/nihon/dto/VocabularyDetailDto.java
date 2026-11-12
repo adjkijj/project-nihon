@@ -61,6 +61,22 @@ public class VocabularyDetailDto {
         private Long kanjiId;
         private String hanViet;
         private String meaningVi;
+        private String strokeFileName;
+        private Boolean hasStrokeData;
+
+        public String getStrokeFileName() {
+            if (strokeFileName != null && !strokeFileName.isBlank()) {
+                return strokeFileName;
+            }
+            return com.nihon.service.KanjiStrokeHelper.computeStrokeFileName(this.character);
+        }
+
+        public boolean isHasStrokeData() {
+            if (hasStrokeData != null) {
+                return hasStrokeData;
+            }
+            return com.nihon.service.KanjiStrokeHelper.hasStrokeData(getStrokeFileName());
+        }
     }
 }
 

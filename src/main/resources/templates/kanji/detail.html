@@ -6,6 +6,7 @@
     <title th:text="${'Chi tiết chữ ' + kanji.character + (kanji.hanViet != null && !kanji.hanViet.isBlank() ? ' (' + kanji.hanViet + ')' : '') + ' - Project Nihon'}">Chi tiết Kanji - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/kanji-detail.css}">
     <link rel="stylesheet" th:href="@{/css/kanji-stroke.css}">
+    <link rel="stylesheet" th:href="@{/css/kanji-canvas.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
     <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
     <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
@@ -13,6 +14,7 @@
     <script th:src="@{/js/app.js}" defer></script>
     <script th:src="@{/js/ui-enhance.js}" defer></script>
     <script th:src="@{/js/kanji-stroke-player.js}" defer></script>
+    <script th:src="@{/js/kanji-canvas.js}" defer></script>
 </head>
 <body>
     <header th:replace="~{fragments/navbar :: headerNav('kanji')}"></header>
@@ -124,6 +126,90 @@
                 </div>
             </div>
         </div>
+
+        <!-- Bảng tập viết chữ Hán (F20 - Handwriting Practice Canvas) -->
+        <section class="practice-canvas-section" id="kanji-practice-section" aria-labelledby="canvas-section-heading">
+            <div class="section-header">
+                <div class="section-header-row">
+                    <div>
+                        <h2 id="canvas-section-heading"><span>✍️</span> Bảng tập viết chữ Hán</h2>
+                        <p>Luyện viết chữ Hán bằng chuột hoặc màn hình cảm ứng trực tiếp trên ô chữ thập.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thông báo khi trình duyệt không hỗ trợ Pointer Events -->
+            <div id="canvas-unsupported-notice" class="canvas-notice canvas-notice-warning u-hidden" role="alert">
+                Trình duyệt của bạn không hỗ trợ vẽ nét (Pointer Events).
+            </div>
+
+            <!-- Thông báo khi chữ Hán chưa có dữ liệu nét mẫu -->
+            <div id="canvas-no-data-notice" class="canvas-notice canvas-notice-info u-hidden" role="status">
+                Chưa có dữ liệu chữ mẫu, bạn vẫn có thể tự do tập viết.
+            </div>
+
+            <div class="practice-canvas-wrapper" id="kanji-practice-box"
+                 th:attr="data-stroke-url=${kanji.hasStrokeData ? '/kanjivg/' + kanji.strokeFileName : ''},data-has-stroke-data=${kanji.hasStrokeData}">
+                <div class="canvas-board-container">
+                    <canvas id="kanji-practice-canvas"
+                            class="practice-canvas"
+                            width="300"
+                            height="300"
+                            aria-label="Bảng vẽ tập viết chữ Hán"
+                            th:attr="data-stroke-url=${kanji.hasStrokeData ? '/kanjivg/' + kanji.strokeFileName : ''}"></canvas>
+                </div>
+
+                <div class="canvas-controls-panel" id="canvas-controls-panel">
+                    <!-- Điều khiển độ mờ chữ mẫu -->
+                    <div class="practice-control-group" role="group" aria-label="Độ mờ chữ mẫu">
+                        <span class="control-label">Độ mờ chữ mẫu:</span>
+                        <input type="range"
+                               id="canvas-opacity-slider"
+                               class="canvas-range-slider"
+                               min="0"
+                               max="0.4"
+                               step="0.2"
+                               value="0.2"
+                               aria-label="Thanh trượt độ mờ chữ mẫu">
+                        <div class="opacity-button-group">
+                            <button type="button" class="btn-canvas-control btn-opacity" data-opacity="0" id="btn-opacity-0">0%</button>
+                            <button type="button" class="btn-canvas-control btn-opacity active" data-opacity="0.2" id="btn-opacity-20">20%</button>
+                            <button type="button" class="btn-canvas-control btn-opacity" data-opacity="0.4" id="btn-opacity-40">40%</button>
+                        </div>
+                        <select id="canvas-opacity-select" class="canvas-select-control u-hidden" aria-label="Chọn độ mờ chữ mẫu">
+                            <option value="0">0%</option>
+                            <option value="0.2" selected>20%</option>
+                            <option value="0.4">40%</option>
+                        </select>
+                    </div>
+
+                    <!-- Điều khiển độ dày nét vẽ -->
+                    <div class="practice-control-group" role="group" aria-label="Độ dày nét">
+                        <span class="control-label">Độ dày nét:</span>
+                        <div class="thickness-button-group">
+                            <button type="button" class="btn-canvas-control btn-thickness" data-thickness="2" id="btn-thickness-thin" aria-label="Nét mảnh 2px">Mảnh</button>
+                            <button type="button" class="btn-canvas-control btn-thickness active" data-thickness="4" id="btn-thickness-medium" aria-label="Nét vừa 4px">Vừa</button>
+                            <button type="button" class="btn-canvas-control btn-thickness" data-thickness="6" id="btn-thickness-thick" aria-label="Nét dày 6px">Dày</button>
+                        </div>
+                        <select id="canvas-thickness-select" class="canvas-select-control u-hidden" aria-label="Chọn độ dày nét">
+                            <option value="2">Mảnh</option>
+                            <option value="4" selected>Vừa</option>
+                            <option value="6">Dày</option>
+                        </select>
+                    </div>
+
+                    <!-- Nút thao tác hoàn tác và xóa -->
+                    <div class="practice-action-group">
+                        <button type="button" id="btn-canvas-undo" class="btn-canvas-action btn-undo" disabled>
+                            Hoàn tác nét cuối
+                        </button>
+                        <button type="button" id="btn-canvas-clear" class="btn-canvas-action btn-clear" disabled>
+                            Xóa
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <!-- Related Vocabulary Section -->
         <section class="related-section">

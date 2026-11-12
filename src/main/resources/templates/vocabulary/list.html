@@ -6,12 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lý từ vựng - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/vocabulary-list.css}">
+    <link rel="stylesheet" th:href="@{/css/kanji-stroke.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
     <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
     <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
     <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/kanji-stroke-player.js}" defer></script>
 </head>
 
 <body>
@@ -187,6 +189,15 @@
                                 <th:block th:replace="~{fragments/furigana :: rubyWord(${v.japaneseText}, ${v.reading})}"></th:block>
                             </a>
                             <th:block th:replace="~{fragments/speech :: speakerBtn(${v.speechText})}"></th:block>
+                            <div th:if="${view != 'FULL' and v.constituentKanji != null and !v.constituentKanji.empty}" class="constituent-kanji-wrap u-margin-top-0-25rem">
+                                <span th:each="k : ${v.constituentKanji}" class="constituent-kanji-badge">
+                                    <span class="constituent-char" th:text="${k.character}">日</span>
+                                    <button type="button"
+                                            class="btn-stroke-view btn-stroke-view-sm"
+                                            th:attr="data-kanji=${k.character}, data-hanviet=${k.displayHanViet}, data-stroke-url=${k.strokeFileName != null ? '/kanjivg/' + k.strokeFileName : ''}"
+                                            title="Xem thứ tự nét viết">Xem nét</button>
+                                </span>
+                            </div>
                         </td>
                         <td>
                             <span th:if="${v.reading != null}" class="reading-badge" th:text="${v.reading}">わたし</span>
@@ -200,6 +211,10 @@
                                        class="constituent-char kanji-link" th:text="${k.character}" th:title="${'Xem Kanji ' + k.character}">日</a>
                                     <span th:if="${k.kanjiId == null}" class="constituent-char" th:text="${k.character}">日</span>
                                     <span class="constituent-hanviet" th:text="${k.displayHanViet}">NHẬT</span>
+                                    <button type="button"
+                                            class="btn-stroke-view btn-stroke-view-sm"
+                                            th:attr="data-kanji=${k.character}, data-hanviet=${k.displayHanViet}, data-stroke-url=${k.strokeFileName != null ? '/kanjivg/' + k.strokeFileName : ''}"
+                                            title="Xem thứ tự nét viết">Xem nét</button>
                                 </span>
                             </div>
                             <span th:if="${v.constituentKanji == null or v.constituentKanji.empty}" class="u-color-var-text-muted-font-size-0-8rem">—</span>

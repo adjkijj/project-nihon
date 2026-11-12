@@ -2,6 +2,7 @@ package com.nihon.controller;
 
 import com.nihon.config.CsrfInterceptor;
 import com.nihon.config.WebConfig;
+import com.nihon.dto.ConstituentKanjiDto;
 import com.nihon.dto.VocabularyDetailDto;
 import com.nihon.dto.VocabularyForm;
 import com.nihon.dto.VocabularyRowDto;
@@ -758,5 +759,138 @@ class VocabularyControllerTest {
 
         verify(vocabularyService, never()).bulkDelete(anyList(), anyString());
         verify(vocabularyService, never()).bulkMove(anyList(), any(), anyString());
+    }
+
+    @Test
+    void detailVocabulary_f27_rendersStrokeOrderButtonsAndAssets() throws Exception {
+        VocabularyDetailDto detail = VocabularyDetailDto.builder()
+                .id(10L)
+                .japaneseText("先生（せんせい）")
+                .reading("せんせい")
+                .romaji("sensei")
+                .meaningVi("Giáo viên")
+                .hasKanji(true)
+                .topics(List.of(testTopic))
+                .allIds(List.of(10L))
+                .kanjis(List.of(
+                        VocabularyDetailDto.KanjiInWordDto.builder()
+                                .character("先")
+                                .kanjiId(5L)
+                                .hanViet("TIÊN")
+                                .meaningVi("Trước")
+                                .strokeFileName("05148.svg")
+                                .hasStrokeData(true)
+                                .build(),
+                        VocabularyDetailDto.KanjiInWordDto.builder()
+                                .character("生")
+                                .kanjiId(null)
+                                .hanViet("SINH")
+                                .meaningVi(null)
+                                .strokeFileName("0751f.svg")
+                                .hasStrokeData(true)
+                                .build()
+                ))
+                .build();
+
+        when(vocabularyService.findDetailById(10L)).thenReturn(Optional.of(detail));
+
+        mockMvc.perform(get("/vocabulary/10"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("vocabulary/detail"))
+                .andExpect(content().string(containsString("css/kanji-stroke.css")))
+                .andExpect(content().string(containsString("js/kanji-stroke-player.js")))
+                .andExpect(content().string(containsString("Chữ Kanji trong từ")))
+                .andExpect(content().string(containsString("btn-stroke-view")))
+                .andExpect(content().string(containsString("Xem nét")))
+                .andExpect(content().string(containsString("data-kanji=\"先\"")))
+                .andExpect(content().string(containsString("data-hanviet=\"TIÊN\"")))
+                .andExpect(content().string(containsString("data-stroke-url=\"/kanjivg/05148.svg\"")))
+                .andExpect(content().string(containsString("data-kanji=\"生\"")))
+                .andExpect(content().string(containsString("data-hanviet=\"SINH\"")));
+    }
+
+    @Test
+    void listVocabulary_f28_compactView_rendersStrokeOrderButtonsAndAssets() throws Exception {
+        VocabularyRowDto rowDto = VocabularyRowDto.builder()
+                .id(10L)
+                .japaneseText("日本（にほん）")
+                .reading("にほん")
+                .romaji("nihon")
+                .meaningVi("Nhật Bản")
+                .topics(List.of(testTopic))
+                .allIds(List.of(10L))
+                .constituentKanji(List.of(
+                        ConstituentKanjiDto.builder()
+                                .character("日")
+                                .hanViet("NHẬT")
+                                .kanjiId(1L)
+                                .existsInKanjiEntry(true)
+                                .strokeFileName("065e5.svg")
+                                .hasStrokeData(true)
+                                .build(),
+                        ConstituentKanjiDto.builder()
+                                .character("本")
+                                .hanViet("BẢN")
+                                .kanjiId(2L)
+                                .existsInKanjiEntry(true)
+                                .strokeFileName("0672c.svg")
+                                .hasStrokeData(true)
+                                .build()
+                ))
+                .build();
+
+        when(vocabularyService.search(any(), any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(rowDto)));
+        when(vocabularyService.search(any(), any(), any(), any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(rowDto)));
+
+        mockMvc.perform(get("/vocabulary"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("vocabulary/list"))
+                .andExpect(content().string(containsString("css/kanji-stroke.css")))
+                .andExpect(content().string(containsString("js/kanji-stroke-player.js")))
+                .andExpect(content().string(containsString("btn-stroke-view btn-stroke-view-sm")))
+                .andExpect(content().string(containsString("Xem nét")))
+                .andExpect(content().string(containsString("data-kanji=\"日\"")))
+                .andExpect(content().string(containsString("data-hanviet=\"NHẬT\"")))
+                .andExpect(content().string(containsString("data-stroke-url=\"/kanjivg/065e5.svg\"")));
+    }
+
+    @Test
+    void listVocabulary_f28_fullView_rendersStrokeOrderButtonsInColHanviet() throws Exception {
+        VocabularyRowDto rowDto = VocabularyRowDto.builder()
+                .id(10L)
+                .japaneseText("日本（にほん）")
+                .reading("にほん")
+                .romaji("nihon")
+                .meaningVi("Nhật Bản")
+                .topics(List.of(testTopic))
+                .allIds(List.of(10L))
+                .constituentKanji(List.of(
+                        ConstituentKanjiDto.builder()
+                                .character("日")
+                                .hanViet("NHẬT")
+                                .kanjiId(1L)
+                                .existsInKanjiEntry(true)
+                                .strokeFileName("065e5.svg")
+                                .hasStrokeData(true)
+                                .build()
+                ))
+                .build();
+
+        when(vocabularyService.search(any(), any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(rowDto)));
+        when(vocabularyService.search(any(), any(), any(), any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(rowDto)));
+
+        mockMvc.perform(get("/vocabulary").param("view", "FULL"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("vocabulary/list"))
+                .andExpect(content().string(containsString("col-hanviet")))
+                .andExpect(content().string(containsString("btn-stroke-view btn-stroke-view-sm")))
+                .andExpect(content().string(containsString("Xem nét")))
+                .andExpect(content().string(containsString("data-kanji=\"日\"")))
+                .andExpect(content().string(containsString("data-hanviet=\"NHẬT\"")))
+                .andExpect(content().string(containsString("data-stroke-url=\"/kanjivg/065e5.svg\"")));
     }
 }

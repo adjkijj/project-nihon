@@ -578,4 +578,48 @@ class KanjiControllerTest {
                 .andExpect(content().string(not(containsString("id=\"stroke-order-box\""))))
                 .andExpect(content().string(not(containsString("btn-stroke-play"))));
     }
+
+    @Test
+    @DisplayName("F20: Trang chi tiết Kanji hiển thị bảng vẽ Canvas, các nút điều khiển, opacity slider, stroke thickness và aria-label khi hasStrokeData == true")
+    void testDetail_f20_canvasControlsAndAriaLabel_withStrokeData() throws Exception {
+        when(kanjiService.findDetailById(1L)).thenReturn(Optional.of(kanjiFish));
+        when(kanjiService.getRelatedVocabulary("魚", 5L)).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/kanji/1"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("kanji/detail"))
+                .andExpect(content().string(containsString("id=\"kanji-practice-section\"")))
+                .andExpect(content().string(containsString("Bảng tập viết chữ Hán")))
+                .andExpect(content().string(containsString("id=\"kanji-practice-canvas\"")))
+                .andExpect(content().string(containsString("width=\"300\"")))
+                .andExpect(content().string(containsString("height=\"300\"")))
+                .andExpect(content().string(containsString("aria-label=\"Bảng vẽ tập viết chữ Hán\"")))
+                .andExpect(content().string(containsString("id=\"canvas-opacity-slider\"")))
+                .andExpect(content().string(containsString("id=\"btn-canvas-undo\"")))
+                .andExpect(content().string(containsString("Hoàn tác nét cuối")))
+                .andExpect(content().string(containsString("id=\"btn-canvas-clear\"")))
+                .andExpect(content().string(containsString("Xóa")))
+                .andExpect(content().string(containsString("btn-thickness")))
+                .andExpect(content().string(containsString("btn-opacity")))
+                .andExpect(content().string(containsString("css/kanji-canvas.css")))
+                .andExpect(content().string(containsString("js/kanji-canvas.js")))
+                .andExpect(content().string(containsString("data-stroke-url=\"/kanjivg/09b5a.svg\"")));
+    }
+
+    @Test
+    @DisplayName("F20: Trang chi tiết Kanji khi hasStrokeData == false vẫn hiển thị bảng vẽ, thông báo chưa có chữ mẫu và thông báo hỗ trợ Pointer Events")
+    void testDetail_f20_canvas_fallbackWithoutStrokeData() throws Exception {
+        when(kanjiService.findDetailById(2L)).thenReturn(Optional.of(kanjiSchoolMissingKun));
+        when(kanjiService.getRelatedVocabulary("校", 5L)).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/kanji/2"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("kanji/detail"))
+                .andExpect(content().string(containsString("id=\"kanji-practice-canvas\"")))
+                .andExpect(content().string(containsString("aria-label=\"Bảng vẽ tập viết chữ Hán\"")))
+                .andExpect(content().string(containsString("id=\"canvas-no-data-notice\"")))
+                .andExpect(content().string(containsString("Chưa có dữ liệu chữ mẫu, bạn vẫn có thể tự do tập viết.")))
+                .andExpect(content().string(containsString("id=\"canvas-unsupported-notice\"")))
+                .andExpect(content().string(containsString("Trình duyệt của bạn không hỗ trợ vẽ nét (Pointer Events).")));
+    }
 }
