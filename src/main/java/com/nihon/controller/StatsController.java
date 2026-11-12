@@ -119,7 +119,12 @@ public class StatsController {
                     .currentTopicFilter(effectiveTopicId)
                     .build();
         }
-        int wrongCount = studyProgressService.getWrongVocabIds(session, safeMode, effectiveTopicId).size();
+        int wrongCount;
+        if (safeMode.startsWith("KANJI_")) {
+            wrongCount = studyProgressService.getWrongKanjiIds(session, safeMode, effectiveTopicId).size();
+        } else {
+            wrongCount = studyProgressService.getWrongVocabIds(session, safeMode, effectiveTopicId).size();
+        }
 
         model.addAttribute("progress", progress);
         model.addAttribute("selectedMode", safeMode);
@@ -137,6 +142,8 @@ public class StatsController {
         String trimmedUpper = mode.strip().toUpperCase(Locale.ROOT);
         if ("JA_VI".equals(trimmedUpper) || "VI_JA".equals(trimmedUpper)
                 || "MC_JA_VI".equals(trimmedUpper) || "MC_VI_JA".equals(trimmedUpper)
+                || "KANJI_READING".equals(trimmedUpper) || "KANJI_WRITE".equals(trimmedUpper)
+                || "KANJI_CHOICE".equals(trimmedUpper)
                 || "ALL".equals(trimmedUpper)) {
             return trimmedUpper;
         }

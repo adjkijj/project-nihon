@@ -56,6 +56,9 @@
                         <option value="VI_JA" th:selected="${selectedMode == 'VI_JA'}">🇻🇳 → 🇯🇵 Việt → Nhật (Tự luận)</option>
                         <option value="MC_JA_VI" th:selected="${selectedMode == 'MC_JA_VI'}">🎯 Trắc nghiệm Nhật → Việt</option>
                         <option value="MC_VI_JA" th:selected="${selectedMode == 'MC_VI_JA'}">🎯 Trắc nghiệm Việt → Nhật</option>
+                        <option value="KANJI_READING" th:selected="${selectedMode == 'KANJI_READING'}">漢 Kanji: Đoán âm đọc</option>
+                        <option value="KANJI_WRITE" th:selected="${selectedMode == 'KANJI_WRITE'}">✍️ Kanji: Viết chữ Hán</option>
+                        <option value="KANJI_CHOICE" th:selected="${selectedMode == 'KANJI_CHOICE'}">🎲 Kanji: Trắc nghiệm</option>
                     </select>
                 </div>
 
@@ -81,12 +84,17 @@
 
         <!-- Retry Wrong Words Button in Stats -->
         <div class="stats-retry-toolbar">
+            <a th:if="${wrongCount > 0 and (selectedMode == 'KANJI_READING' or selectedMode == 'KANJI_WRITE' or selectedMode == 'KANJI_CHOICE')}"
+               th:href="@{/practice/kanji/question(topicId=${selectedTopicId}, mode=${selectedMode == 'KANJI_WRITE' ? 'MEANING_TO_KANJI' : (selectedMode == 'KANJI_CHOICE' ? 'KANJI_CHOICE' : 'KANJI_TO_READING')}, retryWrongOnly=true)}"
+               class="btn btn-retry-stats">
+                <span>🔄</span> Ôn lại Kanji làm sai (<span th:text="${wrongCount}">0</span>)
+            </a>
             <a th:if="${wrongCount > 0 and selectedMode == 'VI_JA'}"
                th:href="@{/practice/vi-ja/question(topicId=${selectedTopicId}, retryWrongOnly=true)}"
                class="btn btn-retry-stats">
                 <span>🔄</span> Ôn lại từ làm sai (<span th:text="${wrongCount}">0</span>)
             </a>
-            <a th:if="${wrongCount > 0 and selectedMode != 'VI_JA'}"
+            <a th:if="${wrongCount > 0 and selectedMode != 'VI_JA' and selectedMode != 'KANJI_READING' and selectedMode != 'KANJI_WRITE' and selectedMode != 'KANJI_CHOICE'}"
                th:href="@{/practice/question(topicId=${selectedTopicId}, retryWrongOnly=true)}"
                class="btn btn-retry-stats">
                 <span>🔄</span> Ôn lại từ làm sai (<span th:text="${wrongCount}">0</span>)
@@ -173,6 +181,11 @@
                             <td>
                                 <span th:if="${item.mode == 'JA_VI'}" class="badge-mode badge-mode-ja-vi">Nhật → Việt</span>
                                 <span th:if="${item.mode == 'VI_JA'}" class="badge-mode badge-mode-vi-ja">Việt → Nhật</span>
+                                <span th:if="${item.mode == 'MC_JA_VI'}" class="badge-mode badge-mode-ja-vi">Trắc nghiệm (Nhật → Việt)</span>
+                                <span th:if="${item.mode == 'MC_VI_JA'}" class="badge-mode badge-mode-vi-ja">Trắc nghiệm (Việt → Nhật)</span>
+                                <span th:if="${item.mode == 'KANJI_READING'}" class="badge-mode badge-mode-kanji">Kanji: Đoán âm đọc</span>
+                                <span th:if="${item.mode == 'KANJI_WRITE'}" class="badge-mode badge-mode-kanji">Kanji: Viết chữ</span>
+                                <span th:if="${item.mode == 'KANJI_CHOICE'}" class="badge-mode badge-mode-kanji">Kanji: Trắc nghiệm</span>
                             </td>
                             <td>
                                 <strong class="u-font-size-1-05rem" th:text="${(item.questionPrompt != null && !item.questionPrompt.isBlank()) ? item.questionPrompt : '-'}">Từ vựng</strong>
@@ -188,6 +201,7 @@
                                 <a th:if="${item.mode == 'JA_VI'}" th:href="@{/practice/question(topicId=${item.topicId})}" class="btn-sm u-96b36b49" title="Ôn tập chủ đề này">Ôn tập ↺</a>
                                 <a th:if="${item.mode == 'VI_JA'}" th:href="@{/practice/vi-ja/question(topicId=${item.topicId})}" class="btn-sm u-96b36b49" title="Ôn tập chủ đề này">Ôn tập ↺</a>
                                 <a th:if="${item.mode == 'MC_JA_VI' or item.mode == 'MC_VI_JA'}" th:href="@{/practice/choice/question(topicId=${item.topicId})}" class="btn-sm u-96b36b49" title="Ôn tập chủ đề này">Ôn tập ↺</a>
+                                <a th:if="${item.mode == 'KANJI_READING' or item.mode == 'KANJI_WRITE' or item.mode == 'KANJI_CHOICE'}" th:href="@{/practice/kanji/question(topicId=${item.topicId}, mode=${item.mode == 'KANJI_WRITE' ? 'MEANING_TO_KANJI' : (item.mode == 'KANJI_CHOICE' ? 'KANJI_CHOICE' : 'KANJI_TO_READING')})}" class="btn-sm u-96b36b49" title="Ôn tập bài học Kanji này">Ôn tập ↺</a>
                             </td>
                         </tr>
                     </tbody>
@@ -227,6 +241,9 @@
                                 <span th:if="${r.mode == 'VI_JA'}" class="badge-mode badge-mode-vi-ja">Việt → Nhật</span>
                                 <span th:if="${r.mode == 'MC_JA_VI'}" class="badge-mode badge-mode-ja-vi">Trắc nghiệm (Nhật → Việt)</span>
                                 <span th:if="${r.mode == 'MC_VI_JA'}" class="badge-mode badge-mode-vi-ja">Trắc nghiệm (Việt → Nhật)</span>
+                                <span th:if="${r.mode == 'KANJI_READING'}" class="badge-mode badge-mode-kanji">Kanji: Đoán âm đọc</span>
+                                <span th:if="${r.mode == 'KANJI_WRITE'}" class="badge-mode badge-mode-kanji">Kanji: Viết chữ</span>
+                                <span th:if="${r.mode == 'KANJI_CHOICE'}" class="badge-mode badge-mode-kanji">Kanji: Trắc nghiệm</span>
                             </td>
                             <td>
                                 <strong th:text="${(r.questionPrompt != null && !r.questionPrompt.isBlank()) ? r.questionPrompt : '-'}">Từ vựng</strong>

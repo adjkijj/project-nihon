@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Câu hỏi luyện tập Kanji - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/practice-index.css}">
+    <link rel="stylesheet" th:href="@{/css/kanji-practice.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('practice')}"></header>
+
+    <main>
+        <div class="kanji-stage">
+            <!-- Thanh thông tin câu hỏi -->
+            <div class="kanji-stage-header">
+                <div class="stage-badge-group">
+                    <span th:if="${question.mode.name() == 'KANJI_TO_READING'}" class="stage-mode-badge badge-reading">
+                        📖 Đoán âm đọc (On / Kun)
+                    </span>
+                    <span th:if="${question.mode.name() == 'MEANING_TO_KANJI'}" class="stage-mode-badge badge-write">
+                        ✍️ Viết chữ Kanji
+                    </span>
+                    <span th:if="${question.mode.name() == 'KANJI_CHOICE'}" class="stage-mode-badge badge-choice">
+                        🎯 Trắc nghiệm 4 lựa chọn
+                    </span>
+                    <span th:if="${retryWrongOnly}" class="stage-retry-badge">
+                        🔄 Chế độ ôn từ sai
+                    </span>
+                </div>
+                <div class="stage-topic-name" th:text="${question.topicName != null ? question.topicName : 'Tất cả bài học'}">
+                    Bài 1
+                </div>
+            </div>
+
+            <!-- Khung đề bài hiển thị lớn -->
+            <div class="kanji-prompt-card">
+                <!-- Dạng 1 & Dạng 3: Hiện chữ Kanji kích thước lớn -->
+                <div th:if="${question.mode.name() == 'KANJI_TO_READING' or question.mode.name() == 'KANJI_CHOICE'}"
+                     class="kanji-large-display"
+                     th:text="${question.character}">
+                    字
+                </div>
+
+                <!-- Dạng 2: Hiện Hán Việt & Ý nghĩa -->
+                <div th:if="${question.mode.name() == 'MEANING_TO_KANJI'}" class="kanji-meaning-prompt">
+                    <div class="prompt-hanviet" th:if="${question.promptHanViet != null and !question.promptHanViet.isBlank()}"
+                         th:text="${question.promptHanViet}">
+                        HÁN VIỆT
+                    </div>
+                    <div class="prompt-meaning" th:if="${question.promptMeaningVi != null and !question.promptMeaningVi.isBlank()}"
+                         th:text="${question.promptMeaningVi}">
+                        Ý nghĩa của từ
+                    </div>
+                </div>
+            </div>
+
+            <!-- FORM DÀNH CHO DẠNG 1 (KANJI_TO_READING) VÀ DẠNG 2 (MEANING_TO_KANJI) -->
+            <form th:if="${question.mode.name() == 'KANJI_TO_READING' or question.mode.name() == 'MEANING_TO_KANJI'}"
+                  th:action="@{/practice/kanji/check}"
+                  th:object="${form}"
+                  method="post"
+                  class="kanji-answer-form"
+                  id="kanjiTextForm">
+                <input type="hidden" name="_csrf" th:value="${_csrf}">
+                <input type="hidden" th:field="*{kanjiId}">
+                <input type="hidden" th:field="*{mode}">
+                <input type="hidden" th:field="*{topicId}">
+                <input type="hidden" th:field="*{retryWrongOnly}">
+
+                <!-- Gợi ý số lượng âm đọc cho Dạng 1 (tuyệt đối không lộ nội dung) -->
+                <div th:if="${question.mode.name() == 'KANJI_TO_READING'}" class="kanji-hint-container">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnToggleHint" aria-expanded="false">
+                        💡 Hiện gợi ý
+                    </button>
+                    <div id="hintContent" class="hint-text u-display-none" aria-live="polite">
+                        Chữ này có <strong th:text="${question.validReadingsCount}">1</strong> âm đọc hợp lệ (chấp nhận cả âm On Katakana và âm Kun Hiragana).
+                    </div>
+                </div>
+
+                <div class="form-group kanji-input-group">
+                    <label for="kanjiAnswerInput" th:if="${question.mode.name() == 'KANJI_TO_READING'}">
+                        Nhập âm đọc bằng chữ Kana (Hiragana hoặc Katakana):
+                    </label>
+                    <label for="kanjiAnswerInput" th:if="${question.mode.name() == 'MEANING_TO_KANJI'}">
+                        Dùng bộ gõ tiếng Nhật nhập chữ Kanji tương ứng:
+                    </label>
+                    <input type="text"
+                           id="kanjiAnswerInput"
+                           th:field="*{answer}"
+                           class="form-control kanji-input"
+                           th:placeholder="${question.mode.name() == 'KANJI_TO_READING' ? 'Nhập âm đọc kana (Hiragana hoặc Katakana)...' : 'Dùng bộ gõ nhập chữ Kanji...'}"
+                           autocomplete="off"
+                           autofocus
+                           required>
+                </div>
+
+                <div class="kanji-action-row">
+                    <button type="submit" class="btn btn-primary btn-submit-answer" id="btnSubmitAnswer">
+                        Kiểm tra đáp án ↵
+                    </button>
+                    <a th:href="@{/practice/kanji(topicId=${form.topicId}, mode=${form.mode})}" class="btn btn-secondary">
+                        Đổi bài khác
+                    </a>
+                </div>
+            </form>
+
+            <!-- FORM DÀNH CHO DẠNG 3 (KANJI_CHOICE - TRẮC NGHIỆM 4 LỰA CHỌN) -->
+            <form th:if="${question.mode.name() == 'KANJI_CHOICE'}"
+                  th:action="@{/practice/kanji/check}"
+                  th:object="${form}"
+                  method="post"
+                  id="kanjiChoiceForm">
+                <input type="hidden" name="_csrf" th:value="${_csrf}">
+                <input type="hidden" th:field="*{kanjiId}">
+                <input type="hidden" th:field="*{mode}">
+                <input type="hidden" th:field="*{topicId}">
+                <input type="hidden" th:field="*{retryWrongOnly}">
+                <input type="hidden" id="choiceKanjiIdInput" name="choiceKanjiId" value="">
+
+                <div class="kanji-choice-grid">
+                    <button th:each="option, iter : ${question.options}"
+                            type="button"
+                            class="kanji-choice-btn"
+                            th:data-choice-id="${option.kanjiId}">
+                        <span class="choice-num" th:text="${iter.count}">1</span>
+                        <span class="choice-text" th:text="${option.displayText}">Hán Việt - Ý nghĩa</span>
+                    </button>
+                </div>
+
+                <div class="choice-keyboard-hint">
+                    Nhấn phím <kbd>1</kbd>, <kbd>2</kbd>, <kbd>3</kbd>, <kbd>4</kbd> hoặc bấm chuột vào phương án để chọn ngay.
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Chế độ luyện tập Kanji - Chấm điểm tại máy chủ.</p>
+    </footer>
+
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+    <script th:src="@{/js/kanji-practice.js}" defer></script>
+</body>
+</html>
+

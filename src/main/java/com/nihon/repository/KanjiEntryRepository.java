@@ -76,6 +76,15 @@ public interface KanjiEntryRepository extends JpaRepository<KanjiEntry, Long> {
     @Query("SELECT COUNT(k) > 0 FROM KanjiEntry k WHERE k.topic.id = :topicId AND (k.importBatchId IS NULL OR k.importBatchId <> :batchId)")
     boolean existsByTopicIdOutsideBatch(@Param("topicId") Long topicId, @Param("batchId") Long batchId);
 
+    @Query("SELECT k FROM KanjiEntry k JOIN FETCH k.topic t LEFT JOIN t.parent p " +
+           "WHERE (:topicId IS NULL OR t.id = :topicId OR p.id = :topicId)")
+    List<KanjiEntry> findEligibleKanji(@Param("topicId") Long topicId);
+
+    @Query("SELECT k FROM KanjiEntry k JOIN FETCH k.topic t LEFT JOIN t.parent p " +
+           "WHERE (:topicId IS NULL OR t.id = :topicId OR p.id = :topicId) " +
+           "  AND k.id IN :allowedIds")
+    List<KanjiEntry> findEligibleKanjiWithIds(@Param("topicId") Long topicId, @Param("allowedIds") Collection<Long> allowedIds);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE KanjiEntry k SET k.importBatchId = :batchId, k.updatedAt = k.createdAt WHERE k.id IN :ids")
     void assignImportBatchId(@Param("ids") List<Long> ids, @Param("batchId") Long batchId);

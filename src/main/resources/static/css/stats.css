@@ -499,6 +499,11 @@ tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
     color: #d8b4fe;
     border: 1px solid rgba(168, 85, 247, 0.3);
 }
+.badge-mode-kanji {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #fcd34d;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
 
 /* Proportion Card */
 .proportion-card {

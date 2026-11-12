@@ -63,7 +63,7 @@ class NavbarTemplateTest {
     }
 
     @Test
-    @DisplayName("Tất cả 24 trang template người dùng đều dùng fragment navbar chung")
+    @DisplayName("Tất cả các trang template người dùng đều dùng fragment navbar chung")
     void testAllUserFacingTemplatesUseNavbarFragment() throws IOException {
         List<Path> templateFiles;
         try (Stream<Path> stream = Files.walk(TEMPLATES_DIR)) {
@@ -73,7 +73,7 @@ class NavbarTemplateTest {
         }
 
         assertThat(templateFiles).isNotEmpty();
-        assertThat(templateFiles.size()).isEqualTo(24);
+        assertThat(templateFiles.size()).isEqualTo(27);
 
         for (Path file : templateFiles) {
             String templateContent = Files.readString(file, StandardCharsets.UTF_8);
