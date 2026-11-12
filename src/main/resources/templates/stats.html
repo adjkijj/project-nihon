@@ -7,6 +7,7 @@
     <link rel="stylesheet" th:href="@{/css/stats.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
     <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <link rel="stylesheet" th:href="@{/css/timed-practice.css}">
     <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
     <script th:src="@{/js/ui-enhance.js}" defer></script>
@@ -59,6 +60,10 @@
                         <option value="KANJI_READING" th:selected="${selectedMode == 'KANJI_READING'}">漢 Kanji: Đoán âm đọc</option>
                         <option value="KANJI_WRITE" th:selected="${selectedMode == 'KANJI_WRITE'}">✍️ Kanji: Viết chữ Hán</option>
                         <option value="KANJI_CHOICE" th:selected="${selectedMode == 'KANJI_CHOICE'}">🎲 Kanji: Trắc nghiệm</option>
+                        <option value="TIMED_JA_VI" th:selected="${selectedMode == 'TIMED_JA_VI'}">⏱️ Tính giờ (Nhật - Việt)</option>
+                        <option value="TIMED_VI_JA" th:selected="${selectedMode == 'TIMED_VI_JA'}">⏱️ Tính giờ (Việt - Nhật)</option>
+                        <option value="TIMED_KANJI_READING" th:selected="${selectedMode == 'TIMED_KANJI_READING'}">⏱️ Tính giờ (Kanji)</option>
+                        <option value="TIMED_CHOICE" th:selected="${selectedMode == 'TIMED_CHOICE'}">⏱️ Tính giờ (Trắc nghiệm)</option>
                     </select>
                 </div>
 
@@ -94,7 +99,12 @@
                class="btn btn-retry-stats">
                 <span>🔄</span> Ôn lại từ làm sai (<span th:text="${wrongCount}">0</span>)
             </a>
-            <a th:if="${wrongCount > 0 and selectedMode != 'VI_JA' and selectedMode != 'KANJI_READING' and selectedMode != 'KANJI_WRITE' and selectedMode != 'KANJI_CHOICE'}"
+            <a th:if="${wrongCount > 0 and (selectedMode == 'TIMED_JA_VI' or selectedMode == 'TIMED_VI_JA' or selectedMode == 'TIMED_KANJI_READING' or selectedMode == 'TIMED_CHOICE')}"
+               th:href="@{/practice/timed}"
+               class="btn btn-retry-stats">
+                <span>⏱️</span> Ôn lại bài tính giờ (<span th:text="${wrongCount}">0</span>)
+            </a>
+            <a th:if="${wrongCount > 0 and selectedMode != 'VI_JA' and selectedMode != 'KANJI_READING' and selectedMode != 'KANJI_WRITE' and selectedMode != 'KANJI_CHOICE' and selectedMode != 'TIMED_JA_VI' and selectedMode != 'TIMED_VI_JA' and selectedMode != 'TIMED_KANJI_READING' and selectedMode != 'TIMED_CHOICE'}"
                th:href="@{/practice/question(topicId=${selectedTopicId}, retryWrongOnly=true)}"
                class="btn btn-retry-stats">
                 <span>🔄</span> Ôn lại từ làm sai (<span th:text="${wrongCount}">0</span>)
@@ -186,6 +196,10 @@
                                 <span th:if="${item.mode == 'KANJI_READING'}" class="badge-mode badge-mode-kanji">Kanji: Đoán âm đọc</span>
                                 <span th:if="${item.mode == 'KANJI_WRITE'}" class="badge-mode badge-mode-kanji">Kanji: Viết chữ</span>
                                 <span th:if="${item.mode == 'KANJI_CHOICE'}" class="badge-mode badge-mode-kanji">Kanji: Trắc nghiệm</span>
+                                <span th:if="${item.mode == 'TIMED_JA_VI'}" class="badge-mode badge-mode-timed">Tính giờ (Nhật - Việt)</span>
+                                <span th:if="${item.mode == 'TIMED_VI_JA'}" class="badge-mode badge-mode-timed">Tính giờ (Việt - Nhật)</span>
+                                <span th:if="${item.mode == 'TIMED_KANJI_READING'}" class="badge-mode badge-mode-timed">Tính giờ (Kanji)</span>
+                                <span th:if="${item.mode == 'TIMED_CHOICE'}" class="badge-mode badge-mode-timed">Tính giờ (Trắc nghiệm)</span>
                             </td>
                             <td>
                                 <strong class="u-font-size-1-05rem" th:text="${(item.questionPrompt != null && !item.questionPrompt.isBlank()) ? item.questionPrompt : '-'}">Từ vựng</strong>
@@ -202,6 +216,7 @@
                                 <a th:if="${item.mode == 'VI_JA'}" th:href="@{/practice/vi-ja/question(topicId=${item.topicId})}" class="btn-sm u-96b36b49" title="Ôn tập chủ đề này">Ôn tập ↺</a>
                                 <a th:if="${item.mode == 'MC_JA_VI' or item.mode == 'MC_VI_JA'}" th:href="@{/practice/choice/question(topicId=${item.topicId})}" class="btn-sm u-96b36b49" title="Ôn tập chủ đề này">Ôn tập ↺</a>
                                 <a th:if="${item.mode == 'KANJI_READING' or item.mode == 'KANJI_WRITE' or item.mode == 'KANJI_CHOICE'}" th:href="@{/practice/kanji/question(topicId=${item.topicId}, mode=${item.mode == 'KANJI_WRITE' ? 'MEANING_TO_KANJI' : (item.mode == 'KANJI_CHOICE' ? 'KANJI_CHOICE' : 'KANJI_TO_READING')})}" class="btn-sm u-96b36b49" title="Ôn tập bài học Kanji này">Ôn tập ↺</a>
+                                <a th:if="${item.mode == 'TIMED_JA_VI' or item.mode == 'TIMED_VI_JA' or item.mode == 'TIMED_KANJI_READING' or item.mode == 'TIMED_CHOICE'}" th:href="@{/practice/timed}" class="btn-sm u-96b36b49" title="Luyện tập tính giờ">Luyện tập ↺</a>
                             </td>
                         </tr>
                     </tbody>
@@ -244,6 +259,10 @@
                                 <span th:if="${r.mode == 'KANJI_READING'}" class="badge-mode badge-mode-kanji">Kanji: Đoán âm đọc</span>
                                 <span th:if="${r.mode == 'KANJI_WRITE'}" class="badge-mode badge-mode-kanji">Kanji: Viết chữ</span>
                                 <span th:if="${r.mode == 'KANJI_CHOICE'}" class="badge-mode badge-mode-kanji">Kanji: Trắc nghiệm</span>
+                                <span th:if="${r.mode == 'TIMED_JA_VI'}" class="badge-mode badge-mode-timed">Tính giờ (Nhật - Việt)</span>
+                                <span th:if="${r.mode == 'TIMED_VI_JA'}" class="badge-mode badge-mode-timed">Tính giờ (Việt - Nhật)</span>
+                                <span th:if="${r.mode == 'TIMED_KANJI_READING'}" class="badge-mode badge-mode-timed">Tính giờ (Kanji)</span>
+                                <span th:if="${r.mode == 'TIMED_CHOICE'}" class="badge-mode badge-mode-timed">Tính giờ (Trắc nghiệm)</span>
                             </td>
                             <td>
                                 <strong th:text="${(r.questionPrompt != null && !r.questionPrompt.isBlank()) ? r.questionPrompt : '-'}">Từ vựng</strong>

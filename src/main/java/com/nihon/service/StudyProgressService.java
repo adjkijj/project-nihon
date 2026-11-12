@@ -178,6 +178,42 @@ public class StudyProgressService {
         addRecordToSession(session, record);
     }
 
+    /**
+     * Ghi nhận kết quả câu hỏi trong bài luyện tập tính giờ (F42, F50, F17) vào tiến độ của session.
+     */
+    public synchronized void recordTimedAttempt(HttpSession session,
+                                                Long vocabId,
+                                                Long kanjiId,
+                                                Long topicId,
+                                                String topicName,
+                                                String timedMode,
+                                                String questionPrompt,
+                                                String userAnswer,
+                                                String expectedAnswer,
+                                                boolean correct,
+                                                String feedbackMessage) {
+        if (session == null) {
+            return;
+        }
+
+        PracticeRecordDto record = PracticeRecordDto.builder()
+                .id(UUID.randomUUID().toString())
+                .vocabId(vocabId)
+                .kanjiId(kanjiId)
+                .topicId(topicId)
+                .topicName(topicName != null ? topicName : "Luyện tập tính giờ")
+                .mode(timedMode != null ? timedMode.toUpperCase(Locale.ROOT) : "TIMED_JA_VI")
+                .questionPrompt(questionPrompt)
+                .userAnswer(userAnswer != null ? userAnswer : "")
+                .expectedAnswer(expectedAnswer != null ? expectedAnswer : "")
+                .correct(correct)
+                .feedbackMessage(feedbackMessage)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        addRecordToSession(session, record);
+    }
+
     private void addRecordToSession(HttpSession session, PracticeRecordDto record) {
         List<PracticeRecordDto> list = getOrCreateHistoryList(session);
         synchronized (list) {
@@ -202,7 +238,8 @@ public class StudyProgressService {
 
     /**
      * Chuẩn hóa tham số chế độ kiểm tra: chỉ nhận ALL, JA_VI, VI_JA, MC_JA_VI, MC_VI_JA,
-     * KANJI_READING, KANJI_WRITE, KANJI_CHOICE (không phân biệt hoa thường).
+     * KANJI_READING, KANJI_WRITE, KANJI_CHOICE, TIMED_JA_VI, TIMED_VI_JA,
+     * TIMED_KANJI_READING, TIMED_CHOICE (không phân biệt hoa thường).
      * Mọi giá trị khác coi như ALL.
      */
     public String normalizeMode(String modeFilter) {
@@ -214,6 +251,8 @@ public class StudyProgressService {
                 || "MC_JA_VI".equals(trimmedUpper) || "MC_VI_JA".equals(trimmedUpper)
                 || "KANJI_READING".equals(trimmedUpper) || "KANJI_WRITE".equals(trimmedUpper)
                 || "KANJI_CHOICE".equals(trimmedUpper)
+                || "TIMED_JA_VI".equals(trimmedUpper) || "TIMED_VI_JA".equals(trimmedUpper)
+                || "TIMED_KANJI_READING".equals(trimmedUpper) || "TIMED_CHOICE".equals(trimmedUpper)
                 || "ALL".equals(trimmedUpper)) {
             return trimmedUpper;
         }
@@ -264,7 +303,8 @@ public class StudyProgressService {
 
     /**
      * Chuẩn hóa tham số chế độ cho chức năng lấy từ sai: whitelist JA_VI, VI_JA,
-     * KANJI_READING, KANJI_WRITE, KANJI_CHOICE, ALL.
+     * KANJI_READING, KANJI_WRITE, KANJI_CHOICE, TIMED_JA_VI, TIMED_VI_JA,
+     * TIMED_KANJI_READING, TIMED_CHOICE, ALL.
      * Mọi giá trị khác (hoặc rỗng/null) coi như ALL.
      */
     public String normalizeWrongMode(String mode) {
@@ -274,7 +314,9 @@ public class StudyProgressService {
         String upper = mode.strip().toUpperCase(Locale.ROOT);
         if ("JA_VI".equals(upper) || "VI_JA".equals(upper)
                 || "KANJI_READING".equals(upper) || "KANJI_WRITE".equals(upper)
-                || "KANJI_CHOICE".equals(upper)) {
+                || "KANJI_CHOICE".equals(upper)
+                || "TIMED_JA_VI".equals(upper) || "TIMED_VI_JA".equals(upper)
+                || "TIMED_KANJI_READING".equals(upper) || "TIMED_CHOICE".equals(upper)) {
             return upper;
         }
         return "ALL";
