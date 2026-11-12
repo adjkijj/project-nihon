@@ -110,3 +110,23 @@ CREATE TABLE IF NOT EXISTS study_answer (
     PRIMARY KEY (id),
     CONSTRAINT fk_study_answer_session FOREIGN KEY (session_id) REFERENCES study_session (id) ON DELETE CASCADE
 );
+
+-- 7. Bảng verb: Quản lý động từ tiếng Nhật và các thể chia (F13, F16)
+CREATE TABLE IF NOT EXISTS verb (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    topic_id BIGINT NULL,
+    masu_form VARCHAR(100) NOT NULL,
+    dictionary_form VARCHAR(100) NOT NULL,
+    kanji_text VARCHAR(100) NULL,
+    verb_group TINYINT NOT NULL,
+    meaning_vi VARCHAR(255) NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT uk_verb_dict_kanji UNIQUE (dictionary_form, kanji_text),
+    CONSTRAINT fk_verb_topic FOREIGN KEY (topic_id) REFERENCES topic (id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_verb_dictionary_form ON verb (dictionary_form);
+CREATE INDEX IF NOT EXISTS idx_verb_topic_id ON verb (topic_id);
+CREATE INDEX IF NOT EXISTS idx_verb_verb_group ON verb (verb_group);

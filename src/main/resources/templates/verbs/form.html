@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${isEdit ? 'Chỉnh sửa động từ - Project Nihon' : 'Thêm động từ mới - Project Nihon'}">Thêm/Sửa Động từ - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/verbs.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('verbs')}"></header>
+
+    <main class="verbs-container">
+        <div class="verb-form-card">
+            <div class="form-header">
+                <h1 th:text="${isEdit ? 'Chỉnh sửa động từ' : 'Thêm động từ mới'}">Thêm động từ mới</h1>
+                <p>Nhập thông tin động từ để hệ thống tự động kiểm tra tính nhất quán và sinh 5 thể cơ bản</p>
+            </div>
+
+            <!-- Global Error / Consistency Check Alert -->
+            <div th:if="${errorMessage}" class="alert alert-error" role="alert">
+                <span class="alert-icon">⚠️</span>
+                <span th:text="${errorMessage}">Thể ます và thể từ điển không khớp với nhóm đã chọn</span>
+            </div>
+
+            <form th:action="${isEdit ? '/verbs/' + verbId + '/edit' : '/verbs/new'}"
+                  th:object="${form}" method="post" class="verb-form">
+                <input type="hidden" name="_csrf" th:value="${_csrf}">
+
+                <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-error" role="alert">
+                    <span class="alert-icon">⚠️</span>
+                    <span th:each="err : ${#fields.globalErrors()}" th:text="${err}">Lỗi dữ liệu.</span>
+                </div>
+
+                <!-- Kanji Text -->
+                <div class="form-field-group">
+                    <label for="kanjiText">Chữ Hán (Kanji)</label>
+                    <input type="text" id="kanjiText" th:field="*{kanjiText}" class="form-control"
+                           placeholder="Ví dụ: 飲む (để trống nếu từ thuần Hiragana)"
+                           maxlength="100"
+                           th:classappend="${#fields.hasErrors('kanjiText')} ? 'is-invalid' : ''">
+                    <div class="field-hint">Chữ Hán kèm okurigana (nếu có). Ví dụ: 飲む, 食べる, 行く.</div>
+                    <div th:if="${#fields.hasErrors('kanjiText')}" th:errors="*{kanjiText}" class="field-error"></div>
+                </div>
+
+                <!-- Dictionary Form -->
+                <div class="form-field-group">
+                    <label for="dictionaryForm">Thể từ điển (Hiragana) <span class="required">*</span></label>
+                    <input type="text" id="dictionaryForm" th:field="*{dictionaryForm}" class="form-control"
+                           placeholder="Ví dụ: のむ, たべる, いく, くる, べんきょうする"
+                           maxlength="100"
+                           required
+                           th:classappend="${#fields.hasErrors('dictionaryForm')} ? 'is-invalid' : ''">
+                    <div class="field-hint">Dạng nguyên thể viết bằng Hiragana (phải tận cùng bằng âm thuộc hàng u: う, く, ぐ, す, つ, ぬ, ぶ, む, る).</div>
+                    <div th:if="${#fields.hasErrors('dictionaryForm')}" th:errors="*{dictionaryForm}" class="field-error"></div>
+                </div>
+
+                <!-- Masu Form -->
+                <div class="form-field-group">
+                    <label for="masuForm">Thể ます (Hiragana) <span class="required">*</span></label>
+                    <input type="text" id="masuForm" th:field="*{masuForm}" class="form-control"
+                           placeholder="Ví dụ: のみます, たべます, いきます, きます, べんきょうします"
+                           maxlength="100"
+                           required
+                           th:classappend="${#fields.hasErrors('masuForm')} ? 'is-invalid' : ''">
+                    <div class="field-hint">Dạng lịch sự viết bằng Hiragana (bắt buộc kết thúc bằng "ます").</div>
+                    <div th:if="${#fields.hasErrors('masuForm')}" th:errors="*{masuForm}" class="field-error"></div>
+                </div>
+
+                <!-- Verb Group -->
+                <div class="form-field-group">
+                    <label for="verbGroup">Nhóm động từ <span class="required">*</span></label>
+                    <select id="verbGroup" th:field="*{verbGroup}" class="form-control"
+                            required
+                            th:classappend="${#fields.hasErrors('verbGroup')} ? 'is-invalid' : ''">
+                        <option value="">-- Chọn nhóm động từ --</option>
+                        <option value="1">Nhóm 1 (Godan / Ngũ đoạn - 五段動詞)</option>
+                        <option value="2">Nhóm 2 (Ichidan / Nhất đoạn - 一段動詞)</option>
+                        <option value="3">Nhóm 3 (Bất quy tắc: する, くる - 不規則動詞)</option>
+                    </select>
+                    <div class="field-hint">
+                        Quy tắc: Nhóm 1 (âm trước ます là hàng i), Nhóm 2 (âm trước ます là hàng e hoặc trường hợp đặc biệt hàng i như 見る, 起きる), Nhóm 3 (する, くる và các từ ghép).
+                    </div>
+                    <div th:if="${#fields.hasErrors('verbGroup')}" th:errors="*{verbGroup}" class="field-error"></div>
+                </div>
+
+                <!-- Meaning VI -->
+                <div class="form-field-group">
+                    <label for="meaningVi">Nghĩa tiếng Việt <span class="required">*</span></label>
+                    <input type="text" id="meaningVi" th:field="*{meaningVi}" class="form-control"
+                           placeholder="Ví dụ: Uống (nước, sữa, thuốc)"
+                           maxlength="255"
+                           required
+                           th:classappend="${#fields.hasErrors('meaningVi')} ? 'is-invalid' : ''">
+                    <div th:if="${#fields.hasErrors('meaningVi')}" th:errors="*{meaningVi}" class="field-error"></div>
+                </div>
+
+                <!-- Topic -->
+                <div class="form-field-group">
+                    <label for="topicId">Chủ đề bài học</label>
+                    <select id="topicId" th:field="*{topicId}" class="form-control"
+                            th:classappend="${#fields.hasErrors('topicId')} ? 'is-invalid' : ''">
+                        <option value="">-- Không chọn chủ đề (Chưa phân loại) --</option>
+                        <option th:each="t : ${topics}"
+                                th:value="${t.id}"
+                                th:text="${t.parent != null ? '↳ ' + t.name : t.name}">
+                            Bài 1
+                        </option>
+                    </select>
+                    <div class="field-hint">Tùy chọn: Gán động từ này vào một chủ đề cụ thể để học theo bài.</div>
+                    <div th:if="${#fields.hasErrors('topicId')}" th:errors="*{topicId}" class="field-error"></div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <a th:href="@{/verbs}" class="btn btn-secondary">Hủy bỏ</a>
+                    <button type="submit" class="btn btn-primary" th:text="${isEdit ? 'Lưu thay đổi' : 'Tạo động từ'}">Lưu động từ</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Phân loại và chia động từ tiếng Nhật tự động.</p>
+        <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
+    </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${(verb.hasKanji ? verb.kanjiText + ' (' + verb.dictionaryForm + ')' : verb.dictionaryForm) + ' - Chi tiết Động từ - Project Nihon'}">Chi tiết Động từ - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/verbs.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('verbs')}"></header>
+
+    <main class="verbs-container">
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success" role="status">
+            <span class="alert-icon">✓</span>
+            <span th:text="${successMessage}">Thao tác thành công!</span>
+        </div>
+
+        <div th:if="${errorMessage}" class="alert alert-error" role="alert">
+            <span class="alert-icon">⚠️</span>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi.</span>
+        </div>
+
+        <div class="verb-detail-container">
+            <!-- Hero Card: Tổng quan động từ -->
+            <article class="verb-hero-card">
+                <div class="verb-hero-top">
+                    <div>
+                        <div class="verb-hero-main">
+                            <span th:if="${verb.hasKanji}" class="verb-hero-kanji" th:text="${verb.kanjiText}">飲む</span>
+                            <span class="verb-hero-dict" th:text="${verb.dictionaryForm}">のむ</span>
+                            <span th:if="${verb.verbGroup == 1}" class="verb-group-badge badge-group-1">Nhóm 1 (Godan)</span>
+                            <span th:if="${verb.verbGroup == 2}" class="verb-group-badge badge-group-2">Nhóm 2 (Ichidan)</span>
+                            <span th:if="${verb.verbGroup == 3}" class="verb-group-badge badge-group-3">Nhóm 3 (Bất quy tắc)</span>
+                        </div>
+                        <div class="verb-hero-meaning" th:text="${verb.meaningVi}">Uống</div>
+                    </div>
+
+                    <div class="table-actions">
+                        <a th:href="@{'/verbs/' + ${verb.id} + '/edit'}" class="btn btn-edit" title="Chỉnh sửa thông tin">✏️ Sửa</a>
+                        <form method="post" th:action="@{'/verbs/' + ${verb.id} + '/delete'}"
+                              th:attr="data-confirm=${'Bạn có chắc chắn muốn xóa động từ ' + (verb.hasKanji ? verb.kanjiText : verb.dictionaryForm) + '?'}"
+                              class="u-inline-form">
+                            <input type="hidden" name="_csrf" th:value="${_csrf}">
+                            <button type="submit" class="btn btn-danger" title="Xóa động từ">🗑️ Xóa</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="verb-meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">Thể ます (Lịch sự)</span>
+                        <span class="meta-value jp-masu" th:text="${verb.masuForm}">のみます</span>
+                    </div>
+
+                    <div class="meta-item">
+                        <span class="meta-label">Chủ đề bài học</span>
+                        <span class="meta-value">
+                            <span th:if="${verb.topicName != null and !verb.topicName.isBlank()}"
+                                  class="topic-tag" th:text="${verb.topicName}">Bài 1</span>
+                            <span th:unless="${verb.topicName != null and !verb.topicName.isBlank()}"
+                                  class="text-muted">Chưa gán</span>
+                        </span>
+                    </div>
+
+                    <div class="meta-item">
+                        <span class="meta-label">Nhóm ngữ pháp</span>
+                        <span class="meta-value">
+                            <span th:if="${verb.verbGroup == 1}">Nhóm 1 (Động từ ngũ đoạn - 五段動詞)</span>
+                            <span th:if="${verb.verbGroup == 2}">Nhóm 2 (Động từ nhất đoạn - 一段動詞)</span>
+                            <span th:if="${verb.verbGroup == 3}">Nhóm 3 (Động từ bất quy tắc - カ変・サ変)</span>
+                        </span>
+                    </div>
+
+                    <div class="meta-item">
+                        <span class="meta-label">Mã định danh</span>
+                        <span class="meta-value text-muted" th:text="${'#' + verb.id}">#1</span>
+                    </div>
+                </div>
+            </article>
+
+            <!-- Bảng chia 5 thể cơ bản (F16) -->
+            <section class="conjugation-section" aria-label="Bảng chia 5 thể">
+                <div class="section-header">
+                    <h2><span>⚡</span> Bảng chia 5 thể cơ bản</h2>
+                    <p>Hệ thống tự động liên hợp ngữ pháp theo quy tắc biến âm tiếng Nhật</p>
+                </div>
+
+                <div class="table-container">
+                    <table class="conjugation-table" aria-label="5 thể cơ bản của động từ">
+                        <thead>
+                            <tr>
+                                <th scope="col">Tên thể</th>
+                                <th scope="col">Dạng Kana (Cách đọc)</th>
+                                <th scope="col">Dạng Kanji</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 1. Thể từ điển (辞書形) -->
+                            <tr>
+                                <td>
+                                    <div class="form-badge-title">Thể từ điển (辞書形)</div>
+                                    <div class="form-badge-sub">Dạng nguyên thể / Hiện tại tương lai khẳng định thân mật</div>
+                                </td>
+                                <td>
+                                    <span class="form-kana-display" th:text="${verb.dictionaryForm}">のむ</span>
+                                </td>
+                                <td>
+                                    <span th:if="${verb.hasKanji and verb.kanjiDictionaryForm != null}"
+                                          class="form-kanji-display" th:text="${verb.kanjiDictionaryForm}">飲む</span>
+                                    <span th:unless="${verb.hasKanji and verb.kanjiDictionaryForm != null}"
+                                          class="text-muted">-</span>
+                                </td>
+                            </tr>
+
+                            <!-- 2. Thể ます (ます形) -->
+                            <tr>
+                                <td>
+                                    <div class="form-badge-title">Thể ます (ます形)</div>
+                                    <div class="form-badge-sub">Dạng lịch sự / Dùng trong giao tiếp trang trọng</div>
+                                </td>
+                                <td>
+                                    <span class="form-kana-display" th:text="${verb.masuForm}">のみます</span>
+                                </td>
+                                <td>
+                                    <span th:if="${verb.hasKanji and verb.kanjiMasuForm != null}"
+                                          class="form-kanji-display" th:text="${verb.kanjiMasuForm}">飲みます</span>
+                                    <span th:unless="${verb.hasKanji and verb.kanjiMasuForm != null}"
+                                          class="text-muted">-</span>
+                                </td>
+                            </tr>
+
+                            <!-- 3. Thể て (て形) -->
+                            <tr>
+                                <td>
+                                    <div class="form-badge-title">Thể て (て形)</div>
+                                    <div class="form-badge-sub">Dạng liên kết / Nối câu, sai khiến, đề nghị, đang làm (〜ている)</div>
+                                </td>
+                                <td>
+                                    <span class="form-kana-display" th:text="${verb.teForm}">のんで</span>
+                                </td>
+                                <td>
+                                    <span th:if="${verb.hasKanji and verb.kanjiTeForm != null}"
+                                          class="form-kanji-display" th:text="${verb.kanjiTeForm}">飲んで</span>
+                                    <span th:unless="${verb.hasKanji and verb.kanjiTeForm != null}"
+                                          class="text-muted">-</span>
+                                </td>
+                            </tr>
+
+                            <!-- 4. Thể た (た形) -->
+                            <tr>
+                                <td>
+                                    <div class="form-badge-title">Thể た (た形)</div>
+                                    <div class="form-badge-sub">Dạng quá khứ ngắn thân mật / Đã từng làm (〜たことがある)</div>
+                                </td>
+                                <td>
+                                    <span class="form-kana-display" th:text="${verb.taForm}">のんだ</span>
+                                </td>
+                                <td>
+                                    <span th:if="${verb.hasKanji and verb.kanjiTaForm != null}"
+                                          class="form-kanji-display" th:text="${verb.kanjiTaForm}">飲んだ</span>
+                                    <span th:unless="${verb.hasKanji and verb.kanjiTaForm != null}"
+                                          class="text-muted">-</span>
+                                </td>
+                            </tr>
+
+                            <!-- 5. Thể ない (ない形) -->
+                            <tr>
+                                <td>
+                                    <div class="form-badge-title">Thể ない (ない形)</div>
+                                    <div class="form-badge-sub">Dạng phủ định ngắn thân mật / Xin đừng làm (〜ないでください)</div>
+                                </td>
+                                <td>
+                                    <span class="form-kana-display" th:text="${verb.naiForm}">のまない</span>
+                                </td>
+                                <td>
+                                    <span th:if="${verb.hasKanji and verb.kanjiNaiForm != null}"
+                                          class="form-kanji-display" th:text="${verb.kanjiNaiForm}">飲まない</span>
+                                    <span th:unless="${verb.hasKanji and verb.kanjiNaiForm != null}"
+                                          class="text-muted">-</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Bottom Actions -->
+            <div class="verb-detail-actions">
+                <a th:href="@{/verbs}" class="btn btn-secondary">← Quay lại danh sách động từ</a>
+                <div class="table-actions">
+                    <a th:href="@{'/verbs/' + ${verb.id} + '/edit'}" class="btn btn-edit">Sửa động từ</a>
+                    <a th:href="@{/verbs/new}" class="btn btn-primary">+ Thêm động từ khác</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Phân loại và chia động từ tiếng Nhật tự động.</p>
+        <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
+    </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+</body>
+</html>

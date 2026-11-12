@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Động từ - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/verbs.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('verbs')}"></header>
+
+    <main class="verbs-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="page-title">
+                <h1><span class="title-badge">動</span> Quản lý Động từ</h1>
+                <p>Kho động từ tiếng Nhật phân loại theo 3 nhóm ngữ pháp và bộ chia 5 thể cơ bản</p>
+            </div>
+            <div class="action-buttons">
+                <a th:href="@{/verbs/bulk}" class="btn btn-outline" title="Nhập danh sách động từ hàng loạt">📋 Thêm hàng loạt</a>
+                <a th:href="@{/verbs/new}" class="btn btn-primary" title="Tạo động từ mới">+ Thêm động từ</a>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success" role="status">
+            <span class="alert-icon">✓</span>
+            <span th:text="${successMessage}">Thao tác thành công!</span>
+        </div>
+
+        <div th:if="${warningMessage}" class="alert alert-warning" role="alert">
+            <span class="alert-icon">⚠️</span>
+            <span th:text="${warningMessage}">Cảnh báo!</span>
+        </div>
+
+        <div th:if="${errorMessage}" class="alert alert-error" role="alert">
+            <span class="alert-icon">⚠️</span>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi.</span>
+        </div>
+
+        <!-- Filter Panel -->
+        <section class="filter-panel" aria-label="Bộ lọc động từ">
+            <form th:action="@{/verbs}" method="get" class="filter-form">
+                <div class="form-group">
+                    <label for="keyword">Từ khóa tìm kiếm</label>
+                    <input type="text" id="keyword" name="keyword" th:value="${keyword}"
+                           class="form-control"
+                           placeholder="Kanji, thể từ điển, thể ます, hoặc nghĩa...">
+                </div>
+
+                <div class="form-group">
+                    <label for="group">Nhóm động từ</label>
+                    <select id="group" name="group" class="form-control">
+                        <option value="">-- Tất cả nhóm --</option>
+                        <option value="1" th:selected="${selectedGroup != null and selectedGroup == 1}">Nhóm 1 (Godan / Ngũ đoạn)</option>
+                        <option value="2" th:selected="${selectedGroup != null and selectedGroup == 2}">Nhóm 2 (Ichidan / Nhất đoạn)</option>
+                        <option value="3" th:selected="${selectedGroup != null and selectedGroup == 3}">Nhóm 3 (Bất quy tắc)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="topicId">Chủ đề bài học</label>
+                    <select id="topicId" name="topicId" class="form-control">
+                        <option value="">-- Tất cả chủ đề --</option>
+                        <option th:each="t : ${topics}"
+                                th:value="${t.id}"
+                                th:text="${t.parent != null ? '↳ ' + t.name : t.name}"
+                                th:selected="${selectedTopicId != null and selectedTopicId == t.id}">
+                            Chủ đề 1
+                        </option>
+                    </select>
+                </div>
+
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+                    <a th:href="@{/verbs}" class="btn btn-secondary">Đặt lại</a>
+                </div>
+            </form>
+        </section>
+
+        <!-- Empty State Banner -->
+        <div th:if="${verbs.empty}" class="empty-state-card">
+            <div class="empty-state-icon">📖</div>
+            <h2 class="empty-state-title">Chưa có động từ nào</h2>
+            <p class="empty-state-desc">
+                Không tìm thấy động từ nào phù hợp với bộ lọc hiện tại, hoặc hệ thống chưa có dữ liệu động từ.
+                Bạn có thể nạp ngay bộ 5 động từ mẫu đại diện cho cả 3 nhóm hoặc tự thêm mới.
+            </p>
+            <div class="empty-state-actions">
+                <form method="post" th:action="@{/verbs/sample-data}" class="u-inline-form"
+                      data-confirm="Tải 5 động từ mẫu (のむ, たべる, いく, くる, べんきょうする) vào hệ thống?">
+                    <input type="hidden" name="_csrf" th:value="${_csrf}">
+                    <button type="submit" class="btn btn-primary">✨ Nạp dữ liệu mẫu</button>
+                </form>
+                <a th:href="@{/verbs/new}" class="btn btn-secondary">+ Thêm động từ thủ công</a>
+                <a th:href="@{/verbs/bulk}" class="btn btn-outline">📋 Thêm hàng loạt</a>
+            </div>
+        </div>
+
+        <!-- Verbs Table -->
+        <div th:unless="${verbs.empty}" class="table-container">
+            <table class="verb-table" aria-label="Danh sách động từ">
+                <thead>
+                    <tr>
+                        <th class="col-kanji">Chữ Hán</th>
+                        <th class="col-dict">Thể từ điển</th>
+                        <th class="col-masu">Thể ます</th>
+                        <th class="col-group">Nhóm</th>
+                        <th class="col-meaning">Nghĩa tiếng Việt</th>
+                        <th class="col-topic">Chủ đề</th>
+                        <th class="col-actions">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="v : ${verbs.content}">
+                        <td>
+                            <span th:if="${v.kanjiText != null and !v.kanjiText.isBlank()}"
+                                  class="jp-kanji" th:text="${v.kanjiText}">飲む</span>
+                            <span th:unless="${v.kanjiText != null and !v.kanjiText.isBlank()}"
+                                  class="text-muted">-</span>
+                        </td>
+                        <td>
+                            <a th:href="@{'/verbs/' + ${v.id}}" class="jp-reading"
+                               th:text="${v.dictionaryForm}"
+                               th:title="${'Xem chi tiết thể chia của ' + v.dictionaryForm}">のむ</a>
+                        </td>
+                        <td>
+                            <span class="jp-masu" th:text="${v.masuForm}">のみます</span>
+                        </td>
+                        <td>
+                            <span th:if="${v.verbGroup == 1}" class="verb-group-badge badge-group-1">Nhóm 1</span>
+                            <span th:if="${v.verbGroup == 2}" class="verb-group-badge badge-group-2">Nhóm 2</span>
+                            <span th:if="${v.verbGroup == 3}" class="verb-group-badge badge-group-3">Nhóm 3</span>
+                        </td>
+                        <td>
+                            <span class="verb-meaning-text" th:text="${v.meaningVi}">Uống nước</span>
+                        </td>
+                        <td>
+                            <span th:if="${v.topic != null}" class="topic-tag" th:text="${v.topic.name}">Bài 1</span>
+                            <span th:unless="${v.topic != null}" class="text-muted">-</span>
+                        </td>
+                        <td>
+                            <div class="table-actions">
+                                <a th:href="@{'/verbs/' + ${v.id}}" class="btn btn-outline btn-sm" title="Xem chi tiết">Chi tiết</a>
+                                <a th:href="@{'/verbs/' + ${v.id} + '/edit'}" class="btn btn-edit btn-sm" title="Chỉnh sửa">Sửa</a>
+                                <form method="post" th:action="@{'/verbs/' + ${v.id} + '/delete'}"
+                                      th:attr="data-confirm=${'Bạn có chắc chắn muốn xóa động từ ' + (v.kanjiText != null and !v.kanjiText.isBlank() ? v.kanjiText : v.dictionaryForm) + '?'}"
+                                      class="u-inline-form">
+                                    <input type="hidden" name="_csrf" th:value="${_csrf}">
+                                    <button type="submit" class="btn btn-danger btn-sm" title="Xóa động từ">Xóa</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Bar -->
+        <div th:unless="${verbs.empty}" class="pagination-bar">
+            <div class="pagination-info">
+                Hiển thị trang <strong th:text="${verbs.number + 1}">1</strong> / <strong th:text="${verbs.totalPages}">1</strong>
+                (Tổng cộng <strong th:text="${totalCount}">0</strong> động từ)
+            </div>
+
+            <nav th:if="${verbs.totalPages > 1}" class="pagination-controls" aria-label="Phân trang danh sách động từ">
+                <!-- Nút Trước -->
+                <a th:href="@{/verbs(page=${verbs.number - 1}, size=${verbs.size}, keyword=${keyword}, group=${selectedGroup}, topicId=${selectedTopicId})}"
+                   class="page-btn"
+                   th:classappend="${verbs.first} ? 'disabled'"
+                   aria-label="Trang trước">«</a>
+
+                <!-- Các trang số -->
+                <th:block th:each="i : ${#numbers.sequence(0, verbs.totalPages - 1)}">
+                    <a th:href="@{/verbs(page=${i}, size=${verbs.size}, keyword=${keyword}, group=${selectedGroup}, topicId=${selectedTopicId})}"
+                       class="page-btn"
+                       th:classappend="${i == verbs.number} ? 'active'"
+                       th:text="${i + 1}"
+                       th:aria-current="${i == verbs.number} ? 'page' : null">1</a>
+                </th:block>
+
+                <!-- Nút Sau -->
+                <a th:href="@{/verbs(page=${verbs.number + 1}, size=${verbs.size}, keyword=${keyword}, group=${selectedGroup}, topicId=${selectedTopicId})}"
+                   class="page-btn"
+                   th:classappend="${verbs.last} ? 'disabled'"
+                   aria-label="Trang sau">»</a>
+            </nav>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Phân loại và chia động từ tiếng Nhật tự động.</p>
+        <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
+    </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+</body>
+</html>
