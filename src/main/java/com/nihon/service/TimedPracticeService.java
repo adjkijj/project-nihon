@@ -60,13 +60,16 @@ public class TimedPracticeService {
     private final PracticeService practiceService;
     private final KanjiPracticeService kanjiPracticeService;
     private final StudyProgressService studyProgressService;
+    private final StudyHistoryService studyHistoryService;
 
     public TimedPracticeService(VocabularyRepository vocabularyRepository,
                                 KanjiEntryRepository kanjiEntryRepository,
                                 TopicRepository topicRepository,
                                 PracticeService practiceService,
                                 KanjiPracticeService kanjiPracticeService,
-                                StudyProgressService studyProgressService) {
+                                StudyProgressService studyProgressService,
+                                  StudyHistoryService studyHistoryService) {
+        this.studyHistoryService = studyHistoryService;
         this.vocabularyRepository = vocabularyRepository;
         this.kanjiEntryRepository = kanjiEntryRepository;
         this.topicRepository = topicRepository;
@@ -449,10 +452,33 @@ public class TimedPracticeService {
                 );
             }
 
+            // Lưu lịch sử bền vững đúng một lần (chỉ khi trình duyệt có cookie học viên hợp lệ)
+            saveTimedHistory(sessionData);
+
             session.setAttribute(SESSION_TIMED_PRACTICE, sessionData);
         }
 
         return sessionData;
+    }
+
+    private void saveTimedHistory(TimedSession sessionData) {
+        try {
+            java.util.Optional<String> learner = com.nihon.history.LearnerContext.current();
+            if (learner.isEmpty() || sessionData.getAnswers().isEmpty()) {
+                return;
+            }
+            java.util.List<StudyHistoryService.AnswerItem> items = sessionData.getAnswers().stream()
+                    .map(r -> new StudyHistoryService.AnswerItem(r.getVocabId(), r.getKanjiId(), r.isCorrect()))
+                    .toList();
+            long elapsed = sessionData.getStartedAt() == null ? 0
+                    : Math.max(0, Instant.now().getEpochSecond() - sessionData.getStartedAt().getEpochSecond());
+            long cap = sessionData.getDurationMinutes() * 60L;
+            int duration = (int) (cap > 0 ? Math.min(elapsed, cap) : elapsed);
+            studyHistoryService.saveSessionSafe(learner.get(), "TIMED_" + sessionData.getType().name(),
+                    sessionData.getTopicId(), items, duration);
+        } catch (RuntimeException ignored) {
+            // lịch sử là tính năng phụ, không được làm hỏng luồng luyện tập
+        }
     }
 
     /**

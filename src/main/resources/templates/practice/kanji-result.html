@@ -12,6 +12,7 @@
     <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
     <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <link rel="stylesheet" th:href="@{/css/history.css}">
 </head>
 <body>
     <header th:replace="~{fragments/navbar :: headerNav('practice')}"></header>
@@ -131,10 +132,16 @@
                 </div>
             </div>
         </div>
+            <form th:action="@{/history/end-session}" method="post" class="end-session-form">
+            <input type="hidden" name="_csrf" th:value="${_csrf}">
+            <button type="submit" class="btn-end-session">Kết thúc buổi học</button>
+            <p class="end-session-hint">Lưu kết quả buổi học vào <a th:href="@{/history}">Lịch sử</a> của bạn.</p>
+        </form>
     </main>
 
     <footer>
         <p>&copy; 2026 Project Nihon. Chế độ luyện tập Kanji.</p>
+        <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
     </footer>
 
     <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>

@@ -324,3 +324,17 @@ Dự án cung cấp tài liệu kỹ thuật chi tiết tại thư mục [docs/]
 - **Dữ liệu thứ tự nét viết Kanji:** Được trích xuất và tham chiếu từ dự án mã nguồn mở [KanjiVG](https://kanjivg.tagaini.net/) (bản quyền © 2009-2023 Ulrich Apel và các cộng tác viên KanjiVG).
 - **Điều khoản giấy phép:** Phát hành theo giấy phép [Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)](https://creativecommons.org/licenses/by-sa/3.0/). Thông tin chi tiết giấy phép lưu tại [src/main/resources/static/kanjivg/LICENSE.txt](src/main/resources/static/kanjivg/LICENSE.txt).
 
+
+
+## Lịch sử học tập (F49)
+
+Lịch sử học được lưu bền vững cho từng trình duyệt, **không cần đăng nhập**.
+
+- **Cookie**: `nihon_learner` = UUID ngẫu nhiên (HttpOnly, SameSite=Lax, Secure khi HTTPS, Max-Age 365 ngày, path `/`). Mã người học chỉ lấy từ cookie, không bao giờ từ URL/form. Cookie sai định dạng sẽ bị thay mới.
+- **Dữ liệu lưu** (`study_session`, `study_answer`): chế độ, chủ đề, số câu, số câu đúng, thời lượng, thời điểm; đúng/sai theo mã từ/kanji. **Không lưu** tên, email, IP, hay nội dung câu trả lời.
+- **Khi nào lưu**: phiên luyện tập tính giờ lưu một lần khi kết thúc/hết giờ; các chế độ khác lưu khi người học bấm lưu (`POST /history/end-session`). Không lưu theo từng câu.
+- **Tắt cookie**: ứng dụng vẫn dùng bình thường, chỉ riêng lịch sử bị vô hiệu.
+- **Xoá**: `POST /history/delete-all` xoá toàn bộ lịch sử của trình duyệt hiện tại (có CSRF).
+- **Lưu trữ**: tự động xoá phiên cũ hơn `app.history.retention-days` (mặc định 180 ngày) bằng job hằng ngày 03:15 (`app.history.cleanup-cron`).
+- **Triển khai sau lớp xác thực**: cookie ẩn danh không phải danh tính người dùng. Nếu đặt ứng dụng sau reverse proxy/SSO, lịch sử vẫn gắn với trình duyệt chứ không gắn với tài khoản; các trình duyệt dùng chung máy sẽ thấy chung lịch sử. Hãy bảo đảm proxy chuyển `X-Forwarded-Proto` để cookie được đặt cờ `Secure`.
+- **Migration**: `V8__create_study_history.sql` (đồng thời có trong `schema.sql`).
