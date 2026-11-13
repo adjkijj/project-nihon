@@ -60,11 +60,19 @@ public class GrammarService {
     // =========================================================================
 
     public Page<GrammarTopic> getGrammarTopics(GrammarCategory category, String keyword, Pageable pageable) {
+        return getGrammarTopics(category, null, keyword, pageable);
+    }
+
+    public Page<GrammarTopic> getGrammarTopics(GrammarCategory category, Long topicId, String keyword, Pageable pageable) {
         Specification<GrammarTopic> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
             if (category != null) {
                 predicates.add(cb.equal(root.get("category"), category));
+            }
+
+            if (topicId != null && topicId > 0) {
+                predicates.add(cb.equal(root.get("topic").get("id"), topicId));
             }
 
             if (keyword != null && !keyword.isBlank()) {

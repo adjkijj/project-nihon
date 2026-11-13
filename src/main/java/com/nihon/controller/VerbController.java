@@ -287,10 +287,15 @@ public class VerbController {
     }
 
     @GetMapping("/lab")
-    public String lab(@RequestParam(value = "input", required = false) String input,
+    public Object lab(@RequestParam(value = "input", required = false) String input,
                       @RequestParam(value = "group", required = false, defaultValue = "AUTO") String group,
+                      HttpServletRequest request,
                       Model model) {
         VerbLabResultDto labResult = verbService.processLabInput(input, group);
+        String accept = request.getHeader("Accept");
+        if (accept != null && accept.contains("application/json")) {
+            return ResponseEntity.ok(labResult);
+        }
         model.addAttribute("labResult", labResult);
         model.addAttribute("input", input != null ? input.trim() : "");
         model.addAttribute("selectedGroup", group != null ? group.trim().toUpperCase(Locale.ROOT) : "AUTO");

@@ -49,7 +49,8 @@ public class StudyHistoryService {
     public static final Set<String> MODES = Set.of("ALL", "JA_VI", "VI_JA", "MC_JA_VI", "MC_VI_JA",
             "KANJI_READING", "KANJI_WRITE", "KANJI_CHOICE",
             "TIMED_JA_VI", "TIMED_VI_JA", "TIMED_KANJI_READING", "TIMED_CHOICE",
-            "TIMED_VERB_TE", "VERB_TE", "VERB_RU", "VERB_TA", "VERB_NAI", "VERB_MASU", "TOPIC_TEST");
+            "TIMED_VERB_TE", "VERB_TE", "VERB_RU", "VERB_TA", "VERB_NAI", "VERB_MASU", "TOPIC_TEST",
+            "GRAMMAR_QUIZ", "TIMED_GRAMMAR");
     public static final Set<String> RANGES = Set.of("7D", "30D", "ALL");
     private static final LocalDateTime EPOCH = LocalDateTime.of(1970, 1, 1, 0, 0);
     private static final int MAX_DURATION_SECONDS = 6 * 3600;
@@ -129,6 +130,8 @@ public class StudyHistoryService {
             case "TIMED_KANJI_READING" -> "Tính giờ: Đọc Kanji";
             case "TIMED_CHOICE" -> "Tính giờ: Trắc nghiệm";
             case "TOPIC_TEST" -> "Kiểm tra cuối bài";
+            case "GRAMMAR_QUIZ" -> "Trắc nghiệm Ngữ pháp";
+            case "TIMED_GRAMMAR" -> "Đấu trường Ngữ pháp";
             default -> mode;
         };
     }

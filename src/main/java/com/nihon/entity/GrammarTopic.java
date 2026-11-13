@@ -16,6 +16,8 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import com.nihon.service.grammar.GrammarTextRenderer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -144,6 +146,11 @@ public class GrammarTopic {
             questions.remove(question);
             question.setGrammarTopic(null);
         }
+    }
+
+    @Transient
+    public String getRenderedExplanation() {
+        return GrammarTextRenderer.renderExplanation(this.explanation);
     }
 }
 

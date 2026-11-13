@@ -47,13 +47,16 @@ public class TopicController {
     private final TopicService topicService;
     private final com.nihon.service.VerbService verbService;
     private final com.nihon.service.TopicTestService topicTestService;
+    private final com.nihon.repository.GrammarTopicRepository grammarTopicRepository;
 
     public TopicController(TopicService topicService,
                            com.nihon.service.VerbService verbService,
-                           com.nihon.service.TopicTestService topicTestService) {
+                           com.nihon.service.TopicTestService topicTestService,
+                           com.nihon.repository.GrammarTopicRepository grammarTopicRepository) {
         this.topicService = topicService;
         this.verbService = verbService;
         this.topicTestService = topicTestService;
+        this.grammarTopicRepository = grammarTopicRepository;
     }
 
     @InitBinder("form")
@@ -179,6 +182,9 @@ public class TopicController {
         model.addAttribute("kanjiCount", detail.getKanjiCount());
         model.addAttribute("verbCount", topicVerbs.size());
         model.addAttribute("verbs", topicVerbs);
+        long grammarCount = grammarTopicRepository.countByTopicId(id);
+        model.addAttribute("hasGrammarTopics", grammarCount > 0);
+        model.addAttribute("grammarCount", grammarCount);
         model.addAttribute("candidateTargetTopics", candidateTargets);
         return "topics/detail";
     }

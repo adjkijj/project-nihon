@@ -50,11 +50,11 @@ class GrammarAdminIntegrationTest {
     private GrammarTopicRepository topicRepository;
 
     @Test
-    @DisplayName("GET /grammar: Chuyển hướng công khai về /grammar/admin")
-    void testPublicGrammarRouteRedirectsToAdmin() throws Exception {
+    @DisplayName("GET /grammar: Hiển thị giao diện học ngữ pháp cho người học (Prompt 23)")
+    void testPublicGrammarRouteRendersLearnerPage() throws Exception {
         mockMvc.perform(get("/grammar"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/grammar/admin"));
+                .andExpect(status().isOk())
+                .andExpect(view().name("grammar/index"));
     }
 
     @Test

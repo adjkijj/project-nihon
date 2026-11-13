@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đang thi đấu trường - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <link rel="stylesheet" th:href="@{/css/grammar.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/grammar-arena.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('grammar')}"></header>
+
+    <main class="page-container max-w-800 py-4">
+        <!-- Thanh trạng thái đỉnh: Số câu, Đồng hồ đếm ngược, Streak -->
+        <div class="arena-header-bar">
+            <div>
+                <span class="text-secondary font-size-sm">Tiến độ bài thi:</span>
+                <strong class="font-size-md text-primary ml-1"
+                        th:text="'Câu ' + ${question.questionIndex} + ' / ' + ${question.totalQuestions}">
+                    Câu 1 / 10
+                </strong>
+            </div>
+
+            <!-- Đồng hồ đếm ngược đồng bộ từ server -->
+            <div id="arenaTimer" class="arena-timer-box" th:data-remaining-seconds="${question.remainingSeconds}">
+                ⏳ <span id="arenaTimerDisplay">--:--</span>
+            </div>
+
+            <!-- Hiển thị chuỗi đúng liên tiếp (Streak) -->
+            <div class="arena-streak-badge">
+                🔥 Chuỗi đúng: <strong th:text="${question.currentStreak}">0</strong>
+                <span class="font-size-xs text-secondary ml-1" th:text="'(Kỷ lục: ' + ${question.maxStreak} + ')'">(Kỷ lục: 0)</span>
+            </div>
+        </div>
+
+        <!-- Phản hồi câu trả lời vừa rồi nếu có -->
+        <div th:if="${question.lastResult != null}" class="mb-3">
+            <div th:if="${question.lastResult.correct}" class="alert alert-success py-2 font-size-sm">
+                ✓ Chính xác! Chuỗi đúng tăng lên <strong><span th:text="${question.lastResult.streakAfter}">1</span></strong>.
+            </div>
+            <div th:unless="${question.lastResult.correct}" class="alert alert-danger py-2 font-size-sm">
+                ✗ Chưa chính xác! Đáp án đúng câu trước là: <strong><span th:text="${question.lastResult.correctChoiceText}">...</span></strong>.
+                <span th:if="${question.lastResult.explanation != null}" th:text="' (' + ${question.lastResult.explanation} + ')'"></span>
+            </div>
+        </div>
+
+        <!-- Khung câu hỏi hiện tại -->
+        <div class="arena-question-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="badge badge-grammar" th:text="${question.grammarTitle}">Cấu trúc ngữ pháp</span>
+                <span class="font-size-xs text-secondary">Chọn đáp án đúng nhất</span>
+            </div>
+
+            <div class="arena-prompt" th:text="${question.prompt}">
+                あしたは　テストが　ある（　）、きょうは　べんきょうします。
+            </div>
+
+            <!-- Form nộp đáp án câu trắc nghiệm -->
+            <form id="arenaAnswerForm" th:action="@{/grammar/arena/answer}" method="post">
+                <input type="hidden" name="_csrf" th:value="${_csrf}" />
+                <input type="hidden" id="arenaSelectedChoiceId" name="choiceId" value="" />
+
+                <div class="arena-choices-grid">
+                    <button type="button"
+                            th:each="c, cIter : ${question.choices}"
+                            class="arena-choice-btn"
+                            th:data-choice-id="${c.choiceId}">
+                        <span class="arena-choice-number" th:text="${cIter.count}">1</span>
+                        <span th:text="${c.text}">から</span>
+                    </button>
+                </div>
+            </form>
+
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                <form th:action="@{/grammar/arena/finish}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${_csrf}" />
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                        Dừng bài thi sớm
+                    </button>
+                </form>
+
+                <small class="text-secondary font-size-xs">
+                    * Bấm trực tiếp vào phương án để trả lời và chuyển câu.
+                </small>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Hệ thống ghi nhớ từ vựng và ngữ pháp tiếng Nhật.</p>
+    </footer>
+</body>
+</html>

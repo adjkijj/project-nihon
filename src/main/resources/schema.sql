@@ -304,3 +304,15 @@ CREATE TABLE IF NOT EXISTS grammar_quiz_choice (
 );
 
 CREATE INDEX IF NOT EXISTS idx_grammar_quiz_choice_q_sort ON grammar_quiz_choice (question_id, sort_order);
+
+-- 19. Bảng grammar_progress: Theo dõi tiến độ học ngữ pháp theo người học ẩn danh (F30)
+CREATE TABLE IF NOT EXISTS grammar_progress (
+    learner_id CHAR(36) NOT NULL,
+    grammar_id BIGINT NOT NULL,
+    learned_at TIMESTAMP NOT NULL,
+    PRIMARY KEY (learner_id, grammar_id),
+    CONSTRAINT fk_grammar_progress_grammar FOREIGN KEY (grammar_id) REFERENCES grammar_topic (id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_grammar_progress_learner_time ON grammar_progress (learner_id, learned_at);
+

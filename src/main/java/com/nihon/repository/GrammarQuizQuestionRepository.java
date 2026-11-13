@@ -21,5 +21,13 @@ public interface GrammarQuizQuestionRepository extends JpaRepository<GrammarQuiz
 
     @Query("SELECT DISTINCT q FROM GrammarQuizQuestion q LEFT JOIN FETCH q.choices WHERE q.id = :id")
     Optional<GrammarQuizQuestion> findByIdWithChoices(@Param("id") Long id);
+
+    @Query("SELECT DISTINCT q FROM GrammarQuizQuestion q " +
+           "JOIN FETCH q.grammarTopic gt " +
+           "LEFT JOIN FETCH q.choices " +
+           "WHERE (:category IS NULL OR gt.category = :category) " +
+           "AND (:topicId IS NULL OR gt.topic.id = :topicId)")
+    List<GrammarQuizQuestion> findQuestionsForArena(@Param("category") com.nihon.entity.GrammarCategory category,
+                                                    @Param("topicId") Long topicId);
 }
 

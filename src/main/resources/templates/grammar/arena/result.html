@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết quả Đấu trường ngữ pháp - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <link rel="stylesheet" th:href="@{/css/grammar.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('grammar')}"></header>
+
+    <main class="page-container max-w-900 py-4">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a th:href="@{/}">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/grammar}">Ngữ pháp</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/grammar/arena}">Đấu trường</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Kết quả</li>
+            </ol>
+        </nav>
+
+        <div class="card p-4 mb-4 text-center">
+            <div class="font-size-xl mb-2">🏆</div>
+            <h1 class="page-title h3 m-0 font-weight-bold">Tổng Kết Đấu Trường Phản Xạ</h1>
+            <p class="text-secondary font-size-sm mt-1">
+                Chủ đề: <strong th:text="${result.topicName}">Tất cả bài học</strong> — 
+                Trạng thái: <span class="badge" th:classappend="${result.status.name() == 'EXPIRED'} ? 'badge-danger' : 'badge-success'" th:text="${result.status.name() == 'EXPIRED'} ? 'Hết giờ' : 'Hoàn thành'">Hoàn thành</span>
+            </p>
+
+            <!-- Grid 4 thông số tổng kết -->
+            <div class="d-flex justify-content-center gap-3 flex-wrap mt-3">
+                <div class="p-3 border rounded min-w-160 bg-light">
+                    <div class="font-size-xs text-secondary font-weight-bold uppercase">Số câu đúng</div>
+                    <div class="h3 font-weight-bold text-primary m-0 mt-1"
+                         th:text="${result.correctCount} + ' / ' + ${result.totalQuestions}">
+                        8 / 10
+                    </div>
+                </div>
+
+                <div class="p-3 border rounded min-w-160 bg-light">
+                    <div class="font-size-xs text-secondary font-weight-bold uppercase">Độ chính xác</div>
+                    <div class="h3 font-weight-bold text-success m-0 mt-1"
+                         th:text="${result.accuracyPercent} + '%'">
+                        80%
+                    </div>
+                </div>
+
+                <div class="p-3 border rounded min-w-160 bg-light">
+                    <div class="font-size-xs text-secondary font-weight-bold uppercase">Streak cao nhất</div>
+                    <div class="h3 font-weight-bold text-warning m-0 mt-1"
+                         th:text="'🔥 ' + ${result.maxStreak}">
+                        🔥 5
+                    </div>
+                </div>
+
+                <div class="p-3 border rounded min-w-160 bg-light">
+                    <div class="font-size-xs text-secondary font-weight-bold uppercase">Thời gian thi đấu</div>
+                    <div class="h3 font-weight-bold text-dark m-0 mt-1"
+                         th:text="${result.durationSeconds} + ' giây'">
+                        120 giây
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-center gap-2 mt-4 pt-3 border-top">
+                <a th:href="@{/grammar/arena}" class="btn btn-warning font-weight-bold">
+                    ⚡ Thử thách lượt mới
+                </a>
+                <a th:href="@{/grammar}" class="btn btn-secondary">
+                    📖 Về danh sách ngữ pháp
+                </a>
+            </div>
+        </div>
+
+        <!-- Bảng chi tiết từng câu hỏi đã làm -->
+        <div th:if="${result.details != null and !result.details.isEmpty()}" class="card p-4">
+            <h2 class="h5 font-weight-bold mb-3">📋 Bảng đối chiếu kết quả từng câu:</h2>
+
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="w-60 text-center">STT</th>
+                            <th>Câu hỏi</th>
+                            <th>Lựa chọn của bạn</th>
+                            <th>Đáp án chính xác</th>
+                            <th class="text-center w-100">Đánh giá</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="d : ${result.details}">
+                            <td class="text-center font-weight-bold" th:text="${d.questionIndex}">1</td>
+                            <td>
+                                <div class="font-weight-bold" th:text="${d.prompt}">あしたは テストが ある（ ）...</div>
+                                <div th:if="${d.explanation != null and !d.explanation.isEmpty()}"
+                                     class="font-size-xs text-secondary mt-1"
+                                     th:text="'💡 ' + ${d.explanation}">
+                                    Giải thích ngữ pháp...
+                                </div>
+                            </td>
+                            <td>
+                                <span th:text="${d.userChoiceText}"
+                                      th:classappend="${d.correct ? 'text-success font-weight-bold' : 'text-danger'}">
+                                    から
+                                </span>
+                            </td>
+                            <td>
+                                <strong class="text-success" th:text="${d.correctChoiceText}">から</strong>
+                            </td>
+                            <td class="text-center">
+                                <span th:if="${d.correct}" class="badge badge-success">✓ Đúng</span>
+                                <span th:unless="${d.correct}" class="badge badge-danger">✗ Sai</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Hệ thống ghi nhớ từ vựng và ngữ pháp tiếng Nhật.</p>
+    </footer>
+</body>
+</html>
