@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luyện chia thể động từ - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/verbs-practice.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/verbs-practice.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('verbs')}"></header>
+
+    <main class="vp-container">
+        <!-- Breadcrumb & Header -->
+        <div class="vp-header">
+            <nav class="vp-breadcrumb" aria-label="Breadcrumb">
+                <a th:href="@{/}">Trang chủ</a>
+                <span>/</span>
+                <a th:href="@{/verbs}">Động từ</a>
+                <span>/</span>
+                <a th:href="@{/verbs/practice}">Luyện chia thể</a>
+                <span>/</span>
+                <span>Làm bài</span>
+            </nav>
+            <h1 class="vp-title">🎯 Luyện chia thể động từ</h1>
+        </div>
+
+        <div th:if="${errorMessage}" class="alert alert-danger u-mb-3" role="alert" th:text="${errorMessage}"></div>
+
+        <!-- Question Box -->
+        <div class="vp-question-box">
+            <!-- Streak badge -->
+            <div th:if="${question.currentStreak > 0}" class="vp-streak-pill" title="Chuỗi trả lời đúng liên tiếp">
+                <span>🔥 Chuỗi đúng:</span>
+                <strong th:text="${question.currentStreak}">3</strong>
+            </div>
+
+            <!-- Target Banner -->
+            <div class="vp-target-banner">
+                <span th:if="${question.targetForm.name() == 'TE'}">Chia sang: THỂ TE (て)</span>
+                <span th:if="${question.targetForm.name() == 'RU'}">Chia sang: THỂ TỪ ĐIỂN (辞書形)</span>
+                <span th:if="${question.targetForm.name() == 'TA'}">Chia sang: THỂ TA (た)</span>
+                <span th:if="${question.targetForm.name() == 'NAI'}">Chia sang: THỂ NAI (ない)</span>
+                <span th:if="${question.targetForm.name() == 'MASU'}">Chia sang: THỂ MASU (ます)</span>
+                <span th:if="${question.targetForm.name() == 'RANDOM'}">Chia sang: THỂ NGẪU NHIÊN</span>
+            </div>
+
+            <!-- Retry Mode Pill -->
+            <div th:if="${retryWrongOnly}" class="u-mb-2">
+                <span class="vp-badge">🔄 Đang ôn lại từ làm sai</span>
+            </div>
+
+            <!-- Prompt Card -->
+            <div class="vp-prompt-main">
+                <span th:text="${question.prompt}">のみます</span>
+                <th:block th:replace="~{fragments/speech :: speakerBtn(${question.speechText != null ? question.speechText : question.masuForm})}"></th:block>
+            </div>
+
+            <!-- Kanji if available & Meaning -->
+            <div class="vp-prompt-meaning">
+                <span th:if="${question.kanjiText != null and !question.kanjiText.isBlank()}" th:text="'[' + ${question.kanjiText} + '] '"></span>
+                <span th:text="${question.meaningVi}">Uống</span>
+            </div>
+
+            <div class="u-mb-4">
+                <span class="vp-badge" th:text="'Nhóm ' + ${question.verbGroup}">Nhóm 1</span>
+            </div>
+
+            <!-- Answer Form -->
+            <form id="verbPracticeQuestionForm" th:action="@{/verbs/practice/check}" th:object="${form}" method="post">
+                <input type="hidden" name="_csrf" th:value="${_csrf}">
+                <input type="hidden" th:field="*{verbId}">
+                <input type="hidden" th:field="*{targetForm}">
+                <input type="hidden" th:field="*{mode}">
+                <input type="hidden" th:field="*{group}">
+                <input type="hidden" th:field="*{topicId}">
+                <input type="hidden" th:field="*{retryWrongOnly}">
+                <input type="hidden" th:field="*{choiceIndex}" id="choiceIndexInput">
+
+                <!-- Mode CHOICE: 4 Multiple Choice Buttons -->
+                <div th:if="${question.mode == 'CHOICE'}">
+                    <input type="hidden" th:field="*{answer}" id="verbAnswerInput">
+                    <div class="vp-choice-grid">
+                        <button type="button"
+                                class="vp-choice-btn"
+                                th:each="choice, iter : ${question.choices}"
+                                th:attr="data-index=${iter.index}, data-value=${choice}">
+                            <span class="vp-choice-num" th:text="${iter.count}">1</span>
+                            <span th:text="${choice}">のんで</span>
+                        </button>
+                    </div>
+                    <p class="vp-option-desc">💡 <em>Mẹo: Bấm phím 1, 2, 3, 4 trên bàn phím để chọn nhanh đáp án.</em></p>
+                </div>
+
+                <!-- Mode INPUT: Free text typing -->
+                <div th:if="${question.mode == 'INPUT' or question.mode == null}" class="vp-input-group">
+                    <label for="verbTextInput" class="vp-option-title u-mb-2">
+                        Nhập thể chia tương ứng (chấp nhận cả Hiragana và Kanji):
+                    </label>
+                    <input type="text"
+                           id="verbTextInput"
+                           th:field="*{answer}"
+                           class="vp-input-lg"
+                           placeholder="Nhập dạng chia bằng Hiragana hoặc Kanji..."
+                           autocomplete="off"
+                           autofocus
+                           required>
+                    <div class="u-mt-3">
+                        <button type="submit" class="vp-btn-submit">
+                            <span>Kiểm tra</span> ➔
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Controls / Back -->
+        <div class="u-flex u-justify-between u-items-center u-mt-3">
+            <a th:href="@{/verbs/practice(targetForm=${form.targetForm}, group=${form.group}, topicId=${form.topicId}, mode=${form.mode})}"
+               class="btn btn-secondary">
+                ⬅ Cấu hình lại
+            </a>
+            <a th:href="@{/verbs}" class="btn btn-secondary">
+                📑 Danh sách động từ
+            </a>
+        </div>
+    </main>
+
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+    <th:block th:replace="~{fragments/speech :: scripts}"></th:block>
+</body>
+</html>

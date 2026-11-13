@@ -28,6 +28,10 @@ public class TopicDetailDto {
     private Integer sortOrder;
     private long vocabularyCount;
     private long kanjiCount;
+    private long verbCount;
+
+    @Builder.Default
+    private List<com.nihon.dto.verb.VerbDetailDto> verbs = Collections.emptyList();
 
     @Builder.Default
     private List<Topic> children = Collections.emptyList();

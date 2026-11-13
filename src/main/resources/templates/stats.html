@@ -65,6 +65,12 @@
                         <option value="TIMED_VI_JA" th:selected="${selectedMode == 'TIMED_VI_JA'}">⏱️ Tính giờ (Việt - Nhật)</option>
                         <option value="TIMED_KANJI_READING" th:selected="${selectedMode == 'TIMED_KANJI_READING'}">⏱️ Tính giờ (Kanji)</option>
                         <option value="TIMED_CHOICE" th:selected="${selectedMode == 'TIMED_CHOICE'}">⏱️ Tính giờ (Trắc nghiệm)</option>
+                        <option value="TIMED_VERB_TE" th:selected="${selectedMode == 'TIMED_VERB_TE'}">⏱️ Tính giờ: Đấu trường thể Te</option>
+                        <option value="VERB_TE" th:selected="${selectedMode == 'VERB_TE'}">🔄 Động từ: Thể Te (て)</option>
+                        <option value="VERB_RU" th:selected="${selectedMode == 'VERB_RU'}">🔄 Động từ: Thể Từ điển (る)</option>
+                        <option value="VERB_TA" th:selected="${selectedMode == 'VERB_TA'}">🔄 Động từ: Thể Ta (た)</option>
+                        <option value="VERB_NAI" th:selected="${selectedMode == 'VERB_NAI'}">🔄 Động từ: Thể Nai (ない)</option>
+                        <option value="VERB_MASU" th:selected="${selectedMode == 'VERB_MASU'}">🔄 Động từ: Thể Masu (ます)</option>
                     </select>
                 </div>
 
@@ -100,12 +106,17 @@
                class="btn btn-retry-stats">
                 <span>🔄</span> Ôn lại từ làm sai (<span th:text="${wrongCount}">0</span>)
             </a>
-            <a th:if="${wrongCount > 0 and (selectedMode == 'TIMED_JA_VI' or selectedMode == 'TIMED_VI_JA' or selectedMode == 'TIMED_KANJI_READING' or selectedMode == 'TIMED_CHOICE')}"
+            <a th:if="${wrongCount > 0 and (selectedMode == 'TIMED_JA_VI' or selectedMode == 'TIMED_VI_JA' or selectedMode == 'TIMED_KANJI_READING' or selectedMode == 'TIMED_CHOICE' or selectedMode == 'TIMED_VERB_TE')}"
                th:href="@{/practice/timed}"
                class="btn btn-retry-stats">
                 <span>⏱️</span> Ôn lại bài tính giờ (<span th:text="${wrongCount}">0</span>)
             </a>
-            <a th:if="${wrongCount > 0 and selectedMode != 'VI_JA' and selectedMode != 'KANJI_READING' and selectedMode != 'KANJI_WRITE' and selectedMode != 'KANJI_CHOICE' and selectedMode != 'TIMED_JA_VI' and selectedMode != 'TIMED_VI_JA' and selectedMode != 'TIMED_KANJI_READING' and selectedMode != 'TIMED_CHOICE'}"
+            <a th:if="${wrongCount > 0 and (selectedMode.startsWith('VERB_'))}"
+               th:href="@{/verbs/practice/question(targetForm=${selectedMode.replace('VERB_', '')}, topicId=${selectedTopicId}, retryWrongOnly=true)}"
+               class="btn btn-retry-stats">
+                <span>🔄</span> Ôn lại động từ làm sai (<span th:text="${wrongCount}">0</span>)
+            </a>
+            <a th:if="${wrongCount > 0 and selectedMode != 'VI_JA' and selectedMode != 'KANJI_READING' and selectedMode != 'KANJI_WRITE' and selectedMode != 'KANJI_CHOICE' and selectedMode != 'TIMED_JA_VI' and selectedMode != 'TIMED_VI_JA' and selectedMode != 'TIMED_KANJI_READING' and selectedMode != 'TIMED_CHOICE' and selectedMode != 'TIMED_VERB_TE' and !selectedMode.startsWith('VERB_')}"
                th:href="@{/practice/question(topicId=${selectedTopicId}, retryWrongOnly=true)}"
                class="btn btn-retry-stats">
                 <span>🔄</span> Ôn lại từ làm sai (<span th:text="${wrongCount}">0</span>)

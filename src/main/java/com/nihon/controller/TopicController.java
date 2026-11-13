@@ -43,9 +43,11 @@ public class TopicController {
     private static final int MAX_PAGE = 100000;
 
     private final TopicService topicService;
+    private final com.nihon.service.VerbService verbService;
 
-    public TopicController(TopicService topicService) {
+    public TopicController(TopicService topicService, com.nihon.service.VerbService verbService) {
         this.topicService = topicService;
+        this.verbService = verbService;
     }
 
     @InitBinder("form")
@@ -161,10 +163,16 @@ public class TopicController {
             candidateTargets = Collections.emptyList();
         }
 
+        List<com.nihon.dto.verb.VerbDetailDto> topicVerbs = verbService.findByTopicIdWithForms(id);
+        detail.setVerbCount(topicVerbs.size());
+        detail.setVerbs(topicVerbs);
+
         model.addAttribute("topic", detail);
         model.addAttribute("children", detail.getChildren());
         model.addAttribute("vocabularyCount", detail.getVocabularyCount());
         model.addAttribute("kanjiCount", detail.getKanjiCount());
+        model.addAttribute("verbCount", topicVerbs.size());
+        model.addAttribute("verbs", topicVerbs);
         model.addAttribute("candidateTargetTopics", candidateTargets);
         return "topics/detail";
     }

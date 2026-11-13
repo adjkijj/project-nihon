@@ -22,6 +22,7 @@ public class PracticeRecordDto implements Serializable {
     private String id;
     private Long vocabId;
     private Long kanjiId;
+    private Long verbId;
     private Long topicId;
     private String topicName;
     private String mode; // "JA_VI" (Nhật -> Việt) hoặc "VI_JA" (Việt -> Nhật)

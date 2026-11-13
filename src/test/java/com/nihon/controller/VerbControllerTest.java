@@ -61,6 +61,12 @@ class VerbControllerTest {
     @MockitoBean
     private TopicService topicService;
 
+    @MockitoBean
+    private com.nihon.service.VocabularyExportRateLimiter exportRateLimiter;
+
+    @MockitoBean
+    private com.nihon.config.ClientIpResolver clientIpResolver;
+
     private Topic testTopic;
     private Verb testVerb;
     private VerbDetailDto testVerbDetail;
@@ -88,6 +94,8 @@ class VerbControllerTest {
         testVerbDetail = VerbDetailDto.fromEntity(testVerb, forms);
 
         when(topicService.findAllOrdered()).thenReturn(List.of(testTopic));
+        when(clientIpResolver.resolveClientIp(any())).thenReturn("127.0.0.1");
+        when(exportRateLimiter.tryAcquire(anyString())).thenReturn(true);
     }
 
     @Nested

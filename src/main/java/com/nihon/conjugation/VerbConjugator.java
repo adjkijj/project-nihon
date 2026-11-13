@@ -1,8 +1,13 @@
 package com.nihon.conjugation;
 
+import com.nihon.validation.TextNormalizer;
+
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 /**
@@ -604,6 +609,46 @@ public final class VerbConjugator {
         );
     }
 
+    /**
+     * Chuyển đổi thể ます thành thể từ điển khi đã biết trước nhóm động từ (1, 2 hoặc 3).
+     * Trả về null nếu không thể khôi phục.
+     */
+    public static String masuToDictionary(String masuForm, Integer group) {
+        if (masuForm == null || masuForm.isBlank() || group == null) {
+            return null;
+        }
+        String masu = masuForm.trim();
+        if (!masu.endsWith("ます") || masu.length() < 3) {
+            return null;
+        }
+        String stem = masu.substring(0, masu.length() - 2);
+
+        if (group == 3) {
+            if ("し".equals(stem)) return "する";
+            if ("き".equals(stem)) return "くる";
+            if ("来".equals(stem)) return "来る";
+            if (stem.endsWith("し")) return stem.substring(0, stem.length() - 1) + "する";
+            if (stem.endsWith("き")) return stem.substring(0, stem.length() - 1) + "くる";
+            if (stem.endsWith("来")) return stem.substring(0, stem.length() - 1) + "来る";
+            return null;
+        }
+
+        if (group == 2) {
+            return stem + "る";
+        }
+
+        if (group == 1) {
+            char lastChar = stem.charAt(stem.length() - 1);
+            Character uDan = I_TO_U.get(lastChar);
+            if (uDan != null) {
+                return stem.substring(0, stem.length() - 1) + uDan;
+            }
+            return null;
+        }
+
+        return null;
+    }
+
     // -------------------------------------------------------------------------
     // Group Inference from Dictionary Form
     // -------------------------------------------------------------------------
@@ -649,6 +694,388 @@ public final class VerbConjugator {
         }
 
         return 1;
+    }
+
+    // -------------------------------------------------------------------------
+    // Target Form Extraction
+    // -------------------------------------------------------------------------
+
+    public static String getFormKana(ConjugatedForms forms, TargetForm targetForm) {
+        if (forms == null || targetForm == null) return "";
+        return switch (targetForm) {
+            case TE -> forms.getTeForm();
+            case RU -> forms.getDictionaryForm();
+            case TA -> forms.getTaForm();
+            case NAI -> forms.getNaiForm();
+            case MASU -> forms.getMasuForm();
+            default -> forms.getTeForm();
+        };
+    }
+
+    public static String getFormKanji(ConjugatedForms forms, TargetForm targetForm) {
+        if (forms == null || targetForm == null) return null;
+        return switch (targetForm) {
+            case TE -> forms.getKanjiTeForm();
+            case RU -> forms.getKanjiDictionaryForm();
+            case TA -> forms.getKanjiTaForm();
+            case NAI -> forms.getKanjiNaiForm();
+            case MASU -> forms.getKanjiMasuForm();
+            default -> forms.getKanjiTeForm();
+        };
+    }
+
+    // -------------------------------------------------------------------------
+    // Answer Checking & Short Rule Explanations
+    // -------------------------------------------------------------------------
+
+    public static boolean isFormMatch(String dict, int group, String kanji, TargetForm targetForm, String userAnswer) {
+        if (userAnswer == null || userAnswer.isBlank()) {
+            return false;
+        }
+        String normalized = TextNormalizer.normalize(userAnswer.trim()).replaceAll("\\s+", "");
+        ConjugatedForms forms = conjugate(dict, group, kanji);
+        String expectedKana = getFormKana(forms, targetForm);
+        String expectedKanji = getFormKanji(forms, targetForm);
+
+        if (expectedKana != null && normalized.equalsIgnoreCase(expectedKana.replaceAll("\\s+", ""))) {
+            return true;
+        }
+        if (expectedKanji != null && normalized.equalsIgnoreCase(expectedKanji.replaceAll("\\s+", ""))) {
+            return true;
+        }
+        return false;
+    }
+
+    public static String getShortRule(int group, TargetForm targetForm, String dict) {
+        if (targetForm == null) return "";
+        String safeDict = dict != null ? dict.trim() : "";
+
+        return switch (targetForm) {
+            case TE -> getShortRuleTe(group, safeDict);
+            case TA -> getShortRuleTa(group, safeDict);
+            case NAI -> getShortRuleNai(group, safeDict);
+            case RU -> getShortRuleRu(group, safeDict);
+            case MASU -> getShortRuleMasu(group, safeDict);
+            default -> "";
+        };
+    }
+
+    private static String getShortRuleTe(int group, String dict) {
+        if (group == 3) {
+            return "Quy tắc nhóm 3: する → して, くる (来る) → きて (来て).";
+        }
+        if (group == 2) {
+            return "Quy tắc nhóm 2 (Ichidan): Bỏ [る] hoặc bỏ [ます] rồi thêm [て].";
+        }
+        if ("いく".equals(dict) || "行く".equals(dict)) {
+            return "Quy tắc nhóm 1 (Ngoại lệ): いく (行く) chia thể て là いって (không chia là いいて).";
+        }
+        if (dict.endsWith("う") || dict.endsWith("つ") || dict.endsWith("る")) {
+            return "Quy tắc nhóm 1 (Godan): Động từ kết thúc bằng [う, つ, る] đổi thành [って].";
+        }
+        if (dict.endsWith("む") || dict.endsWith("ぶ") || dict.endsWith("ぬ")) {
+            return "Quy tắc nhóm 1 (Godan): Động từ kết thúc bằng [む, ぶ, ぬ] đổi thành [んで].";
+        }
+        if (dict.endsWith("く")) {
+            return "Quy tắc nhóm 1 (Godan): Động từ kết thúc bằng [く] đổi thành [いて] (ngoại lệ: いく → いって).";
+        }
+        if (dict.endsWith("ぐ")) {
+            return "Quy tắc nhóm 1 (Godan): Động từ kết thúc bằng [ぐ] đổi thành [いで].";
+        }
+        if (dict.endsWith("す")) {
+            return "Quy tắc nhóm 1 (Godan): Động từ kết thúc bằng [す] đổi thành [して].";
+        }
+        return "Quy tắc nhóm 1 (Godan): Biến đổi âm cuối theo quy tắc thể て (って, んで, いて, いで, して).";
+    }
+
+    private static String getShortRuleTa(int group, String dict) {
+        if (group == 3) {
+            return "Quy tắc nhóm 3: する → した, くる (来る) → きた (来た).";
+        }
+        if (group == 2) {
+            return "Quy tắc nhóm 2 (Ichidan): Bỏ [る] hoặc bỏ [ます] rồi thêm [た].";
+        }
+        if ("いく".equals(dict) || "行く".equals(dict)) {
+            return "Quy tắc nhóm 1 (Ngoại lệ): いく (行く) chia thể た là いった (không chia là いいた).";
+        }
+        if (dict.endsWith("う") || dict.endsWith("つ") || dict.endsWith("る")) {
+            return "Quy tắc nhóm 1 (Godan): Động từ kết thúc bằng [う, つ, る] đổi thành [った].";
+        }
+        if (dict.endsWith("む") || dict.endsWith("ぶ") || dict.endsWith("ぬ")) {
+            return "Quy tắc nhóm 1 (Godan): Động từ kết thúc bằng [む, ぶ, ぬ] đổi thành [んだ].";
+        }
+        if (dict.endsWith("く")) {
+            return "Quy tắc nhóm 1 (Godan): Động từ kết thúc bằng [く] đổi thành [いた] (ngoại lệ: いく → いった).";
+        }
+        if (dict.endsWith("ぐ")) {
+            return "Quy tắc nhóm 1 (Godan): Động từ kết thúc bằng [ぐ] đổi thành [いだ].";
+        }
+        if (dict.endsWith("す")) {
+            return "Quy tắc nhóm 1 (Godan): Động từ kết thúc bằng [す] đổi thành [した].";
+        }
+        return "Quy tắc nhóm 1 (Godan): Biến đổi tương tự thể て nhưng thay [て/で] bằng [た/だ].";
+    }
+
+    private static String getShortRuleNai(int group, String dict) {
+        if (group == 3) {
+            return "Quy tắc nhóm 3: する → しない, くる (来る) → こない (来ない).";
+        }
+        if (group == 2) {
+            return "Quy tắc nhóm 2 (Ichidan): Bỏ [る] hoặc bỏ [ます] rồi thêm [ない].";
+        }
+        if ("ある".equals(dict) || "有る".equals(dict)) {
+            return "Quy tắc nhóm 1 (Ngoại lệ): ある chia thể ない là ない (không chia là あらない).";
+        }
+        if (dict.endsWith("う")) {
+            return "Quy tắc nhóm 1 (Godan): Động từ kết thúc bằng [う] đổi thành [わ] + ない (không đổi thành あ).";
+        }
+        return "Quy tắc nhóm 1 (Godan): Đổi âm cuối sang hàng [あ] tương ứng rồi thêm [ない].";
+    }
+
+    private static String getShortRuleRu(int group, String dict) {
+        if (group == 3) {
+            return "Quy tắc nhóm 3: します → する, きます (来ます) → くる (来る).";
+        }
+        if (group == 2) {
+            return "Quy tắc nhóm 2 (Ichidan): Bỏ [ます] rồi thêm [る].";
+        }
+        return "Quy tắc nhóm 1 (Godan): Đổi âm trước [ます] (thuộc hàng [い]) sang hàng [う] tương ứng.";
+    }
+
+    private static String getShortRuleMasu(int group, String dict) {
+        if (group == 3) {
+            return "Quy tắc nhóm 3: する → します, くる (来る) → きます (来ます).";
+        }
+        if (group == 2) {
+            return "Quy tắc nhóm 2 (Ichidan): Bỏ [る] rồi thêm [ます].";
+        }
+        return "Quy tắc nhóm 1 (Godan): Đổi âm cuối (thuộc hàng [う]) sang hàng [い] tương ứng rồi thêm [ます].";
+    }
+
+    // -------------------------------------------------------------------------
+    // Multiple Choice Generation (F16)
+    // -------------------------------------------------------------------------
+
+    public static List<String> generateChoices(String dict, int group, String kanji, TargetForm targetForm) {
+        ConjugatedForms forms = conjugate(dict, group, kanji);
+        String correct = getFormKana(forms, targetForm);
+        String correctKanji = getFormKanji(forms, targetForm);
+
+        Set<String> uniqueChoices = new LinkedHashSet<>();
+        uniqueChoices.add(correct);
+
+        List<String> distractors = generateDistractors(dict, group, targetForm, forms);
+        for (String d : distractors) {
+            if (d != null && !d.isBlank() && !d.equals(correct) && (correctKanji == null || !d.equals(correctKanji))) {
+                uniqueChoices.add(d);
+                if (uniqueChoices.size() == 4) {
+                    break;
+                }
+            }
+        }
+
+        // Fallbacks nếu chưa đủ 4 lựa chọn
+        List<String> fallbacks = List.of(
+                forms.getMasuForm(),
+                forms.getTeForm(),
+                forms.getTaForm(),
+                forms.getNaiForm(),
+                forms.getDictionaryForm()
+        );
+        for (String f : fallbacks) {
+            if (uniqueChoices.size() >= 4) break;
+            if (f != null && !f.isBlank() && !f.equals(correct) && (correctKanji == null || !f.equals(correctKanji))) {
+                uniqueChoices.add(f);
+            }
+        }
+
+        int counter = 1;
+        while (uniqueChoices.size() < 4) {
+            uniqueChoices.add(correct + (counter == 1 ? "よ" : (counter == 2 ? "ね" : "か")));
+            counter++;
+        }
+
+        List<String> result = new ArrayList<>(uniqueChoices);
+        Collections.shuffle(result, new Random(System.nanoTime()));
+        return result;
+    }
+
+    private static List<String> generateDistractors(String dict, int group, TargetForm targetForm, ConjugatedForms forms) {
+        List<String> list = new ArrayList<>();
+        String masu = forms.getMasuForm();
+        String masuStem = masu.endsWith("ます") ? masu.substring(0, masu.length() - 2) : masu;
+        String dictStem = dict.length() > 1 ? dict.substring(0, dict.length() - 1) : dict;
+
+        switch (targetForm) {
+            case TE -> {
+                if (group == 1) {
+                    // Áp dụng nhầm quy tắc nhóm 2
+                    list.add(masuStem + "て");
+                    // Áp dụng nhầm đuôi trong nhóm 1
+                    if (dict.endsWith("む") || dict.endsWith("ぶ") || dict.endsWith("ぬ")) {
+                        list.add(dictStem + "って");
+                        list.add(dictStem + "いて");
+                    } else if (dict.endsWith("う") || dict.endsWith("つ") || dict.endsWith("る")) {
+                        list.add(dictStem + "んで");
+                        list.add(dictStem + "いて");
+                    } else if (dict.endsWith("く")) {
+                        list.add(dictStem + "って");
+                        list.add(dictStem + "いで");
+                        if ("いく".equals(dict)) list.add("いいて");
+                    } else if (dict.endsWith("ぐ")) {
+                        list.add(dictStem + "んで");
+                        list.add(dictStem + "いて");
+                    } else if (dict.endsWith("す")) {
+                        list.add(dictStem + "って");
+                        list.add(dictStem + "いて");
+                    }
+                    list.add(forms.getTaForm());
+                    list.add(forms.getNaiForm());
+                } else if (group == 2) {
+                    // Áp dụng nhầm quy tắc nhóm 1 (る -> って)
+                    list.add(dictStem + "って");
+                    list.add(dictStem + "んで");
+                    list.add(forms.getTaForm());
+                    list.add(forms.getNaiForm());
+                } else {
+                    // Nhóm 3
+                    if (dict.endsWith("する")) {
+                        String prefix = dict.substring(0, dict.length() - 2);
+                        list.add(prefix + "すて");
+                        list.add(prefix + "すって");
+                        list.add(prefix + "しんで");
+                        list.add(prefix + "した");
+                    } else if (dict.endsWith("くる")) {
+                        String prefix = dict.substring(0, dict.length() - 2);
+                        list.add(prefix + "くって");
+                        list.add(prefix + "こて");
+                        list.add(prefix + "きって");
+                        list.add(prefix + "きた");
+                    }
+                }
+            }
+            case TA -> {
+                if (group == 1) {
+                    list.add(masuStem + "た");
+                    if (dict.endsWith("む") || dict.endsWith("ぶ") || dict.endsWith("ぬ")) {
+                        list.add(dictStem + "った");
+                        list.add(dictStem + "いた");
+                    } else if (dict.endsWith("う") || dict.endsWith("つ") || dict.endsWith("る")) {
+                        list.add(dictStem + "んだ");
+                        list.add(dictStem + "いた");
+                    } else if (dict.endsWith("く")) {
+                        list.add(dictStem + "った");
+                        list.add(dictStem + "いだ");
+                        if ("いく".equals(dict)) list.add("いいた");
+                    } else if (dict.endsWith("ぐ")) {
+                        list.add(dictStem + "んだ");
+                        list.add(dictStem + "いた");
+                    } else if (dict.endsWith("す")) {
+                        list.add(dictStem + "った");
+                        list.add(dictStem + "いた");
+                    }
+                    list.add(forms.getTeForm());
+                    list.add(forms.getNaiForm());
+                } else if (group == 2) {
+                    list.add(dictStem + "った");
+                    list.add(dictStem + "んだ");
+                    list.add(forms.getTeForm());
+                    list.add(forms.getNaiForm());
+                } else {
+                    if (dict.endsWith("する")) {
+                        String prefix = dict.substring(0, dict.length() - 2);
+                        list.add(prefix + "すた");
+                        list.add(prefix + "すった");
+                        list.add(prefix + "しんだ");
+                        list.add(prefix + "して");
+                    } else if (dict.endsWith("くる")) {
+                        String prefix = dict.substring(0, dict.length() - 2);
+                        list.add(prefix + "くった");
+                        list.add(prefix + "こた");
+                        list.add(prefix + "きった");
+                        list.add(prefix + "きて");
+                    }
+                }
+            }
+            case NAI -> {
+                if (group == 1) {
+                    list.add(masuStem + "ない");
+                    list.add(dict + "ない");
+                    if ("ある".equals(dict)) {
+                        list.add("あらない");
+                        list.add("ありない");
+                    }
+                    if (dict.endsWith("う")) {
+                        list.add(dictStem + "あない");
+                    }
+                    list.add(forms.getTeForm());
+                } else if (group == 2) {
+                    list.add(dictStem + "らない");
+                    list.add(dict + "ない");
+                    list.add(forms.getTeForm());
+                } else {
+                    if (dict.endsWith("する")) {
+                        String prefix = dict.substring(0, dict.length() - 2);
+                        list.add(prefix + "さない");
+                        list.add(prefix + "すらない");
+                        list.add(prefix + "すない");
+                    } else if (dict.endsWith("くる")) {
+                        String prefix = dict.substring(0, dict.length() - 2);
+                        list.add(prefix + "きない");
+                        list.add(prefix + "くらない");
+                        list.add(prefix + "こらない");
+                    }
+                }
+            }
+            case RU -> {
+                if (group == 1) {
+                    list.add(masuStem + "る");
+                    list.add(dictStem + "る");
+                    list.add(masuStem + "す");
+                } else if (group == 2) {
+                    list.add(dictStem + "む");
+                    list.add(dictStem + "す");
+                    list.add(dictStem + "う");
+                } else {
+                    if (dict.endsWith("する")) {
+                        String prefix = dict.substring(0, dict.length() - 2);
+                        list.add(prefix + "しる");
+                        list.add(prefix + "すむ");
+                        list.add(prefix + "さる");
+                    } else if (dict.endsWith("くる")) {
+                        String prefix = dict.substring(0, dict.length() - 2);
+                        list.add(prefix + "きる");
+                        list.add(prefix + "くむ");
+                        list.add(prefix + "こる");
+                    }
+                }
+            }
+            case MASU -> {
+                if (group == 1) {
+                    list.add(dictStem + "ます");
+                    list.add(dict + "ます");
+                } else if (group == 2) {
+                    list.add(dictStem + "ります");
+                    list.add(dict + "ます");
+                } else {
+                    if (dict.endsWith("する")) {
+                        String prefix = dict.substring(0, dict.length() - 2);
+                        list.add(prefix + "すます");
+                        list.add(prefix + "せます");
+                    } else if (dict.endsWith("くる")) {
+                        String prefix = dict.substring(0, dict.length() - 2);
+                        list.add(prefix + "くます");
+                        list.add(prefix + "こます");
+                    }
+                }
+            }
+            default -> {
+                list.add(forms.getTeForm());
+                list.add(forms.getTaForm());
+                list.add(forms.getNaiForm());
+            }
+        }
+        return list;
     }
 
     private static boolean containsKanji(String text) {

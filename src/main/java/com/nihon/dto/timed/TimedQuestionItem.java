@@ -22,6 +22,7 @@ public class TimedQuestionItem implements Serializable {
     private int index;
     private Long vocabId;
     private Long kanjiId;
+    private Long verbId;
     private String prompt;
     private String baseJapaneseText;
     private String reading;

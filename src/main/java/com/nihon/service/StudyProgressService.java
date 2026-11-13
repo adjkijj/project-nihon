@@ -192,6 +192,22 @@ public class StudyProgressService {
                                                 String expectedAnswer,
                                                 boolean correct,
                                                 String feedbackMessage) {
+        recordTimedAttempt(session, vocabId, kanjiId, null, topicId, topicName, timedMode,
+                questionPrompt, userAnswer, expectedAnswer, correct, feedbackMessage);
+    }
+
+    public synchronized void recordTimedAttempt(HttpSession session,
+                                                Long vocabId,
+                                                Long kanjiId,
+                                                Long verbId,
+                                                Long topicId,
+                                                String topicName,
+                                                String timedMode,
+                                                String questionPrompt,
+                                                String userAnswer,
+                                                String expectedAnswer,
+                                                boolean correct,
+                                                String feedbackMessage) {
         if (session == null) {
             return;
         }
@@ -200,9 +216,46 @@ public class StudyProgressService {
                 .id(UUID.randomUUID().toString())
                 .vocabId(vocabId)
                 .kanjiId(kanjiId)
+                .verbId(verbId)
                 .topicId(topicId)
                 .topicName(topicName != null ? topicName : "Luyện tập tính giờ")
                 .mode(timedMode != null ? timedMode.toUpperCase(Locale.ROOT) : "TIMED_JA_VI")
+                .questionPrompt(questionPrompt)
+                .userAnswer(userAnswer != null ? userAnswer : "")
+                .expectedAnswer(expectedAnswer != null ? expectedAnswer : "")
+                .correct(correct)
+                .feedbackMessage(feedbackMessage)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        addRecordToSession(session, record);
+    }
+
+    /**
+     * Ghi nhận kết quả câu hỏi luyện chia thể động từ (F13 - F18) vào tiến độ của session.
+     */
+    public synchronized void recordVerbAttempt(HttpSession session,
+                                               Long verbId,
+                                               String targetForm,
+                                               Long topicId,
+                                               String topicName,
+                                               String questionPrompt,
+                                               String userAnswer,
+                                               String expectedAnswer,
+                                               boolean correct,
+                                               String feedbackMessage) {
+        if (session == null) {
+            return;
+        }
+
+        String mode = "VERB_" + (targetForm != null ? targetForm.toUpperCase(Locale.ROOT) : "TE");
+
+        PracticeRecordDto record = PracticeRecordDto.builder()
+                .id(UUID.randomUUID().toString())
+                .verbId(verbId)
+                .topicId(topicId)
+                .topicName(topicName != null ? topicName : "Tất cả chủ đề động từ")
+                .mode(mode)
                 .questionPrompt(questionPrompt)
                 .userAnswer(userAnswer != null ? userAnswer : "")
                 .expectedAnswer(expectedAnswer != null ? expectedAnswer : "")
@@ -253,6 +306,10 @@ public class StudyProgressService {
                 || "KANJI_CHOICE".equals(trimmedUpper)
                 || "TIMED_JA_VI".equals(trimmedUpper) || "TIMED_VI_JA".equals(trimmedUpper)
                 || "TIMED_KANJI_READING".equals(trimmedUpper) || "TIMED_CHOICE".equals(trimmedUpper)
+                || "TIMED_VERB_TE".equals(trimmedUpper)
+                || "VERB_TE".equals(trimmedUpper) || "VERB_RU".equals(trimmedUpper)
+                || "VERB_TA".equals(trimmedUpper) || "VERB_NAI".equals(trimmedUpper)
+                || "VERB_MASU".equals(trimmedUpper)
                 || "ALL".equals(trimmedUpper)) {
             return trimmedUpper;
         }
@@ -316,7 +373,11 @@ public class StudyProgressService {
                 || "KANJI_READING".equals(upper) || "KANJI_WRITE".equals(upper)
                 || "KANJI_CHOICE".equals(upper)
                 || "TIMED_JA_VI".equals(upper) || "TIMED_VI_JA".equals(upper)
-                || "TIMED_KANJI_READING".equals(upper) || "TIMED_CHOICE".equals(upper)) {
+                || "TIMED_KANJI_READING".equals(upper) || "TIMED_CHOICE".equals(upper)
+                || "TIMED_VERB_TE".equals(upper)
+                || "VERB_TE".equals(upper) || "VERB_RU".equals(upper)
+                || "VERB_TA".equals(upper) || "VERB_NAI".equals(upper)
+                || "VERB_MASU".equals(upper)) {
             return upper;
         }
         return "ALL";
@@ -433,6 +494,56 @@ public class StudyProgressService {
 
     public Set<Long> getWrongKanjiIds(HttpSession session) {
         return getWrongKanjiIds(session, "ALL", null);
+    }
+
+    /**
+     * Lấy tập verbId của các động từ đang ở trạng thái "sai" trong phiên làm việc hiện tại:
+     * Động từ có bản ghi gần nhất là sai. Nếu động từ đó được trả lời đúng ở lần sau thì không còn trong tập.
+     */
+    public Set<Long> getWrongVerbIds(HttpSession session, String mode, Long topicId) {
+        List<PracticeRecordDto> history = getHistory(session);
+        if (history.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        String safeMode = normalizeWrongMode(mode);
+        Set<Long> seenVerbs = new HashSet<>();
+        Set<Long> wrongVerbIds = new LinkedHashSet<>();
+
+        synchronized (history) {
+            for (PracticeRecordDto record : history) {
+                if (record == null || record.getVerbId() == null) {
+                    continue;
+                }
+
+                if (!"ALL".equals(safeMode)) {
+                    if (record.getMode() == null || !safeMode.equalsIgnoreCase(record.getMode())) {
+                        continue;
+                    }
+                }
+
+                if (topicId != null && (record.getTopicId() == null || !topicId.equals(record.getTopicId()))) {
+                    continue;
+                }
+
+                Long verbId = record.getVerbId();
+                if (seenVerbs.add(verbId)) {
+                    if (!record.isCorrect()) {
+                        wrongVerbIds.add(verbId);
+                    }
+                }
+            }
+        }
+
+        return wrongVerbIds;
+    }
+
+    public Set<Long> getWrongVerbIds(HttpSession session, String mode) {
+        return getWrongVerbIds(session, mode, null);
+    }
+
+    public Set<Long> getWrongVerbIds(HttpSession session) {
+        return getWrongVerbIds(session, "ALL", null);
     }
 
     /**

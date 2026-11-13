@@ -1,18 +1,27 @@
 package com.nihon.controller;
 
+import com.nihon.config.ClientIpResolver;
+import com.nihon.conjugation.TargetForm;
+import com.nihon.conjugation.VerbConjugator;
 import com.nihon.dto.verb.VerbBulkForm;
 import com.nihon.dto.verb.VerbBulkResultItem;
 import com.nihon.dto.verb.VerbDetailDto;
 import com.nihon.dto.verb.VerbForm;
+import com.nihon.dto.verb.VerbLabResultDto;
 import com.nihon.entity.Topic;
 import com.nihon.entity.Verb;
 import com.nihon.service.TopicService;
 import com.nihon.service.VerbService;
+import com.nihon.service.VocabularyExportRateLimiter;
+import com.nihon.service.excel.RateLimitExceededException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -26,7 +35,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.NoSuchElementException;
 
 @Controller
@@ -39,10 +52,17 @@ public class VerbController {
 
     private final VerbService verbService;
     private final TopicService topicService;
+    private final VocabularyExportRateLimiter exportRateLimiter;
+    private final ClientIpResolver clientIpResolver;
 
-    public VerbController(VerbService verbService, TopicService topicService) {
+    public VerbController(VerbService verbService,
+                          TopicService topicService,
+                          VocabularyExportRateLimiter exportRateLimiter,
+                          ClientIpResolver clientIpResolver) {
         this.verbService = verbService;
         this.topicService = topicService;
+        this.exportRateLimiter = exportRateLimiter;
+        this.clientIpResolver = clientIpResolver;
     }
 
     @InitBinder("form")
@@ -56,6 +76,7 @@ public class VerbController {
                        @RequestParam(value = "keyword", required = false) String keyword,
                        @RequestParam(value = "group", required = false) Integer group,
                        @RequestParam(value = "topicId", required = false) Long topicId,
+                       @RequestParam(value = "view", required = false) String view,
                        Model model) {
         int safePage = Math.max(0, Math.min(MAX_PAGE, page));
         int safeSize = Math.max(1, Math.min(MAX_PAGE_SIZE, size));
@@ -64,7 +85,17 @@ public class VerbController {
         Page<Verb> verbsPage = verbService.search(group, topicId, keyword, pageable);
         List<Topic> topics = topicService.findAllOrdered();
 
+        String safeView = "TABLE5".equalsIgnoreCase(view) ? "TABLE5" : "COMPACT";
+        List<VerbDetailDto> table5Verbs = Collections.emptyList();
+        if ("TABLE5".equals(safeView)) {
+            table5Verbs = verbsPage.getContent().stream()
+                    .map(v -> VerbDetailDto.fromEntity(v, VerbConjugator.conjugate(v.getDictionaryForm(), v.getVerbGroup(), v.getKanjiText())))
+                    .toList();
+        }
+
         model.addAttribute("verbs", verbsPage);
+        model.addAttribute("table5Verbs", table5Verbs);
+        model.addAttribute("currentView", safeView);
         model.addAttribute("topics", topics);
         model.addAttribute("keyword", keyword != null ? keyword.trim() : "");
         model.addAttribute("selectedGroup", group);
@@ -253,5 +284,44 @@ public class VerbController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
         return "redirect:/verbs";
+    }
+
+    @GetMapping("/lab")
+    public String lab(@RequestParam(value = "input", required = false) String input,
+                      @RequestParam(value = "group", required = false, defaultValue = "AUTO") String group,
+                      Model model) {
+        VerbLabResultDto labResult = verbService.processLabInput(input, group);
+        model.addAttribute("labResult", labResult);
+        model.addAttribute("input", input != null ? input.trim() : "");
+        model.addAttribute("selectedGroup", group != null ? group.trim().toUpperCase(Locale.ROOT) : "AUTO");
+        model.addAttribute("currentNav", "verbs");
+        return "verbs/lab";
+    }
+
+    @GetMapping("/export-text")
+    public ResponseEntity<byte[]> exportText(@RequestParam(value = "form", required = false, defaultValue = "TE") String formStr,
+                                             @RequestParam(value = "topicId", required = false) Long topicId,
+                                             @RequestParam(value = "group", required = false) Integer group,
+                                             HttpServletRequest request) {
+        String clientIp = clientIpResolver.resolveClientIp(request);
+        if (!exportRateLimiter.tryAcquire(clientIp)) {
+            throw new RateLimitExceededException("Bạn đã vượt quá giới hạn tải xuống (tối đa 20 lần mỗi phút). Vui lòng thử lại sau.");
+        }
+
+        TargetForm targetForm = TargetForm.fromString(formStr);
+        if (!TargetForm.isSpecificForm(targetForm)) {
+            targetForm = TargetForm.TE;
+        }
+
+        byte[] fileBytes = verbService.exportQuizletText(topicId, group, targetForm);
+
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmm"));
+        String filename = "nihon-verbs-" + targetForm.name().toLowerCase(Locale.ROOT) + "-" + timestamp + ".txt";
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/plain; charset=UTF-8")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(fileBytes);
     }
 }

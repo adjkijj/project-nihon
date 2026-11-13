@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luyện chia thể Động từ - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/verbs.css}">
+    <link rel="stylesheet" th:href="@{/css/verbs-practice.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('practice')}"></header>
+
+    <main class="vp-container">
+        <!-- Breadcrumb & Header -->
+        <div class="vp-header">
+            <div class="vp-breadcrumb">
+                <a th:href="@{/verbs}">Động từ</a>
+                <span aria-hidden="true">›</span>
+                <span>Luyện chia thể</span>
+            </div>
+            <h1 class="vp-title">🔄 Luyện Chia Thể Động Từ</h1>
+            <p class="vp-subtitle">
+                Rèn luyện khả năng phản xạ và chia chính xác 5 thể động từ tiếng Nhật (Te, Ru, Ta, Nai, Masu)
+                ở cả dạng gõ câu trả lời và trắc nghiệm 4 lựa chọn.
+            </p>
+        </div>
+
+        <!-- Flash Alert -->
+        <div th:if="${errorMessage}" class="alert alert-error" role="alert">
+            <span class="alert-icon">⚠️</span>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi.</span>
+        </div>
+
+        <!-- Retry Wrong Words Toolbar (F18) -->
+        <div th:if="${wrongCount > 0}" class="vp-card u-mb-2">
+            <div class="vp-card-title">
+                <span>🔄</span> Ôn lại động từ làm sai
+            </div>
+            <p class="vp-subtitle u-text-left u-mb-1">
+                Bạn hiện có <strong th:text="${wrongCount}">0</strong> động từ đang ở trạng thái trả lời chưa đúng trong phiên học này.
+            </p>
+            <a th:href="@{/verbs/practice/question(targetForm=${selectedForm}, group=${selectedGroup}, topicId=${selectedTopicId}, mode=${selectedMode}, retryWrongOnly=true)}"
+               class="btn btn-primary">
+                Bắt đầu ôn lại động từ làm sai ngay →
+            </a>
+        </div>
+
+        <!-- Config Form -->
+        <form th:action="@{/verbs/practice/question}" method="get" class="vp-card">
+            <div class="vp-card-title">
+                <span>⚙️</span> Thiết lập bài luyện tập
+            </div>
+
+            <!-- 1. Thể đích -->
+            <div class="form-group u-mb-2">
+                <label class="form-label">1. Chọn thể đích cần luyện tập <span class="required">*</span></label>
+                <div class="vp-config-grid">
+                    <label class="vp-option-label">
+                        <input type="radio" name="targetForm" value="TE" class="vp-option-input"
+                               th:checked="${selectedForm == null or selectedForm == 'TE'}">
+                        <div class="vp-option-card">
+                            <div>
+                                <div class="vp-option-title">Thể て (Te-form)</div>
+                                <div class="vp-option-desc">Ví dụ: のんで, たべて, して</div>
+                            </div>
+                            <span class="vp-badge">Phổ biến</span>
+                        </div>
+                    </label>
+
+                    <label class="vp-option-label">
+                        <input type="radio" name="targetForm" value="RU" class="vp-option-input"
+                               th:checked="${selectedForm == 'RU'}">
+                        <div class="vp-option-card">
+                            <div>
+                                <div class="vp-option-title">Thể từ điển (辞書形)</div>
+                                <div class="vp-option-desc">Ví dụ: のむ, たべる, する</div>
+                            </div>
+                            <span class="vp-badge">Cơ bản</span>
+                        </div>
+                    </label>
+
+                    <label class="vp-option-label">
+                        <input type="radio" name="targetForm" value="TA" class="vp-option-input"
+                               th:checked="${selectedForm == 'TA'}">
+                        <div class="vp-option-card">
+                            <div>
+                                <div class="vp-option-title">Thể た (Quá khứ)</div>
+                                <div class="vp-option-desc">Ví dụ: のんだ, たべた, した</div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="vp-option-label">
+                        <input type="radio" name="targetForm" value="NAI" class="vp-option-input"
+                               th:checked="${selectedForm == 'NAI'}">
+                        <div class="vp-option-card">
+                            <div>
+                                <div class="vp-option-title">Thể ない (Phủ định)</div>
+                                <div class="vp-option-desc">Ví dụ: のまない, たべない, しない</div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="vp-option-label">
+                        <input type="radio" name="targetForm" value="MASU" class="vp-option-input"
+                               th:checked="${selectedForm == 'MASU'}">
+                        <div class="vp-option-card">
+                            <div>
+                                <div class="vp-option-title">Thể ます (Lịch sự)</div>
+                                <div class="vp-option-desc">Ví dụ: のみます, たべます, します</div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="vp-option-label">
+                        <input type="radio" name="targetForm" value="RANDOM" class="vp-option-input"
+                               th:checked="${selectedForm == 'RANDOM'}">
+                        <div class="vp-option-card">
+                            <div>
+                                <div class="vp-option-title">🎲 Ngẫu nhiên mọi thể</div>
+                                <div class="vp-option-desc">Xáo trộn linh hoạt giữa cả 5 thể</div>
+                            </div>
+                            <span class="vp-badge">Thử thách</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 2. Nhóm động từ -->
+            <div class="form-group u-mb-2">
+                <label for="groupSelect" class="form-label">2. Nhóm động từ</label>
+                <select id="groupSelect" name="group" class="form-control">
+                    <option value="" th:selected="${selectedGroup == null}">-- Tất cả nhóm (Nhóm 1, 2 và 3) --</option>
+                    <option value="1" th:selected="${selectedGroup != null and selectedGroup == 1}">Nhóm 1: Godan (Ngũ đoạn - biến đổi đuôi う, つ, る, む, ぶ, ぬ, く, ぐ, す)</option>
+                    <option value="2" th:selected="${selectedGroup != null and selectedGroup == 2}">Nhóm 2: Ichidan (Nhất đoạn - kết thúc bằng る với nguyên âm i/e)</option>
+                    <option value="3" th:selected="${selectedGroup != null and selectedGroup == 3}">Nhóm 3: Bất quy tắc (する, くる và các dạng ghép)</option>
+                </select>
+            </div>
+
+            <!-- 3. Chủ đề -->
+            <div class="form-group u-mb-2">
+                <label for="topicSelect" class="form-label">3. Chủ đề bài học</label>
+                <select id="topicSelect" name="topicId" class="form-control">
+                    <option value="" th:selected="${selectedTopicId == null}">-- Tất cả chủ đề --</option>
+                    <option th:each="t : ${topics}"
+                            th:value="${t.id}"
+                            th:text="${t.parent != null ? '↳ ' + t.name : t.name}"
+                            th:selected="${selectedTopicId != null and selectedTopicId == t.id}">
+                        Chủ đề 1
+                    </option>
+                </select>
+            </div>
+
+            <!-- 4. Hình thức làm bài -->
+            <div class="form-group u-mb-2">
+                <label class="form-label">4. Hình thức làm bài <span class="required">*</span></label>
+                <div class="vp-config-grid">
+                    <label class="vp-option-label">
+                        <input type="radio" name="mode" value="INPUT" class="vp-option-input"
+                               th:checked="${selectedMode == null or selectedMode == 'INPUT'}">
+                        <div class="vp-option-card">
+                            <div>
+                                <div class="vp-option-title">✍️ Tự luận (Gõ câu trả lời)</div>
+                                <div class="vp-option-desc">Gõ bằng Hiragana hoặc chữ Kanji có Kanji tương ứng</div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="vp-option-label">
+                        <input type="radio" name="mode" value="CHOICE" class="vp-option-input"
+                               th:checked="${selectedMode == 'CHOICE'}">
+                        <div class="vp-option-card">
+                            <div>
+                                <div class="vp-option-title">🎯 Trắc nghiệm (4 lựa chọn)</div>
+                                <div class="vp-option-desc">Chọn nhanh 1 trong 4 phương án, có phím tắt 1 - 4</div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Nộp form -->
+            <div class="u-text-center u-mt-2">
+                <button type="submit" class="vp-btn-submit">
+                    Bắt đầu luyện tập ngay 🚀
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Chế độ luyện chia thể động từ tiếng Nhật.</p>
+        <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
+    </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+</body>
+</html>
+

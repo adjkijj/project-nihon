@@ -122,6 +122,8 @@ public class StatsController {
         int wrongCount;
         if (safeMode.startsWith("KANJI_") || "TIMED_KANJI_READING".equals(safeMode)) {
             wrongCount = studyProgressService.getWrongKanjiIds(session, safeMode, effectiveTopicId).size();
+        } else if (safeMode.startsWith("VERB_") || "TIMED_VERB_TE".equals(safeMode)) {
+            wrongCount = studyProgressService.getWrongVerbIds(session, safeMode, effectiveTopicId).size();
         } else {
             wrongCount = studyProgressService.getWrongVocabIds(session, safeMode, effectiveTopicId).size();
         }
@@ -146,6 +148,10 @@ public class StatsController {
                 || "KANJI_CHOICE".equals(trimmedUpper)
                 || "TIMED_JA_VI".equals(trimmedUpper) || "TIMED_VI_JA".equals(trimmedUpper)
                 || "TIMED_KANJI_READING".equals(trimmedUpper) || "TIMED_CHOICE".equals(trimmedUpper)
+                || "TIMED_VERB_TE".equals(trimmedUpper)
+                || "VERB_TE".equals(trimmedUpper) || "VERB_RU".equals(trimmedUpper)
+                || "VERB_TA".equals(trimmedUpper) || "VERB_NAI".equals(trimmedUpper)
+                || "VERB_MASU".equals(trimmedUpper)
                 || "ALL".equals(trimmedUpper)) {
             return trimmedUpper;
         }

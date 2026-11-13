@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết quả luyện chia thể - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/verbs-practice.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('verbs')}"></header>
+
+    <main class="vp-container">
+        <!-- Breadcrumb & Header -->
+        <div class="vp-header">
+            <nav class="vp-breadcrumb" aria-label="Breadcrumb">
+                <a th:href="@{/}">Trang chủ</a>
+                <span>/</span>
+                <a th:href="@{/verbs}">Động từ</a>
+                <span>/</span>
+                <a th:href="@{/verbs/practice}">Luyện chia thể</a>
+                <span>/</span>
+                <span>Kết quả</span>
+            </nav>
+            <h1 class="vp-title">🎯 Kết quả kiểm tra</h1>
+        </div>
+
+        <!-- Result Card -->
+        <div class="vp-result-card" th:classappend="${result.correct} ? 'correct' : 'incorrect'">
+            <div class="vp-result-status" th:classappend="${result.correct} ? 'correct' : 'incorrect'">
+                <span th:if="${result.correct}">🎉 CHÍNH XÁC!</span>
+                <span th:if="${!result.correct}">❌ CHƯA CHÍNH XÁC</span>
+            </div>
+
+            <!-- Streak feedback -->
+            <div th:if="${result.correct and result.currentStreak > 1}" class="vp-streak-pill vp-streak-inline u-mb-3">
+                <span>🔥 Chuỗi đúng liên tiếp:</span>
+                <strong th:text="${result.currentStreak}">3</strong>
+            </div>
+
+            <!-- Detail Grid -->
+            <div class="vp-result-detail-grid">
+                <div>
+                    <div class="vp-result-item-label">Động từ ban đầu:</div>
+                    <div class="vp-result-item-val u-flex u-items-center u-gap-1">
+                        <span th:text="${result.prompt}">のみます</span>
+                        <th:block th:replace="~{fragments/speech :: speakerBtn(${result.prompt})}"></th:block>
+                    </div>
+                    <div class="vp-cell-sub">
+                        <span th:text="${result.meaningVi}">Uống</span>
+                        <span th:text="'(Nhóm ' + ${result.verbGroup} + ')'"></span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="vp-result-item-label">Thể yêu cầu:</div>
+                    <div class="vp-result-item-val">
+                        <span th:if="${result.targetForm.name() == 'TE'}">Thể Te (て)</span>
+                        <span th:if="${result.targetForm.name() == 'RU'}">Thể Từ điển (辞書形)</span>
+                        <span th:if="${result.targetForm.name() == 'TA'}">Thể Ta (た)</span>
+                        <span th:if="${result.targetForm.name() == 'NAI'}">Thể Nai (ない)</span>
+                        <span th:if="${result.targetForm.name() == 'MASU'}">Thể Masu (ます)</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="vp-result-item-label">Bạn đã trả lời:</div>
+                    <div class="vp-result-item-val" th:classappend="${result.correct} ? 'right' : 'wrong'">
+                        <span th:text="${result.userAnswer != null and !result.userAnswer.isBlank() ? result.userAnswer : '(Bỏ trống)'}">のんで</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="vp-result-item-label">Đáp án chính xác:</div>
+                    <div class="vp-result-item-val right u-flex u-items-center u-gap-1">
+                        <span th:text="${result.expectedDisplay}">のんで (飲んで)</span>
+                        <th:block th:replace="~{fragments/speech :: speakerBtn(${result.expectedKana})}"></th:block>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rule Explanation Box (hiện khi sai hoặc để củng cố) -->
+            <div th:if="${result.feedbackRule != null and !result.feedbackRule.isBlank()}" class="vp-rule-box">
+                <div class="vp-rule-title">💡 Quy tắc chia thể:</div>
+                <div class="vp-rule-text" th:text="${result.feedbackRule}">
+                    Nhóm 1 đuôi む: chuyển む thành んで (ví dụ: のむ ➔ のんで).
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="u-mt-4 u-flex u-justify-center u-gap-2">
+                <a th:href="@{/verbs/practice/question(targetForm=${form.targetForm}, group=${form.group}, topicId=${form.topicId}, mode=${form.mode}, excludeId=${result.verbId}, retryWrongOnly=${form.retryWrongOnly})}"
+                   class="vp-btn-submit"
+                   autofocus>
+                    <span>Câu tiếp theo</span> ➔
+                </a>
+            </div>
+        </div>
+
+        <!-- Secondary Navigation -->
+        <div class="u-flex u-justify-between u-items-center u-mt-3">
+            <a th:href="@{/verbs/practice(targetForm=${form.targetForm}, group=${form.group}, topicId=${form.topicId}, mode=${form.mode})}"
+               class="btn btn-secondary">
+                ⬅ Thay đổi cấu hình
+            </a>
+            <a th:href="@{/verbs}" class="btn btn-secondary">
+                📑 Danh sách động từ
+            </a>
+        </div>
+    </main>
+
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+    <th:block th:replace="~{fragments/speech :: scripts}"></th:block>
+</body>
+</html>

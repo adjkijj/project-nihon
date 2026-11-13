@@ -7,7 +7,8 @@ public enum TimedPracticeType {
     JA_VI("Nhật → Việt"),
     VI_JA("Việt → Nhật"),
     KANJI_READING("Đọc Kanji"),
-    CHOICE("Trắc nghiệm 4 lựa chọn");
+    CHOICE("Trắc nghiệm 4 lựa chọn"),
+    VERB_TE("Chia thể Te");
 
     private final String displayName;
 

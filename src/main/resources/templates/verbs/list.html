@@ -8,6 +8,7 @@
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
     <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
     <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
     <script th:src="@{/js/ui-enhance.js}" defer></script>
 </head>
@@ -22,6 +23,9 @@
                 <p>Kho động từ tiếng Nhật phân loại theo 3 nhóm ngữ pháp và bộ chia 5 thể cơ bản</p>
             </div>
             <div class="action-buttons">
+                <a th:href="@{/verbs/practice}" class="btn btn-primary" title="Luyện chia các thể động từ">🎯 Luyện chia thể</a>
+                <a th:href="@{/verbs/lab}" class="btn btn-secondary" title="Phòng thí nghiệm biến đổi thể động từ">🔬 Phòng biến đổi (Lab)</a>
+                <a th:href="@{/verbs/export-text(form='TE', topicId=${selectedTopicId}, group=${selectedGroup})}" class="btn btn-outline" title="Xuất danh sách động từ sang Quizlet">📥 Xuất Quizlet</a>
                 <a th:href="@{/verbs/bulk}" class="btn btn-outline" title="Nhập danh sách động từ hàng loạt">📋 Thêm hàng loạt</a>
                 <a th:href="@{/verbs/new}" class="btn btn-primary" title="Tạo động từ mới">+ Thêm động từ</a>
             </div>
@@ -102,8 +106,82 @@
             </div>
         </div>
 
-        <!-- Verbs Table -->
-        <div th:unless="${verbs.empty}" class="table-container">
+        <!-- View Toolbar (F36) -->
+        <div th:unless="${verbs.empty}" class="verbs-view-toolbar">
+            <span class="view-toolbar-label">Chế độ xem:</span>
+            <div class="view-toggle-group">
+                <a th:href="@{/verbs(page=${verbs.number}, size=${verbs.size}, keyword=${keyword}, group=${selectedGroup}, topicId=${selectedTopicId}, view='COMPACT')}"
+                   class="btn btn-sm"
+                   th:classappend="${currentView == 'COMPACT' ? 'btn-primary' : 'btn-outline'}">
+                    📋 Bảng thu gọn
+                </a>
+                <a th:href="@{/verbs(page=${verbs.number}, size=${verbs.size}, keyword=${keyword}, group=${selectedGroup}, topicId=${selectedTopicId}, view='TABLE5')}"
+                   class="btn btn-sm"
+                   th:classappend="${currentView == 'TABLE5' ? 'btn-primary' : 'btn-outline'}">
+                    📑 Bảng 5 thể (F36)
+                </a>
+            </div>
+        </div>
+
+        <!-- 1. Bảng 5 thể (F36) -->
+        <div th:if="${!verbs.empty and currentView == 'TABLE5'}" class="table-container">
+            <table class="verb-table" aria-label="Bảng 5 thể động từ">
+                <thead>
+                    <tr>
+                        <th class="col-kanji">Chữ Hán</th>
+                        <th class="col-meaning">Nghĩa tiếng Việt</th>
+                        <th class="col-group">Nhóm</th>
+                        <th>Từ điển (Ru)</th>
+                        <th>Thể Masu</th>
+                        <th>Thể Te</th>
+                        <th>Thể Ta</th>
+                        <th>Thể Nai</th>
+                        <th class="col-actions">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="v : ${table5Verbs}">
+                        <td>
+                            <strong th:text="${v.kanjiText != null ? v.kanjiText : v.dictionaryForm}">飲む</strong>
+                            <th:block th:replace="~{fragments/speech :: speakerBtn(${v.masuForm})}"></th:block>
+                        </td>
+                        <td th:text="${v.meaningVi}">Uống</td>
+                        <td>
+                            <span class="badge" th:text="${'Nhóm ' + v.verbGroup}">Nhóm 1</span>
+                        </td>
+                        <td>
+                            <span th:text="${v.dictionaryForm}">のむ</span>
+                            <th:block th:replace="~{fragments/speech :: speakerBtn(${v.dictionaryForm})}"></th:block>
+                        </td>
+                        <td>
+                            <span th:text="${v.masuForm}">のみます</span>
+                            <th:block th:replace="~{fragments/speech :: speakerBtn(${v.masuForm})}"></th:block>
+                        </td>
+                        <td>
+                            <span th:text="${v.teForm}">のんで</span>
+                            <th:block th:replace="~{fragments/speech :: speakerBtn(${v.teForm})}"></th:block>
+                        </td>
+                        <td>
+                            <span th:text="${v.taForm}">のんだ</span>
+                            <th:block th:replace="~{fragments/speech :: speakerBtn(${v.taForm})}"></th:block>
+                        </td>
+                        <td>
+                            <span th:text="${v.naiForm}">のまない</span>
+                            <th:block th:replace="~{fragments/speech :: speakerBtn(${v.naiForm})}"></th:block>
+                        </td>
+                        <td>
+                            <div class="table-actions">
+                                <a th:href="@{'/verbs/' + ${v.id}}" class="btn btn-outline btn-sm" title="Xem chi tiết">Chi tiết</a>
+                                <a th:href="@{'/verbs/' + ${v.id} + '/edit'}" class="btn btn-edit btn-sm" title="Chỉnh sửa">Sửa</a>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 2. Bảng thu gọn hiện tại -->
+        <div th:if="${!verbs.empty and currentView != 'TABLE5'}" class="table-container">
             <table class="verb-table" aria-label="Danh sách động từ">
                 <thead>
                     <tr>
@@ -198,5 +276,6 @@
         <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
     </footer>
     <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+    <th:block th:replace="~{fragments/speech :: scripts}"></th:block>
 </body>
 </html>

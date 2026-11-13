@@ -21,6 +21,7 @@ public class TimedAnswerRecord implements Serializable {
     private int questionIndex;
     private Long vocabId;
     private Long kanjiId;
+    private Long verbId;
     private String prompt;
     private String userAnswer;
     private String expectedAnswer;

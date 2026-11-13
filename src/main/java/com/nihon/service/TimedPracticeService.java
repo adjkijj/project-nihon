@@ -1,5 +1,8 @@
 package com.nihon.service;
 
+import com.nihon.conjugation.ConjugatedForms;
+import com.nihon.conjugation.TargetForm;
+import com.nihon.conjugation.VerbConjugator;
 import com.nihon.dto.KanjiPracticeMode;
 import com.nihon.dto.PracticeAnswerForm;
 import com.nihon.dto.PracticeChoiceAnswerForm;
@@ -22,9 +25,11 @@ import com.nihon.dto.timed.TimedSessionStatus;
 import com.nihon.dto.timed.TimedStartForm;
 import com.nihon.entity.KanjiEntry;
 import com.nihon.entity.Topic;
+import com.nihon.entity.Verb;
 import com.nihon.entity.Vocabulary;
 import com.nihon.repository.KanjiEntryRepository;
 import com.nihon.repository.TopicRepository;
+import com.nihon.repository.VerbRepository;
 import com.nihon.repository.VocabularyRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Service;
@@ -56,6 +61,7 @@ public class TimedPracticeService {
 
     private final VocabularyRepository vocabularyRepository;
     private final KanjiEntryRepository kanjiEntryRepository;
+    private final VerbRepository verbRepository;
     private final TopicRepository topicRepository;
     private final PracticeService practiceService;
     private final KanjiPracticeService kanjiPracticeService;
@@ -64,6 +70,7 @@ public class TimedPracticeService {
 
     public TimedPracticeService(VocabularyRepository vocabularyRepository,
                                 KanjiEntryRepository kanjiEntryRepository,
+                                VerbRepository verbRepository,
                                 TopicRepository topicRepository,
                                 PracticeService practiceService,
                                 KanjiPracticeService kanjiPracticeService,
@@ -72,6 +79,7 @@ public class TimedPracticeService {
         this.studyHistoryService = studyHistoryService;
         this.vocabularyRepository = vocabularyRepository;
         this.kanjiEntryRepository = kanjiEntryRepository;
+        this.verbRepository = verbRepository;
         this.topicRepository = topicRepository;
         this.practiceService = practiceService;
         this.kanjiPracticeService = kanjiPracticeService;
@@ -363,6 +371,20 @@ public class TimedPracticeService {
                 userAnswer = pResult.getUserAnswer();
                 feedbackMessage = pResult.getFeedbackMessage();
             }
+            case VERB_TE -> {
+                Verb verb = verbRepository.findById(item.getVerbId())
+                        .orElseThrow(() -> new NoSuchElementException("Không tìm thấy động từ: " + item.getVerbId()));
+                String ans = form.getAnswer() != null ? form.getAnswer().trim() : "";
+                userAnswer = ans;
+                correct = VerbConjugator.isFormMatch(verb.getDictionaryForm(), verb.getVerbGroup(), verb.getKanjiText(), TargetForm.TE, ans);
+                ConjugatedForms forms = VerbConjugator.conjugate(verb.getDictionaryForm(), verb.getVerbGroup(), verb.getKanjiText());
+                expectedAnswer = forms.getTeForm() + (forms.getKanjiTeForm() != null && !forms.getKanjiTeForm().equals(forms.getTeForm()) ? " / " + forms.getKanjiTeForm() : "");
+                if (correct) {
+                    feedbackMessage = "Chính xác! Thể て của " + verb.getMasuForm() + " là " + expectedAnswer + ".";
+                } else {
+                    feedbackMessage = "Chưa chính xác. " + VerbConjugator.getShortRule(verb.getVerbGroup(), TargetForm.TE, verb.getDictionaryForm());
+                }
+            }
             default -> throw new IllegalStateException("Hình thức luyện tập không được hỗ trợ: " + sessionData.getType());
         }
 
@@ -381,6 +403,7 @@ public class TimedPracticeService {
                 .questionIndex(sessionData.getCurrentIndex() + 1)
                 .vocabId(item.getVocabId())
                 .kanjiId(item.getKanjiId())
+                .verbId(item.getVerbId())
                 .prompt(item.getPrompt())
                 .userAnswer(userAnswer)
                 .expectedAnswer(expectedAnswer)
@@ -424,6 +447,7 @@ public class TimedPracticeService {
                         .questionIndex(i + 1)
                         .vocabId(unansItem.getVocabId())
                         .kanjiId(unansItem.getKanjiId())
+                        .verbId(unansItem.getVerbId())
                         .prompt(unansItem.getPrompt())
                         .userAnswer("(Chưa trả lời)")
                         .expectedAnswer(expected)
@@ -441,6 +465,7 @@ public class TimedPracticeService {
                         session,
                         r.getVocabId(),
                         r.getKanjiId(),
+                        r.getVerbId(),
                         sessionData.getTopicId(),
                         sessionData.getTopicName(),
                         timedMode,
@@ -588,6 +613,37 @@ public class TimedPracticeService {
             return items;
         }
 
+        if (type == TimedPracticeType.VERB_TE) {
+            List<Verb> verbs = (topicId != null && topicId > 0)
+                    ? verbRepository.findByTopicId(topicId)
+                    : verbRepository.findAll();
+
+            if (verbs.size() < questionCount) {
+                throw new IllegalArgumentException("Không đủ dữ liệu động từ (yêu cầu tối thiểu "
+                        + questionCount + " động từ, hiện chỉ có " + verbs.size() + " động từ).");
+            }
+
+            Collections.shuffle(verbs);
+            List<Verb> selected = verbs.subList(0, questionCount);
+
+            List<TimedQuestionItem> items = new ArrayList<>();
+            for (int i = 0; i < selected.size(); i++) {
+                Verb v = selected.get(i);
+                String promptText = v.getMasuForm() + (v.getKanjiText() != null ? " (" + v.getKanjiText() + ")" : "") + " - " + v.getMeaningVi();
+                items.add(TimedQuestionItem.builder()
+                        .index(i)
+                        .verbId(v.getId())
+                        .prompt(promptText)
+                        .baseJapaneseText(v.getMasuForm())
+                        .speechText(v.getMasuForm())
+                        .meaningVi(v.getMeaningVi())
+                        .hasKanji(v.getKanjiText() != null)
+                        .requireReading(false)
+                        .build());
+            }
+            return items;
+        }
+
         // Các chế độ liên quan đến Vocabulary: JA_VI, VI_JA, CHOICE
         List<Vocabulary> vocabs = (topicId != null && topicId > 0)
                 ? vocabularyRepository.findByTopicIdOrderBySourceLineAsc(topicId)
@@ -730,6 +786,16 @@ public class TimedPracticeService {
                     + (item.getReading() != null && !item.getReading().isBlank() ? " (" + item.getReading().strip() + ")" : "");
             case CHOICE -> item.getMeaningVi();
             case KANJI_READING -> item.getReading();
+            case VERB_TE -> {
+                if (item.getVerbId() != null) {
+                    Verb verb = verbRepository.findById(item.getVerbId()).orElse(null);
+                    if (verb != null) {
+                        ConjugatedForms forms = VerbConjugator.conjugate(verb.getDictionaryForm(), verb.getVerbGroup(), verb.getKanjiText());
+                        yield forms.getTeForm() + (forms.getKanjiTeForm() != null && !forms.getKanjiTeForm().equals(forms.getTeForm()) ? " / " + forms.getKanjiTeForm() : "");
+                    }
+                }
+                yield "";
+            }
         };
     }
 }

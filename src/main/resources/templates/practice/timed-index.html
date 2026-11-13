@@ -66,7 +66,7 @@
 
         <!-- Main Config Grid -->
         <div class="timed-config-grid">
-            <!-- Preset Speed Card (F17) -->
+            <!-- Preset Speed Card (F17 - Vocab) -->
             <div class="timed-preset-card">
                 <span class="timed-preset-badge">⚡ Khuyến nghị</span>
                 <h2 class="timed-preset-title"><span>🏃</span> Đấu Trường Tốc Độ</h2>
@@ -102,6 +102,46 @@
 
                     <button type="submit" class="btn-tp-primary">
                         Bắt đầu Đấu trường tốc độ ⚡
+                    </button>
+                </form>
+            </div>
+
+            <!-- Preset Speed Card (F17 - Te Form) -->
+            <div class="timed-preset-card">
+                <span class="timed-preset-badge">⚡ Đấu trường thể Te</span>
+                <h2 class="timed-preset-title"><span>🔄</span> Đấu Trường Thể Te</h2>
+                <p class="timed-preset-desc">Thử thách phản xạ biến đổi thể て cho 20 động từ trong 3 phút. Rèn luyện tốc độ chia thể tự động và chuẩn xác!</p>
+
+                <div class="timed-preset-specs">
+                    <div class="timed-spec-item">
+                        <span class="timed-spec-label">Số câu hỏi</span>
+                        <span class="timed-spec-value">20 câu</span>
+                    </div>
+                    <div class="timed-spec-item">
+                        <span class="timed-spec-label">Thời gian</span>
+                        <span class="timed-spec-value">03:00</span>
+                    </div>
+                    <div class="timed-spec-item">
+                        <span class="timed-spec-label">Hình thức</span>
+                        <span class="timed-spec-value">Chia thể て</span>
+                    </div>
+                    <div class="timed-spec-item">
+                        <span class="timed-spec-label">Chấm điểm</span>
+                        <span class="timed-spec-value">Tức thì</span>
+                    </div>
+                </div>
+
+                <form th:action="@{/practice/timed/start}" method="post" class="timed-preset-footer">
+                    <input type="hidden" name="_csrf" th:if="${_csrf}" th:value="${_csrf}">
+                    <input type="hidden" name="type" value="VERB_TE">
+                    <input type="hidden" name="questionCount" value="20">
+                    <input type="hidden" name="durationMinutes" value="3">
+                    <input type="hidden" name="evaluationMode" value="INSTANT">
+                    <input type="hidden" name="isSpeedPreset" value="true">
+                    <input type="hidden" name="confirmCancelOld" th:value="${activeSession != null ? 'true' : 'false'}">
+
+                    <button type="submit" class="btn-tp-primary">
+                        Bắt đầu Đấu trường thể Te ⚡
                     </button>
                 </form>
             </div>
@@ -150,6 +190,14 @@
                                 <div class="timed-mode-card">
                                     <div class="timed-mode-title">🎯 Trắc nghiệm</div>
                                     <div class="timed-mode-desc">Chọn 1 trong 4 đáp án nhanh bằng phím 1-4</div>
+                                </div>
+                            </label>
+
+                            <label class="timed-mode-label">
+                                <input type="radio" name="type" value="VERB_TE" class="timed-mode-input">
+                                <div class="timed-mode-card">
+                                    <div class="timed-mode-title">🔄 Chia thể Te</div>
+                                    <div class="timed-mode-desc">Nhìn thể Masu và nghĩa, gõ thể て nhanh và chuẩn xác</div>
                                 </div>
                             </label>
                         </div>

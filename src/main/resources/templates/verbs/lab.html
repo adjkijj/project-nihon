@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phòng biến đổi động từ (Lab) - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/verbs-practice.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/verbs-practice.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('verbs')}"></header>
+
+    <main class="vp-container">
+        <!-- Breadcrumb & Header -->
+        <div class="vp-header">
+            <nav class="vp-breadcrumb" aria-label="Breadcrumb">
+                <a th:href="@{/}">Trang chủ</a>
+                <span>/</span>
+                <a th:href="@{/verbs}">Động từ</a>
+                <span>/</span>
+                <span>Phòng biến đổi (Lab)</span>
+            </nav>
+            <h1 class="vp-title">🔬 Phòng biến đổi động từ (Verb Lab)</h1>
+            <p class="vp-subtitle">
+                Nhập bất kỳ động từ nào ở thể ます hoặc thể từ điển để sinh ngay 5 thể cơ bản (Từ điển, Masu, Te, Ta, Nai) cùng âm thanh phát âm và quy tắc chia.
+            </p>
+        </div>
+
+        <!-- Input Card -->
+        <div class="vp-lab-card">
+            <form th:action="@{/verbs/lab}" method="get" class="vp-lab-form">
+                <div>
+                    <label for="labInput" class="vp-option-title u-mb-1">
+                        Từ vựng cần biến đổi:
+                    </label>
+                    <input type="text"
+                           id="labInput"
+                           name="input"
+                           th:value="${input}"
+                           class="form-control"
+                           maxlength="100"
+                           placeholder="Ví dụ: のむ, のみます, たべる, べんきょうする..."
+                           autocomplete="off"
+                           autofocus
+                           required>
+                </div>
+
+                <div>
+                    <label for="groupSelect" class="vp-option-title u-mb-1">
+                        Nhóm động từ:
+                    </label>
+                    <select id="groupSelect" name="group" class="form-control">
+                        <option value="AUTO" th:selected="${selectedGroup == 'AUTO'}">Tự nhận biết (chỉ する/くる)</option>
+                        <option value="1" th:selected="${selectedGroup == '1'}">Nhóm 1 (Godan / 五段)</option>
+                        <option value="2" th:selected="${selectedGroup == '2'}">Nhóm 2 (Ichidan / 一段)</option>
+                        <option value="3" th:selected="${selectedGroup == '3'}">Nhóm 3 (Bất quy tắc / 変格)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <button type="submit" class="vp-btn-submit">
+                        <span>Biến đổi</span> ➔
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Ambiguous Alert (khi để AUTO nhưng không phải suru/kuru) -->
+        <div th:if="${labResult != null and labResult.ambiguous}" class="alert alert-warning u-mb-4" role="alert">
+            <h4 class="u-mb-1">⚠️ Cần xác định nhóm động từ</h4>
+            <p th:text="${labResult.explanation}">
+                Động từ này cần được chỉ định rõ nhóm (Nhóm 1 hoặc Nhóm 2) để chia thể chính xác. Vui lòng chọn nhóm ở ô lựa chọn phía trên và bấm lại "Biến đổi".
+            </p>
+        </div>
+
+        <!-- Error Alert -->
+        <div th:if="${labResult != null and labResult.errorMessage != null and !labResult.errorMessage.isBlank()}"
+             class="alert alert-danger u-mb-4"
+             role="alert"
+             th:text="${labResult.errorMessage}">
+            Có lỗi xảy ra khi xử lý dữ liệu.
+        </div>
+
+        <!-- Kết quả biến đổi (Bảng 5 thể) -->
+        <div th:if="${labResult != null and labResult.hasResult}" class="vp-card u-mb-4">
+            <div class="u-flex u-justify-between u-items-center u-mb-3">
+                <div class="u-flex u-items-center u-gap-2">
+                    <h2 class="vp-card-title u-mb-0">
+                        📑 Kết quả biến đổi cho: <span class="text-primary" th:text="${labResult.input}">nomu</span>
+                    </h2>
+                    <span class="vp-badge" th:text="'Nhóm ' + ${labResult.inferredGroup}">Nhóm 1</span>
+                </div>
+                <div th:if="${labResult.explanation != null and !labResult.explanation.isBlank()}">
+                    <span class="vp-badge" th:text="${labResult.explanation}"></span>
+                </div>
+            </div>
+
+            <!-- Bảng 5 thể -->
+            <table class="vp-table-5forms" aria-label="Bảng 5 thể động từ">
+                <thead>
+                    <tr>
+                        <th scope="col">Thể</th>
+                        <th scope="col">Dạng Kana (Cách đọc)</th>
+                        <th scope="col">Dạng Kanji (Chữ Hán)</th>
+                        <th scope="col">Ứng dụng ngữ pháp phổ biến</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 1. Thể Từ điển -->
+                    <tr>
+                        <th scope="row">
+                            <strong>Thể Từ điển (辞書形)</strong>
+                        </th>
+                        <td>
+                            <div class="vp-cell-jp">
+                                <span th:text="${labResult.dictionaryForm}">のむ</span>
+                                <th:block th:replace="~{fragments/speech :: speakerBtn(${labResult.dictionaryForm})}"></th:block>
+                            </div>
+                        </td>
+                        <td>
+                            <div th:if="${labResult.kanjiDictionaryForm != null and !labResult.kanjiDictionaryForm.isBlank()}" class="vp-cell-jp">
+                                <span th:text="${labResult.kanjiDictionaryForm}">飲む</span>
+                                <th:block th:replace="~{fragments/speech :: speakerBtn(${labResult.kanjiDictionaryForm})}"></th:block>
+                            </div>
+                            <span th:if="${labResult.kanjiDictionaryForm == null or labResult.kanjiDictionaryForm.isBlank()}" class="text-muted">-</span>
+                        </td>
+                        <td class="vp-cell-sub">Dạng nguyên thể, dùng trong văn phong thông thường, tra từ điển, kết hợp ~ことができます, ~まえに.</td>
+                    </tr>
+
+                    <!-- 2. Thể Masu -->
+                    <tr>
+                        <th scope="row">
+                            <strong>Thể Masu (ます形)</strong>
+                        </th>
+                        <td>
+                            <div class="vp-cell-jp">
+                                <span th:text="${labResult.masuForm}">のみます</span>
+                                <th:block th:replace="~{fragments/speech :: speakerBtn(${labResult.masuForm})}"></th:block>
+                            </div>
+                        </td>
+                        <td>
+                            <div th:if="${labResult.kanjiMasuForm != null and !labResult.kanjiMasuForm.isBlank()}" class="vp-cell-jp">
+                                <span th:text="${labResult.kanjiMasuForm}">飲みます</span>
+                                <th:block th:replace="~{fragments/speech :: speakerBtn(${labResult.kanjiMasuForm})}"></th:block>
+                            </div>
+                            <span th:if="${labResult.kanjiMasuForm == null or labResult.kanjiMasuForm.isBlank()}" class="text-muted">-</span>
+                        </td>
+                        <td class="vp-cell-sub">Thể lịch sự thường dùng trong giao tiếp hàng ngày, kết hợp ~ましょう, ~ませんか, ~たいです.</td>
+                    </tr>
+
+                    <!-- 3. Thể Te -->
+                    <tr>
+                        <th scope="row">
+                            <strong>Thể Te (て形)</strong>
+                        </th>
+                        <td>
+                            <div class="vp-cell-jp">
+                                <span th:text="${labResult.teForm}">のんで</span>
+                                <th:block th:replace="~{fragments/speech :: speakerBtn(${labResult.teForm})}"></th:block>
+                            </div>
+                        </td>
+                        <td>
+                            <div th:if="${labResult.kanjiTeForm != null and !labResult.kanjiTeForm.isBlank()}" class="vp-cell-jp">
+                                <span th:text="${labResult.kanjiTeForm}">飲んで</span>
+                                <th:block th:replace="~{fragments/speech :: speakerBtn(${labResult.kanjiTeForm})}"></th:block>
+                            </div>
+                            <span th:if="${labResult.kanjiTeForm == null or labResult.kanjiTeForm.isBlank()}" class="text-muted">-</span>
+                        </td>
+                        <td class="vp-cell-sub">Nối câu, sai khiến (~てください), đang làm (~ています), cho phép (~てもいいです), cấm (~てはいけません).</td>
+                    </tr>
+
+                    <!-- 4. Thể Ta -->
+                    <tr>
+                        <th scope="row">
+                            <strong>Thể Ta (た形)</strong>
+                        </th>
+                        <td>
+                            <div class="vp-cell-jp">
+                                <span th:text="${labResult.taForm}">のんだ</span>
+                                <th:block th:replace="~{fragments/speech :: speakerBtn(${labResult.taForm})}"></th:block>
+                            </div>
+                        </td>
+                        <td>
+                            <div th:if="${labResult.kanjiTaForm != null and !labResult.kanjiTaForm.isBlank()}" class="vp-cell-jp">
+                                <span th:text="${labResult.kanjiTaForm}">飲んだ</span>
+                                <th:block th:replace="~{fragments/speech :: speakerBtn(${labResult.kanjiTaForm})}"></th:block>
+                            </div>
+                            <span th:if="${labResult.kanjiTaForm == null or labResult.kanjiTaForm.isBlank()}" class="text-muted">-</span>
+                        </td>
+                        <td class="vp-cell-sub">Quá khứ dạng thông thường, diễn tả kinh nghiệm (~たことがあります), liệt kê hành động (~たり~たりします).</td>
+                    </tr>
+
+                    <!-- 5. Thể Nai -->
+                    <tr>
+                        <th scope="row">
+                            <strong>Thể Nai (ない形)</strong>
+                        </th>
+                        <td>
+                            <div class="vp-cell-jp">
+                                <span th:text="${labResult.naiForm}">のまない</span>
+                                <th:block th:replace="~{fragments/speech :: speakerBtn(${labResult.naiForm})}"></th:block>
+                            </div>
+                        </td>
+                        <td>
+                            <div th:if="${labResult.kanjiNaiForm != null and !labResult.kanjiNaiForm.isBlank()}" class="vp-cell-jp">
+                                <span th:text="${labResult.kanjiNaiForm}">飲まない</span>
+                                <th:block th:replace="~{fragments/speech :: speakerBtn(${labResult.kanjiNaiForm})}"></th:block>
+                            </div>
+                            <span th:if="${labResult.kanjiNaiForm == null or labResult.kanjiNaiForm.isBlank()}" class="text-muted">-</span>
+                        </td>
+                        <td class="vp-cell-sub">Phủ định dạng thông thường, khuyên đừng làm (~ないでください), phải làm (~なければなりません).</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="u-flex u-justify-between u-items-center u-mt-4">
+            <a th:href="@{/verbs/practice}" class="btn btn-primary">
+                🎯 Sang phòng Luyện chia thể
+            </a>
+            <a th:href="@{/verbs}" class="btn btn-secondary">
+                📑 Quay lại danh sách động từ
+            </a>
+        </div>
+    </main>
+
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+    <th:block th:replace="~{fragments/speech :: scripts}"></th:block>
+</body>
+</html>
+

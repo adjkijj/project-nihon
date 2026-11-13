@@ -215,6 +215,27 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- 5. MODE: VERB_TE (Chia thể Te) -->
+                <div th:if="${question.type != null and question.type.name() == 'VERB_TE'}">
+                    <div class="timed-input-group">
+                        <label for="verbTeAnswer" class="timed-form-label">Thể て tương ứng (Hiragana hoặc Kanji) <span class="required">*</span></label>
+                        <input type="text"
+                               id="verbTeAnswer"
+                               name="answer"
+                               class="timed-text-input"
+                               placeholder="Ví dụ: のんで hoặc 飲んで"
+                               autocomplete="off"
+                               maxlength="100"
+                               autofocus>
+                    </div>
+
+                    <div class="timed-input-actions">
+                        <button type="submit" class="btn-tp-primary">
+                            Trả lời (Enter) →
+                        </button>
+                    </div>
+                </div>
             </form>
         </div>
 

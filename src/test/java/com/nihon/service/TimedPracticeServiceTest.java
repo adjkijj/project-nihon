@@ -75,6 +75,9 @@ class TimedPracticeServiceTest {
     @Mock
     private StudyProgressService studyProgressService;
 
+    @Mock
+    private com.nihon.repository.VerbRepository verbRepository;
+
     @InjectMocks
     private TimedPracticeService timedPracticeService;
 
@@ -316,7 +319,7 @@ class TimedPracticeServiceTest {
             assertThat(r.isCorrect()).isFalse();
         }
         verify(practiceService, never()).checkAnswer(any());
-        verify(studyProgressService, times(10)).recordTimedAttempt(any(), any(), any(), any(), any(), any(), any(), eq("(Chưa trả lời)"), any(), eq(false), any());
+        verify(studyProgressService, times(10)).recordTimedAttempt(any(), any(), any(), any(), any(), any(), any(), any(), eq("(Chưa trả lời)"), any(), eq(false), any());
     }
 
     @Test
