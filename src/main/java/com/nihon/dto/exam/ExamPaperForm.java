@@ -54,6 +54,9 @@ public class ExamPaperForm {
 
     private boolean published;
 
+    @Builder.Default
+    private boolean shuffleChoices = true;
+
     public static ExamPaperForm fromEntity(ExamPaper paper) {
         if (paper == null) {
             return null;
@@ -67,6 +70,7 @@ public class ExamPaperForm {
                 .category(paper.getCategory() != null ? paper.getCategory().name() : ExamCategory.REVIEW.name())
                 .topicId(paper.getTopic() != null ? paper.getTopic().getId() : null)
                 .published(paper.isPublished())
+                .shuffleChoices(paper.isShuffleChoices())
                 .build();
     }
 }

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" th:content="${_csrf}">
+    <title th:text="'Phòng thi: ' + ${paper.title} + ' - Project Nihon'">Phòng thi trực tuyến - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/exams-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/exam.css}">
+    <th:block th:replace="~{fragments/navbar :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/exam-taker.js}" defer></script>
+    <th:block th:replace="~{fragments/navbar :: scripts}"></th:block>
+</head>
+<body class="hide-translation">
+    <th:block th:replace="~{fragments/navbar :: headerNav('exams')}"></th:block>
+
+    <div class="exam-room-container" id="examRoomContainer"
+         th:data-attempt-id="${attempt.attemptId}"
+         th:data-remaining-seconds="${remainingSeconds}"
+         th:data-total-questions="${paper.totalQuestions}">
+
+        <!-- Thanh điều khiển & Trạng thái dính ở đỉnh (Sticky Bar) -->
+        <header class="exam-sticky-bar">
+            <div class="exam-bar-left">
+                <div>
+                    <h1 class="exam-bar-title" th:text="${paper.title}">Đề thi thử JLPT N5</h1>
+                    <div class="exam-bar-meta">
+                        <span class="mr-2" th:text="${paper.code}">N5-01</span>
+                        <span>•</span>
+                        <span class="ml-2" th:text="${paper.totalQuestions} + ' câu hỏi'">30 câu</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="exam-bar-center">
+                <!-- Đồng hồ đếm ngược -->
+                <div class="exam-timer-box" id="examTimerBox" title="Thời gian làm bài còn lại">
+                    <span aria-hidden="true">⏱</span>
+                    <span id="examTimerDisplay">00:00</span>
+                </div>
+
+                <!-- Tự lưu nháp F48 -->
+                <div class="save-status-indicator saved" id="saveStatusIndicator">
+                    ✓ Đã sẵn sàng
+                </div>
+            </div>
+
+            <div class="exam-bar-right">
+                <!-- F47: Bật/tắt dịch tiếng Việt -->
+                <button type="button" class="btn-exam-tool" id="toggleTranslationBtn" title="Bật/Tắt dịch đề bài tiếng Việt (Mặc định tắt)">
+                    <span>👁️</span>
+                    <span>Hiện dịch tiếng Việt</span>
+                </button>
+
+                <!-- Form nộp bài -->
+                <form id="finishExamForm" th:action="@{/exams/attempt/{id}/finish(id=${attempt.attemptId})}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${_csrf}" />
+                    <button type="submit" class="btn-exam-finish" id="submitExamBtn">
+                        <span>📤</span>
+                        <span>Nộp bài thi</span>
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <!-- Bố cục 2 cột: Đề thi & Bảng câu hỏi Palette -->
+        <div class="exam-layout-grid mode-section">
+
+            <!-- Cột trái: Nội dung câu hỏi thi -->
+            <main class="exam-content-area">
+
+                <!-- Bộ chuyển đổi chế độ xem: Từng câu / Cả phần -->
+                <div class="view-mode-selector">
+                    <div class="font-weight-bold text-secondary font-size-sm">Chế độ hiển thị:</div>
+                    <div class="mode-pills">
+                        <button type="button" class="mode-pill" id="btnSingleMode">
+                            <span>📄</span>
+                            <span>Từng câu một</span>
+                        </button>
+                        <button type="button" class="mode-pill active" id="btnSectionMode">
+                            <span>📑</span>
+                            <span>Toàn bộ các phần</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Lặp qua các phần thi -->
+                <div th:each="sec, sStat : ${paper.sections}" class="exam-section-block" th:id="'section-block-' + ${sec.id}">
+                    <div class="exam-section-banner">
+                        <h2 class="exam-section-banner-title" th:text="'Phần ' + ${sStat.count} + ': ' + ${sec.title}">
+                            Phần 1: Kiến thức ngôn ngữ
+                        </h2>
+                        <p class="exam-section-banner-instructions"
+                           th:if="${sec.instructions != null && !sec.instructions.isBlank()}"
+                           th:text="${sec.instructions}">
+                            Hướng dẫn làm bài phần thi...
+                        </p>
+                    </div>
+
+                    <!-- Lặp qua các câu hỏi trong phần thi -->
+                    <article th:each="q : ${sec.questions}"
+                             class="exam-question-card"
+                             th:id="'question-card-' + ${q.id}"
+                             th:data-question-id="${q.id}"
+                             th:data-question-index="${q.questionIndex}">
+
+                        <div class="question-top-bar">
+                            <div class="question-number-badge">
+                                <span class="badge badge-draft" th:text="'Câu ' + ${q.questionIndex}">Câu 1</span>
+                                <span class="question-type-badge" th:text="${q.type.displayName}">Trắc nghiệm</span>
+                                <span class="question-points-badge" th:text="'(' + ${q.points} + ' đ)'">(1.0 đ)</span>
+                            </div>
+                            <div class="question-actions-bar">
+                                <button type="button"
+                                        class="btn-mark-review"
+                                        th:classappend="${attempt.markedForReview.contains(q.id) ? 'marked' : ''}">
+                                    <span th:text="${attempt.markedForReview.contains(q.id) ? '★ Bỏ đánh dấu' : '☆ Đánh dấu xem lại'}">☆ Đánh dấu xem lại</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Đề bài tiếng Nhật & tiếng Việt (F47) -->
+                        <div class="question-prompts">
+                            <div class="prompt-ja-text" th:if="${q.promptJa != null && !q.promptJa.isBlank()}" th:text="${q.promptJa}">
+                                問題の文章がここに入ります。
+                            </div>
+                            <div class="prompt-vi-text" th:if="${q.promptVi != null && !q.promptVi.isBlank()}" th:text="${q.promptVi}">
+                                Bản dịch tiếng Việt của đề bài (có thể ẩn/hiện bằng nút trên thanh công cụ).
+                            </div>
+                        </div>
+
+                        <!-- Vùng trả lời theo dạng câu hỏi -->
+
+                        <!-- Dạng 1: Trắc nghiệm (MULTIPLE_CHOICE) -->
+                        <div th:if="${q.type.name() == 'MULTIPLE_CHOICE'}" class="choices-container">
+                            <label th:each="choice, cStat : ${q.choices}"
+                                   class="choice-option-label"
+                                   th:classappend="${attempt.answers.get(q.id) == (choice.id + '') ? 'selected' : ''}">
+                                <input type="radio"
+                                       class="choice-radio-input"
+                                       th:name="'choice_' + ${q.id}"
+                                       th:value="${choice.id}"
+                                       th:data-choice-order="${choice.sortOrder}"
+                                       th:checked="${attempt.answers.get(q.id) == (choice.id + '')}" />
+                                <span class="choice-index-circle" th:text="${choice.sortOrder}">1</span>
+                                <span class="choice-text" th:text="${choice.text}">Phương án lựa chọn</span>
+                            </label>
+                        </div>
+
+                        <!-- Dạng 2: Gõ câu trả lời (TYPING) -->
+                        <div th:if="${q.type.name() == 'TYPING'}" class="typing-container">
+                            <input type="text"
+                                   class="text-answer-input"
+                                   placeholder="Nhập câu trả lời bằng tiếng Nhật (Hiragana, Katakana hoặc Kanji)..."
+                                   maxlength="1000"
+                                   th:value="${attempt.answers.get(q.id)}" />
+                            <span class="char-counter">Tối đa 1000 ký tự</span>
+                        </div>
+
+                        <!-- Dạng 3: Ghép câu ngôi sao JLPT (ORDERING) -->
+                        <div th:if="${q.type.name() == 'ORDERING'}" class="ordering-container">
+                            <div class="ordering-slots-box">
+                                <span class="text-secondary font-size-sm mr-2">Thứ tự ghép:</span>
+                                <div th:each="choice, cStat : ${q.choices}"
+                                     class="ordering-slot"
+                                     th:data-slot-label="'(' + ${cStat.count} + ')'"
+                                     th:classappend="${cStat.count == 3 ? 'star-slot' : ''}">
+                                    <span class="slot-text" th:text="'(' + ${cStat.count} + ')'">(1)</span>
+                                </div>
+                            </div>
+
+                            <div class="ordering-pieces-grid">
+                                <button type="button"
+                                        th:each="choice : ${q.choices}"
+                                        class="ordering-piece-btn"
+                                        th:data-choice-id="${choice.id}"
+                                        th:data-choice-text="${choice.text}">
+                                    <span class="badge badge-draft" th:text="${choice.sortOrder}">1</span>
+                                    <span th:text="${choice.text}">mảnh từ</span>
+                                </button>
+                            </div>
+
+                            <div class="ordering-control-actions">
+                                <button type="button" class="btn btn-secondary font-size-sm btn-reset-ordering">
+                                    🔄 Ghép lại từ đầu
+                                </button>
+                                <input type="hidden"
+                                       class="ordering-hidden-input"
+                                       th:value="${attempt.answers.get(q.id)}" />
+                            </div>
+                        </div>
+
+                        <!-- Dạng 4 & 5: Dịch câu & Tự luận (TRANSLATION, ESSAY) -->
+                        <div th:if="${q.type.name() == 'TRANSLATION' or q.type.name() == 'ESSAY'}" class="essay-container">
+                            <textarea class="text-answer-input textarea-answer-input"
+                                      placeholder="Nhập bài làm chi tiết tại đây (tối đa 1000 ký tự)..."
+                                      maxlength="1000"
+                                      th:text="${attempt.answers.get(q.id)}"></textarea>
+                            <span class="char-counter">Tối đa 1000 ký tự</span>
+                        </div>
+
+                        <!-- Thanh điều hướng ở chế độ từng câu (Single Mode) -->
+                        <div class="single-mode-nav-bar">
+                            <button type="button" class="btn-nav-step btn-prev-question">
+                                <span>←</span>
+                                <span>Câu trước</span>
+                            </button>
+                            <span class="font-size-sm text-secondary font-weight-bold" th:text="${q.questionIndex} + ' / ' + ${paper.totalQuestions}">1 / 30</span>
+                            <button type="button" class="btn-nav-step btn-next-question">
+                                <span>Câu sau</span>
+                                <span>→</span>
+                            </button>
+                        </div>
+                    </article>
+                </div>
+            </main>
+
+            <!-- Cột phải: Bảng điều hướng câu hỏi (F46 - Palette) -->
+            <aside class="exam-palette-area">
+                <div class="exam-palette-card">
+                    <div class="palette-header">
+                        <h3 class="palette-title">Danh sách câu hỏi</h3>
+                        <div class="palette-progress">
+                            <span id="paletteAnsweredCount" th:text="${attempt.answeredCount}">0</span>
+                            <span>/</span>
+                            <span th:text="${paper.totalQuestions}">30</span>
+                        </div>
+                    </div>
+
+                    <!-- Chú thích màu sắc -->
+                    <div class="palette-legend">
+                        <div class="legend-item">
+                            <span class="legend-dot unanswered"></span>
+                            <span>Chưa làm</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot answered"></span>
+                            <span>Đã làm</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot review"></span>
+                            <span>Xem lại ★</span>
+                        </div>
+                    </div>
+
+                    <!-- Lưới các câu hỏi theo phần thi -->
+                    <div th:each="sec, sStat : ${paper.sections}" class="palette-section-group">
+                        <div class="palette-section-title" th:text="'Phần ' + ${sStat.count} + ': ' + ${sec.title}">
+                            Phần 1
+                        </div>
+                        <div class="palette-grid">
+                            <button type="button"
+                                    th:each="q : ${sec.questions}"
+                                    class="palette-btn"
+                                    th:id="'palette-btn-' + ${q.id}"
+                                    th:classappend="${(attempt.answers.containsKey(q.id) && !#strings.isEmpty(attempt.answers.get(q.id)) ? 'answered ' : '') + (attempt.markedForReview.contains(q.id) ? 'review' : '')}"
+                                    th:text="${q.questionIndex}">
+                                1
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+</body>
+</html>

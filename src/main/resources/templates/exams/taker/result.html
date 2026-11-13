@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Kết quả nộp bài: ' + ${paper.title} + ' - Project Nihon'">Kết quả nộp bài thi - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/exams-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/exam.css}">
+    <th:block th:replace="~{fragments/navbar :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <th:block th:replace="~{fragments/navbar :: scripts}"></th:block>
+</head>
+<body>
+    <th:block th:replace="~{fragments/navbar :: headerNav('exams')}"></th:block>
+
+    <main class="container">
+        <!-- Thông báo Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success mt-4" th:text="${successMessage}">
+            Bạn đã nộp bài thi thành công!
+        </div>
+
+        <div class="exam-result-card">
+            <div class="result-icon-success">
+                <span th:if="${attempt.status.name() == 'FINISHED'}">🎉</span>
+                <span th:if="${attempt.status.name() == 'EXPIRED'}">⏱️</span>
+            </div>
+
+            <div class="mb-3">
+                <span class="badge badge-published" th:if="${attempt.status.name() == 'FINISHED'}">ĐÃ NỘP BÀI THÀNH CÔNG</span>
+                <span class="badge badge-draft text-warning" th:if="${attempt.status.name() == 'EXPIRED'}">ĐÃ HẾT GIỜ LÀM BÀI</span>
+            </div>
+
+            <h1 class="page-title h2 mb-2" th:text="${paper.title}">Đề thi thử JLPT N5 - Đề số 1</h1>
+            <p class="text-secondary mb-4">
+                Hệ thống đã tiếp nhận và ghi nhận toàn bộ câu trả lời của bạn trong phiên thi này.
+            </p>
+
+            <!-- Thống kê làm bài -->
+            <div class="exam-meta-grid mb-4">
+                <div class="exam-meta-item">
+                    <div class="exam-meta-label">Mã đề thi</div>
+                    <div class="exam-meta-val font-size-md text-accent" th:text="${paper.code}">N5-01</div>
+                </div>
+                <div class="exam-meta-item">
+                    <div class="exam-meta-label">Tổng số câu hỏi</div>
+                    <div class="exam-meta-val" th:text="${paper.totalQuestions}">30</div>
+                </div>
+                <div class="exam-meta-item">
+                    <div class="exam-meta-label">Số câu đã làm</div>
+                    <div class="exam-meta-val text-success" th:text="${attempt.answeredCount}">28</div>
+                </div>
+                <div class="exam-meta-item">
+                    <div class="exam-meta-label">Số câu chưa làm</div>
+                    <div class="exam-meta-val" th:classappend="${attempt.unansweredCount > 0 ? 'text-danger' : 'text-secondary'}"
+                         th:text="${attempt.unansweredCount}">2</div>
+                </div>
+            </div>
+
+            <!-- Ghi chú chuyển tiếp Prompt 21 -->
+            <div class="alert alert-info text-left mb-4 font-size-sm">
+                <strong>ℹ️ Thông tin chấm điểm:</strong>
+                Hệ thống lưu giữ câu trả lời của bạn an toàn. Chức năng phân tích điểm số chi tiết từng phần, so sánh đáp án đúng và lời giải thích sẽ được kích hoạt ở giai đoạn tiếp theo.
+            </div>
+
+            <div class="d-flex justify-content-center gap-3">
+                <a th:href="@{/exams}" class="btn btn-primary font-size-md px-4 py-2">
+                    <span>📚</span>
+                    <span>Quay lại danh sách đề thi</span>
+                </a>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

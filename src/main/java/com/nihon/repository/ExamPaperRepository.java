@@ -33,5 +33,12 @@ public interface ExamPaperRepository extends JpaRepository<ExamPaper, Long> {
             "LEFT JOIN FETCH p.sections s " +
             "WHERE p.id = :id")
     Optional<ExamPaper> findByIdWithSections(@Param("id") Long id);
+
+    @Query("SELECT p FROM ExamPaper p WHERE p.published = true AND " +
+            "(:category IS NULL OR p.category = :category) " +
+            "ORDER BY p.createdAt DESC")
+    java.util.List<ExamPaper> findPublishedExams(@Param("category") ExamCategory category);
+
+    Optional<ExamPaper> findByCodeAndPublishedTrue(String code);
 }
 

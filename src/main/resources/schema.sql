@@ -141,6 +141,7 @@ CREATE TABLE IF NOT EXISTS exam_paper (
     category VARCHAR(40) NOT NULL,
     topic_id BIGINT NULL,
     published BOOLEAN NOT NULL DEFAULT FALSE,
+    shuffle_choices BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
     PRIMARY KEY (id),

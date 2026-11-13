@@ -75,6 +75,10 @@ public class ExamPaper {
     @Column(name = "published", nullable = false)
     private boolean published = false;
 
+    @Builder.Default
+    @Column(name = "shuffle_choices", nullable = false)
+    private boolean shuffleChoices = true;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

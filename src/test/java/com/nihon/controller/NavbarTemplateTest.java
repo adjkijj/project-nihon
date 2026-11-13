@@ -73,7 +73,7 @@ class NavbarTemplateTest {
         }
 
         assertThat(templateFiles).isNotEmpty();
-        assertThat(templateFiles.size()).isEqualTo(46);
+        assertThat(templateFiles.size()).isEqualTo(50);
 
         for (Path file : templateFiles) {
             String templateContent = Files.readString(file, StandardCharsets.UTF_8);

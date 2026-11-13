@@ -107,6 +107,7 @@ public class ExamService {
                 .category(category)
                 .topic(topic)
                 .published(form.isPublished())
+                .shuffleChoices(form.isShuffleChoices())
                 .build();
 
         return paperRepository.save(paper);
@@ -133,6 +134,7 @@ public class ExamService {
         paper.setCategory(category);
         paper.setTopic(topic);
         paper.setPublished(form.isPublished());
+        paper.setShuffleChoices(form.isShuffleChoices());
 
         return paperRepository.save(paper);
     }
