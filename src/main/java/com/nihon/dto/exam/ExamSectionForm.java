@@ -21,7 +21,6 @@ public class ExamSectionForm {
 
     private Long id;
 
-    @NotNull(message = "Mã đề thi không được để trống.")
     private Long paperId;
 
     @NotBlank(message = "Tiêu đề phần thi không được để trống.")

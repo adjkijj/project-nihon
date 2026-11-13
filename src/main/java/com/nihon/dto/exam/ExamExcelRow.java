@@ -62,6 +62,14 @@ public class ExamExcelRow {
     @Builder.Default
     private List<String> errors = new ArrayList<>();
 
+    public int getRowNumber() {
+        return rowNum;
+    }
+
+    public String getType() {
+        return questionType;
+    }
+
     public boolean hasErrors() {
         return errors != null && !errors.isEmpty();
     }
