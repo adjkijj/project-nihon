@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhập Đề thi từ Excel - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/exams-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/exams-admin.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('exams')}"></header>
+
+    <main class="exam-admin-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="page-title">
+                <h1>
+                    <span class="title-badge">📥</span>
+                    <span>Nhập Đề thi từ Tệp Excel</span>
+                </h1>
+                <p>Quy trình kiểm tra hai bước: Xem trước và thẩm định toàn bộ dữ liệu trước khi lưu vào hệ thống</p>
+            </div>
+            <div class="action-buttons">
+                <a th:href="@{/exams/admin/template}" class="btn btn-outline" title="Tải tệp Excel mẫu">📑 Tải file mẫu ExamTemplate.xlsx</a>
+                <a th:href="@{/exams/admin}" class="btn btn-secondary">Quay lại danh sách</a>
+            </div>
+        </div>
+
+        <!-- Error Messages -->
+        <div th:if="${errorMessage}" class="alert alert-error" role="alert">
+            <span class="alert-icon">⚠️</span>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi trong quá trình đọc tệp Excel.</span>
+        </div>
+
+        <!-- Upload & Preview Card -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <span>📁</span>
+                    <span>Bước 1: Chọn tệp Excel (.xlsx) chứa dữ liệu đề thi</span>
+                </h2>
+            </div>
+
+            <form th:action="@{/exams/admin/import/preview}"
+                  method="post"
+                  enctype="multipart/form-data"
+                  class="exam-form">
+
+                <div class="file-dropzone" id="examDropzone">
+                    <label for="excelFileInput" class="cursor-pointer font-weight-bold">
+                        Nhấp vào đây để chọn tệp tin hoặc kéo thả tệp Excel (.xlsx) vào khung này:
+                    </label>
+                    <div>
+                        <input type="file" id="excelFileInput" name="file" accept=".xlsx" required class="file-input" />
+                    </div>
+                    <p class="file-hint">Định dạng hỗ trợ: <strong>.xlsx</strong> (dung lượng tối đa 5MB, tối đa 200 câu hỏi mỗi đề). Các tệp macro (.xlsm) sẽ bị từ chối.</p>
+                </div>
+
+                <div class="action-buttons justify-content-end">
+                    <button type="submit" class="btn btn-primary">
+                        <span>👁️ Xem trước &amp; Thẩm định dữ liệu</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Specifications Card -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <span>📋</span>
+                    <span>Quy chuẩn cấu trúc Sheet "Exam" (15 Cột A-O)</span>
+                </h3>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Cột</th>
+                            <th scope="col">Tên trường</th>
+                            <th scope="col">Quy cách &amp; Kế thừa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>A - D</strong></td>
+                            <td>Mã đề, Tiêu đề, Thời lượng, Phân loại</td>
+                            <td>Chỉ cần điền ở hàng đầu tiên của đề thi; các hàng tiếp theo để trống sẽ tự động kế thừa.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>E</strong></td>
+                            <td>Tiêu đề phần thi (Section Title)</td>
+                            <td>Điền ở hàng bắt đầu phần thi mới; các hàng tiếp theo trong phần để trống sẽ tự động kế thừa.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>F</strong></td>
+                            <td>Loại câu hỏi (Question Type)</td>
+                            <td>MULTIPLE_CHOICE, TYPING, ORDERING, TRANSLATION, ESSAY.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>G</strong></td>
+                            <td>Điểm số (Points)</td>
+                            <td>Số thập phân từ 0.01 đến 100.00 (mặc định 1.00 điểm).</td>
+                        </tr>
+                        <tr>
+                            <td><strong>H - I</strong></td>
+                            <td>Đề bài tiếng Nhật &amp; Tiếng Việt</td>
+                            <td>Nội dung câu hỏi hoặc hướng dẫn làm bài.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>J - M</strong></td>
+                            <td>Lựa chọn 1 đến 4 (Choices)</td>
+                            <td>4 phương án trắc nghiệm hoặc 4 mảnh từ cho câu ghép thứ tự.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>N</strong></td>
+                            <td>Đáp án đúng (Correct Answer)</td>
+                            <td>Trắc nghiệm: số 1-4; Tự luận: văn bản; Ghép câu: dãy thứ tự như <code>1,3,2,4</code>.</td>
+                        </tr>
+                        <tr>
+                            <td><strong>O</strong></td>
+                            <td>Giải thích (Explanation)</td>
+                            <td>Giải thích đáp án; đối với câu sao JLPT thêm tiền tố <code>STAR:X</code> (ví dụ: <code>STAR:3</code>).</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
+

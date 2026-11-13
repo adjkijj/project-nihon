@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Xem trước: ' + ${paper.title} + ' - Project Nihon'">Xem trước Đề thi - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/exams-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/exams-admin.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('exams')}"></header>
+
+    <main class="exam-admin-container">
+        <!-- Top Toolbar (Hidden on Print) -->
+        <div class="page-header btn-print-hide">
+            <div class="page-title">
+                <h1>
+                    <span class="title-badge">👁️</span>
+                    <span>Xem trước Đề thi Hoàn chỉnh</span>
+                </h1>
+                <p>Màn hình mô phỏng bài thi thực tế và duyệt nội dung dành cho Giáo viên / Quản trị viên</p>
+            </div>
+            <div class="action-buttons">
+                <button type="button" class="btn btn-outline" data-action="print">🖨️ In đề thi</button>
+                <a th:href="@{/exams/admin/{id}/export(id=${paper.id})}" class="btn btn-secondary">📤 Xuất Excel</a>
+                <a th:href="@{/exams/admin/{id}(id=${paper.id})}" class="btn btn-primary">Quay lại quản trị đề</a>
+            </div>
+        </div>
+
+        <!-- Simulated Paper Sheet -->
+        <article class="exam-paper-sheet">
+            <!-- Sheet Header -->
+            <header class="paper-sheet-header">
+                <h1 class="paper-sheet-title" th:text="${paper.title}">Đề thi năng lực tiếng Nhật N5</h1>
+                <div class="paper-sheet-meta">
+                    <span>Mã đề: <strong th:text="${paper.code}">N5-01</strong></span>
+                    <span>Thời gian làm bài: <strong th:text="${paper.durationMinutes}">60</strong> phút</span>
+                    <span>Tổng số câu: <strong th:text="${paper.totalQuestions}">20</strong> câu</span>
+                    <span>Tổng điểm: <strong th:text="${paper.totalPoints}">25.0</strong> đ</span>
+                </div>
+            </header>
+
+            <!-- Sections -->
+            <div th:if="${paper.sections.isEmpty()}" class="p-4 text-center text-muted">
+                <p>Đề thi này chưa có phần thi hoặc câu hỏi nào.</p>
+            </div>
+
+            <section th:each="section : ${paper.sections}" class="paper-section">
+                <h2 class="paper-section-title" th:text="'Phần ' + ${section.sortOrder} + ': ' + ${section.title}">Phần 1: Kiến thức ngôn ngữ</h2>
+
+                <div th:if="${section.instructions != null && !section.instructions.isBlank()}"
+                     class="paper-section-instructions">
+                    <span>Hướng dẫn: </span>
+                    <span th:text="${section.instructions}">Đọc kỹ đoạn văn và chọn phương án đúng nhất...</span>
+                </div>
+
+                <!-- Questions inside Section -->
+                <div th:each="q : ${section.questions}" class="paper-question">
+                    <div class="paper-question-header">
+                        <span class="paper-question-number" th:text="'Câu ' + ${q.sortOrder} + '.'">Câu 1.</span>
+                        <div class="flex-1">
+                            <div th:if="${q.promptJa != null && !q.promptJa.isBlank()}"
+                                 class="paper-question-ja"
+                                 th:text="${q.promptJa}">問題の日本語テキスト</div>
+                            <div th:if="${q.promptVi != null && !q.promptVi.isBlank()}"
+                                 class="paper-question-vi"
+                                 th:text="${q.promptVi}">Đề bài tiếng Việt hoặc giải nghĩa</div>
+                        </div>
+                        <span class="badge badge-draft" th:text="${q.points} + ' đ'">1.0 đ</span>
+                    </div>
+
+                    <!-- MULTIPLE_CHOICE Preview -->
+                    <div th:if="${q.type.name() == 'MULTIPLE_CHOICE'}" class="paper-choices-grid">
+                        <div th:each="c, cStat : ${q.choices}"
+                             class="paper-choice-item"
+                             th:classappend="${c.correct} ? 'correct' : ''">
+                            <span class="choice-label" th:text="${cStat.index + 1}">1</span>
+                            <span th:text="${c.text}">Phương án A</span>
+                            <span th:if="${c.correct}" class="ml-auto text-success font-weight-bold">✓ (Đáp án)</span>
+                        </div>
+                    </div>
+
+                    <!-- ORDERING Preview (Star Pattern) -->
+                    <div th:if="${q.type.name() == 'ORDERING'}">
+                        <div class="paper-star-slots">
+                            <div th:each="ak : ${q.answerKeys}" th:if="${ak.answerText.startsWith('STAR:')}" class="d-flex gap-2">
+                                <span class="paper-slot">① ____</span>
+                                <span class="paper-slot" th:classappend="${ak.answerText.endsWith('2')} ? 'star' : ''">② <span th:if="${ak.answerText.endsWith('2')}">★</span></span>
+                                <span class="paper-slot" th:classappend="${ak.answerText.endsWith('3')} ? 'star' : ''">③ <span th:if="${ak.answerText.endsWith('3')}">★</span></span>
+                                <span class="paper-slot" th:classappend="${ak.answerText.endsWith('4')} ? 'star' : ''">④ <span th:if="${ak.answerText.endsWith('4')}">★</span></span>
+                            </div>
+                        </div>
+                        <div class="paper-choices-grid">
+                            <div th:each="c, cStat : ${q.choices}" class="paper-choice-item">
+                                <span class="choice-label" th:text="${cStat.index + 1}">1</span>
+                                <span th:text="${c.text}">Mảnh từ</span>
+                            </div>
+                        </div>
+                        <div th:each="ak : ${q.answerKeys}" class="paper-preview-key">
+                            <span th:if="${ak.answerText.startsWith('ORDER:')}">
+                                Thứ tự đúng: <strong th:text="${ak.answerText.substring(6)}">1,3,2,4</strong>
+                            </span>
+                            <span th:if="${ak.answerText.startsWith('STAR:')}" class="ml-3">
+                                Vị trí ngôi sao ★: <strong th:text="${ak.answerText.substring(5)}">3</strong>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- TYPING Preview -->
+                    <div th:if="${q.type.name() == 'TYPING'}">
+                        <div class="paper-preview-key">
+                            <span>Đáp án chuẩn: </span>
+                            <span th:each="ak, aStat : ${q.answerKeys}" th:if="${ak.kind.name() == 'ACCEPTED'}">
+                                <strong th:text="${ak.answerText}">nihon</strong><span th:unless="${aStat.last}"> | </span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- TRANSLATION Preview -->
+                    <div th:if="${q.type.name() == 'TRANSLATION'}">
+                        <div th:each="ak : ${q.answerKeys}" class="paper-preview-key">
+                            <div th:if="${ak.kind.name() == 'SAMPLE'}">
+                                <span>Bản dịch mẫu: </span>
+                                <strong th:text="${ak.answerText}">Câu mẫu</strong>
+                            </div>
+                            <div th:if="${ak.kind.name() == 'ACCEPTED'}">
+                                <span>Đáp án chấp nhận: </span>
+                                <strong th:text="${ak.answerText}">Đáp án</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ESSAY Preview -->
+                    <div th:if="${q.type.name() == 'ESSAY'}">
+                        <div th:each="ak : ${q.answerKeys}" class="paper-preview-key">
+                            <div th:if="${ak.kind.name() == 'SAMPLE'}">
+                                <span>Bài mẫu: </span>
+                                <div class="mt-1" th:text="${ak.answerText}">Đoạn văn mẫu...</div>
+                            </div>
+                            <div th:if="${ak.kind.name() == 'KEYWORD'}" class="mt-1">
+                                <span>Từ khóa: </span>
+                                <span class="badge badge-draft" th:text="${ak.answerText}">từ khóa</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Explanation -->
+                    <div th:if="${q.explanation != null && !q.explanation.isBlank()}" class="paper-preview-explanation">
+                        <strong>💡 Giải thích chi tiết: </strong>
+                        <span th:text="${q.explanation}">Giải thích...</span>
+                    </div>
+                </div>
+            </section>
+        </article>
+    </main>
+</body>
+</html>
+

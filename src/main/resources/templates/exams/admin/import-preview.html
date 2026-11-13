@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết Quả Xem Trước Đề thi - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/exams-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/exams-admin.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('exams')}"></header>
+
+    <main class="exam-admin-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="page-title">
+                <h1>
+                    <span class="title-badge">📊</span>
+                    <span>Bước 2: Kết Quả Xem Trước &amp; Thẩm Định Đề Thi</span>
+                </h1>
+                <p>Kiểm tra kỹ thông tin đề thi và danh sách câu hỏi trước khi ghi vào cơ sở dữ liệu</p>
+            </div>
+            <div class="action-buttons">
+                <a th:href="@{/exams/admin/import}" class="btn btn-secondary">Chọn tệp khác</a>
+                <a th:href="@{/exams/admin}" class="btn btn-secondary">Quay lại danh sách</a>
+            </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="metrics-grid">
+            <div class="metric-box">
+                <div class="metric-value" th:text="${report.paperCode}">MÃ ĐỀ</div>
+                <div class="metric-label">Mã đề thi</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-value" th:text="${report.category}">LOẠI</div>
+                <div class="metric-label">Phân loại</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-value"><span th:text="${report.durationMinutes}">60</span>'</div>
+                <div class="metric-label">Thời lượng</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-value" th:text="${report.sectionsCount}">0</div>
+                <div class="metric-label">Số phần thi</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-value" th:text="${report.questionsCount}">0</div>
+                <div class="metric-label">Tổng số câu</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-value" th:classappend="${!report.errors.isEmpty()} ? 'error' : ''" th:text="${report.errors.size()}">0</div>
+                <div class="metric-label">Lỗi phát hiện</div>
+            </div>
+        </div>
+
+        <!-- Errors List (If invalid) -->
+        <div class="card" th:if="${!report.errors.isEmpty()}">
+            <div class="card-header">
+                <h2 class="card-title text-danger">
+                    <span>❌</span>
+                    <span>Phát hiện <strong th:text="${report.errors.size()}">1</strong> lỗi cần khắc phục</span>
+                </h2>
+            </div>
+            <p class="text-secondary mb-3">
+                Do nguyên tắc toàn vẹn dữ liệu, toàn bộ giao dịch nhập sẽ bị từ chối nếu có bất kỳ lỗi nào. Vui lòng sửa lại tệp Excel theo danh sách bên dưới và tải lên lại:
+            </p>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Hàng</th>
+                            <th scope="col">Cột</th>
+                            <th scope="col">Chi tiết lỗi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="err : ${report.errors}">
+                            <td>
+                                <span class="badge badge-draft" th:text="'Hàng ' + ${err.rowNumber}">Hàng 2</span>
+                            </td>
+                            <td>
+                                <strong class="text-accent" th:text="${err.column}">Cột</strong>
+                            </td>
+                            <td class="text-danger" th:text="${err.message}">Mô tả chi tiết lỗi</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="action-buttons mt-4 justify-content-end">
+                <a th:href="@{/exams/admin/import}" class="btn btn-primary">🔄 Tải lên tệp Excel đã sửa</a>
+            </div>
+        </div>
+
+        <!-- Valid State & Preview Table -->
+        <div class="card" th:if="${report.valid}">
+            <div class="card-header">
+                <h2 class="card-title text-success">
+                    <span>✅</span>
+                    <span>Tệp dữ liệu hợp lệ: <strong th:text="${report.paperTitle}">Tên đề thi</strong></span>
+                </h2>
+            </div>
+            <p class="text-secondary mb-3">
+                Tất cả các dòng dữ liệu đều vượt qua các bước kiểm tra cú pháp và ràng buộc nghiệp vụ. Nhấp vào nút <strong>"Xác nhận nhập"</strong> bên dưới để hoàn tất lưu đề thi vào hệ thống.
+            </p>
+
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Hàng</th>
+                            <th scope="col">Phần thi</th>
+                            <th scope="col">Loại câu</th>
+                            <th scope="col">Điểm</th>
+                            <th scope="col">Đề bài tiếng Nhật / Việt</th>
+                            <th scope="col">Đáp án đúng</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="row : ${report.rows}">
+                            <td th:text="${row.rowNumber}">2</td>
+                            <td th:text="${row.sectionTitle}">Phần 1</td>
+                            <td>
+                                <span class="badge badge-draft" th:text="${row.type}">MULTIPLE_CHOICE</span>
+                            </td>
+                            <td><span th:text="${row.points}">1.0</span> đ</td>
+                            <td>
+                                <div th:if="${row.promptJa != null}" class="font-japanese font-weight-bold" th:text="${row.promptJa}">問題</div>
+                                <div th:if="${row.promptVi != null}" class="text-secondary font-size-sm" th:text="${row.promptVi}">Đề bài VI</div>
+                            </td>
+                            <td>
+                                <code th:text="${row.correctAnswer}">1</code>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Commit Form -->
+            <form th:action="@{/exams/admin/import/commit}" method="post" class="mt-4">
+                <input type="hidden" name="token" th:value="${report.token}" />
+                <div class="action-buttons justify-content-end">
+                    <a th:href="@{/exams/admin/import}" class="btn btn-secondary">Hủy bỏ</a>
+                    <button type="submit" class="btn btn-primary">
+                        <span>🚀 Xác nhận nhập đề thi vào hệ thống</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+</body>
+</html>
+

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${isEdit ? 'Chỉnh sửa Đề thi' : 'Tạo Đề thi Mới'} + ' - Project Nihon'">Thông tin Đề thi - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/exams-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/exams-admin.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('exams')}"></header>
+
+    <main class="exam-admin-container">
+        <!-- Breadcrumb / Header -->
+        <div class="page-header">
+            <div class="page-title">
+                <h1>
+                    <span class="title-badge">考</span>
+                    <span th:text="${isEdit ? 'Chỉnh sửa Đề thi' : 'Tạo Đề thi Mới'}">Tạo Đề thi Mới</span>
+                </h1>
+                <p>Thiết lập thông tin chung, mã đề, thời lượng và phân loại kỳ thi</p>
+            </div>
+            <div class="action-buttons">
+                <a th:href="@{/exams/admin}" class="btn btn-secondary">Quay lại danh sách</a>
+            </div>
+        </div>
+
+        <!-- Error Alert -->
+        <div th:if="${errorMessage}" class="alert alert-error" role="alert">
+            <span class="alert-icon">⚠️</span>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi khi lưu thông tin.</span>
+        </div>
+
+        <!-- Form Card -->
+        <div class="card form-card">
+            <form th:action="${isEdit ? '/exams/admin/' + form.id + '/edit' : '/exams/admin/new'}"
+                  th:object="${form}"
+                  method="post"
+                  class="exam-form">
+
+                <input type="hidden" th:field="*{id}" th:if="${isEdit}" />
+
+                <div class="form-grid-2">
+                    <!-- Mã đề thi (code) -->
+                    <div class="form-group">
+                        <label for="code">Mã đề thi <span class="text-danger">*</span></label>
+                        <input type="text" id="code" th:field="*{code}" class="form-control"
+                               placeholder="Ví dụ: N5-MIDTERM-01" required maxlength="50" />
+                        <div class="field-error" th:if="${#fields.hasErrors('code')}" th:errors="*{code}">Lỗi mã đề</div>
+                        <small class="form-help">Chữ cái tiếng Anh, số, dấu gạch nối hoặc gạch dưới (tối đa 50 ký tự, không trùng).</small>
+                    </div>
+
+                    <!-- Thời lượng (phút) -->
+                    <div class="form-group">
+                        <label for="durationMinutes">Thời lượng làm bài (phút) <span class="text-danger">*</span></label>
+                        <input type="number" id="durationMinutes" th:field="*{durationMinutes}" class="form-control"
+                               min="1" max="300" required />
+                        <div class="field-error" th:if="${#fields.hasErrors('durationMinutes')}" th:errors="*{durationMinutes}">Lỗi thời lượng</div>
+                        <small class="form-help">Thời gian làm bài từ 1 đến 300 phút.</small>
+                    </div>
+                </div>
+
+                <!-- Tên đề thi (title) -->
+                <div class="form-group mt-3">
+                    <label for="title">Tên đề thi <span class="text-danger">*</span></label>
+                    <input type="text" id="title" th:field="*{title}" class="form-control"
+                           placeholder="Ví dụ: Đề thi giữa kỳ tiếng Nhật N5 - Khóa 2026" required maxlength="255" />
+                    <div class="field-error" th:if="${#fields.hasErrors('title')}" th:errors="*{title}">Lỗi tên đề thi</div>
+                </div>
+
+                <div class="form-grid-2 mt-3">
+                    <!-- Phân loại đề (category) -->
+                    <div class="form-group">
+                        <label for="category">Phân loại đề <span class="text-danger">*</span></label>
+                        <select id="category" th:field="*{category}" class="form-control" required>
+                            <option th:each="cat : ${categories}"
+                                    th:value="${cat.name()}"
+                                    th:text="${cat.displayName}">Giữa kỳ</option>
+                        </select>
+                        <div class="field-error" th:if="${#fields.hasErrors('category')}" th:errors="*{category}">Lỗi phân loại</div>
+                    </div>
+
+                    <!-- Chủ đề liên quan (topicId) -->
+                    <div class="form-group">
+                        <label for="topicId">Chủ đề bài học (tùy chọn)</label>
+                        <select id="topicId" th:field="*{topicId}" class="form-control">
+                            <option value="">-- Không gắn chủ đề cụ thể --</option>
+                            <option th:each="top : ${topics}"
+                                    th:value="${top.id}"
+                                    th:text="${top.name}">Bài 1 - Giới thiệu bản thân</option>
+                        </select>
+                        <div class="field-error" th:if="${#fields.hasErrors('topicId')}" th:errors="*{topicId}">Lỗi chủ đề</div>
+                    </div>
+                </div>
+
+                <!-- Mô tả đề thi (description) -->
+                <div class="form-group mt-3">
+                    <label for="description">Mô tả hoặc ghi chú đề thi</label>
+                    <textarea id="description" th:field="*{description}" class="form-control" rows="3"
+                              placeholder="Thông tin thêm về cấu trúc, mục tiêu hoặc đối tượng bài thi..." maxlength="1000"></textarea>
+                    <div class="field-error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">Lỗi mô tả</div>
+                </div>
+
+                <!-- Trạng thái xuất bản (published) -->
+                <div class="form-group mt-3">
+                    <label class="d-flex align-items-center gap-2 cursor-pointer">
+                        <input type="checkbox" th:field="*{published}" class="checkbox-control" />
+                        <span>Xuất bản đề thi (học viên có thể xem và làm bài thi sau khi xuất bản)</span>
+                    </label>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="action-buttons mt-4 justify-content-end">
+                    <a th:href="${isEdit ? '/exams/admin/' + form.id : '/exams/admin'}" class="btn btn-secondary">Hủy bỏ</a>
+                    <button type="submit" class="btn btn-primary">
+                        <span th:text="${isEdit ? '💾 Cập nhật đề thi' : '➕ Tạo đề thi'}">Lưu đề thi</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+</body>
+</html>
+

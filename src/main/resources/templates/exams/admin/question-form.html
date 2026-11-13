@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${isEdit ? 'Chỉnh sửa Câu hỏi' : 'Thêm Câu hỏi Mới'} + ' - Quản trị Đề thi'">Câu hỏi thi - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/exams-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/exams-admin.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('exams')}"></header>
+
+    <main class="exam-admin-container">
+        <!-- Header -->
+        <div class="page-header">
+            <div class="page-title">
+                <h1>
+                    <span class="title-badge">問</span>
+                    <span th:text="${isEdit ? 'Chỉnh sửa Câu hỏi' : 'Thêm Câu hỏi Mới'}">Thêm Câu hỏi Mới</span>
+                </h1>
+                <p>Thiết lập nội dung câu hỏi, loại bài kiểm tra, barem đáp án và thang điểm</p>
+            </div>
+            <div class="action-buttons">
+                <a th:href="@{/exams/admin/{id}(id=${paperId})}" class="btn btn-secondary">Quay lại đề thi</a>
+            </div>
+        </div>
+
+        <!-- Error Alert -->
+        <div th:if="${errorMessage}" class="alert alert-error" role="alert">
+            <span class="alert-icon">⚠️</span>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi khi lưu câu hỏi.</span>
+        </div>
+
+        <!-- Form Card -->
+        <div class="card form-card">
+            <form th:action="${isEdit ? '/exams/admin/questions/' + form.id + '/edit' : '/exams/admin/sections/' + sectionId + '/questions/new'}"
+                  th:object="${form}"
+                  method="post"
+                  class="exam-form">
+
+                <input type="hidden" name="paperId" th:value="${paperId}" />
+                <input type="hidden" th:field="*{sectionId}" />
+                <input type="hidden" th:field="*{id}" th:if="${isEdit}" />
+
+                <div class="form-grid-2">
+                    <!-- Loại câu hỏi (type) -->
+                    <div class="form-group">
+                        <label for="questionTypeSelect">Loại câu hỏi <span class="text-danger">*</span></label>
+                        <select id="questionTypeSelect" th:field="*{type}" class="form-control" required>
+                            <option th:each="t : ${types}"
+                                    th:value="${t.name()}"
+                                    th:text="${t.displayName}">Trắc nghiệm (MULTIPLE_CHOICE)</option>
+                        </select>
+                        <div class="field-error" th:if="${#fields.hasErrors('type')}" th:errors="*{type}">Lỗi loại câu hỏi</div>
+                    </div>
+
+                    <!-- Điểm số (points) -->
+                    <div class="form-group">
+                        <label for="pointsInput">Điểm số <span class="text-danger">*</span></label>
+                        <input type="number" id="pointsInput" th:field="*{points}" class="form-control"
+                               step="0.25" min="0.01" max="100.00" required />
+                        <div class="field-error" th:if="${#fields.hasErrors('points')}" th:errors="*{points}">Lỗi điểm số</div>
+                    </div>
+                </div>
+
+                <!-- Đề bài tiếng Nhật (promptJa) -->
+                <div class="form-group mt-3">
+                    <label for="promptJa">Đề bài tiếng Nhật (Kanji/Kana)</label>
+                    <textarea id="promptJa" th:field="*{promptJa}" class="form-control font-japanese" rows="3"
+                              placeholder="Ví dụ: きのう、スーパーで りんごを (____) かいました。" maxlength="1000"></textarea>
+                    <div class="field-error" th:if="${#fields.hasErrors('promptJa')}" th:errors="*{promptJa}">Lỗi tiếng Nhật</div>
+                    <small class="form-help">Hỗ trợ phiên âm Furigana hiển thị tự động trên hệ thống.</small>
+                </div>
+
+                <!-- Đề bài tiếng Việt (promptVi) -->
+                <div class="form-group mt-3">
+                    <label for="promptVi">Đề bài tiếng Việt / Gợi ý</label>
+                    <textarea id="promptVi" th:field="*{promptVi}" class="form-control" rows="2"
+                              placeholder="Ví dụ: Chọn từ thích hợp điền vào chỗ trống hoặc dịch câu sang tiếng Nhật..." maxlength="1000"></textarea>
+                    <div class="field-error" th:if="${#fields.hasErrors('promptVi')}" th:errors="*{promptVi}">Lỗi tiếng Việt</div>
+                </div>
+
+                <!-- KHỐI 1: MULTIPLE_CHOICE (Trắc nghiệm) -->
+                <div id="section_MULTIPLE_CHOICE" class="type-section">
+                    <h3 class="card-title text-accent mb-3"><span>🎯</span> Phương án lựa chọn (Chọn 1 đáp án đúng)</h3>
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="mcChoice1">Phương án 1 <span class="text-danger">*</span></label>
+                            <input type="text" id="mcChoice1" th:field="*{choice1}" class="form-control font-japanese"
+                                   placeholder="Ví dụ: ひとつ" maxlength="500" />
+                        </div>
+                        <div class="form-group">
+                            <label for="mcChoice2">Phương án 2 <span class="text-danger">*</span></label>
+                            <input type="text" id="mcChoice2" th:field="*{choice2}" class="form-control font-japanese"
+                                   placeholder="Ví dụ: ふたつ" maxlength="500" />
+                        </div>
+                        <div class="form-group">
+                            <label for="mcChoice3">Phương án 3</label>
+                            <input type="text" id="mcChoice3" th:field="*{choice3}" class="form-control font-japanese"
+                                   placeholder="Ví dụ: みっつ" maxlength="500" />
+                        </div>
+                        <div class="form-group">
+                            <label for="mcChoice4">Phương án 4</label>
+                            <input type="text" id="mcChoice4" th:field="*{choice4}" class="form-control font-japanese"
+                                   placeholder="Ví dụ: よっつ" maxlength="500" />
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label for="correctChoiceIndex">Đáp án đúng số:</label>
+                        <select id="correctChoiceIndex" th:field="*{correctChoiceIndex}" class="form-control">
+                            <option value="1">Phương án 1</option>
+                            <option value="2">Phương án 2</option>
+                            <option value="3">Phương án 3</option>
+                            <option value="4">Phương án 4</option>
+                        </select>
+                        <small class="form-help">Chỉ được chọn đúng 1 đáp án chính xác duy nhất.</small>
+                    </div>
+                </div>
+
+                <!-- KHỐI 2: TYPING (Tự luận gõ đáp án) -->
+                <div id="section_TYPING" class="type-section">
+                    <h3 class="card-title text-accent mb-3"><span>⌨️</span> Danh sách đáp án được chấp nhận</h3>
+                    <div class="form-group">
+                        <label for="typingAcceptedAnswers">Đáp án đúng (chấp nhận nhiều phương án)</label>
+                        <textarea id="typingAcceptedAnswers" th:field="*{typingAcceptedAnswers}" class="form-control font-japanese" rows="3"
+                                  placeholder="Ví dụ: にほんご | 日本語 | ニホンゴ" maxlength="1000"></textarea>
+                        <small class="form-help">Nhập các đáp án hợp lệ, ngăn cách bằng dấu gạch đứng `|` hoặc xuống dòng.</small>
+                    </div>
+                </div>
+
+                <!-- KHỐI 3: ORDERING (Sắp xếp từ / Câu sao ★ JLPT) -->
+                <div id="section_ORDERING" class="type-section">
+                    <h3 class="card-title text-accent mb-3"><span>⭐</span> Mảnh ghép từ &amp; Thứ tự ghép đúng (Dạng sao JLPT)</h3>
+                    <div class="ordering-grid">
+                        <div class="form-group">
+                            <label for="ordChoice1">Mảnh 1 <span class="text-danger">*</span></label>
+                            <input type="text" id="ordChoice1" th:field="*{choice1}" class="form-control font-japanese"
+                                   placeholder="Mảnh 1" maxlength="500" />
+                        </div>
+                        <div class="form-group">
+                            <label for="ordChoice2">Mảnh 2 <span class="text-danger">*</span></label>
+                            <input type="text" id="ordChoice2" th:field="*{choice2}" class="form-control font-japanese"
+                                   placeholder="Mảnh 2" maxlength="500" />
+                        </div>
+                        <div class="form-group">
+                            <label for="ordChoice3">Mảnh 3 <span class="text-danger">*</span></label>
+                            <input type="text" id="ordChoice3" th:field="*{choice3}" class="form-control font-japanese"
+                                   placeholder="Mảnh 3" maxlength="500" />
+                        </div>
+                        <div class="form-group">
+                            <label for="ordChoice4">Mảnh 4 <span class="text-danger">*</span></label>
+                            <input type="text" id="ordChoice4" th:field="*{choice4}" class="form-control font-japanese"
+                                   placeholder="Mảnh 4" maxlength="500" />
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2 mt-3">
+                        <div class="form-group">
+                            <label for="orderingOrder">Thứ tự ghép đúng <span class="text-danger">*</span></label>
+                            <input type="text" id="orderingOrder" th:field="*{orderingOrder}" class="form-control"
+                                   placeholder="Ví dụ: 1,3,2,4" maxlength="100" />
+                            <small class="form-help">Liệt kê thứ tự các mảnh từ ghép thành câu hoàn chỉnh.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="orderingStar">Vị trí dấu sao ★ (1 đến 4)</label>
+                            <input type="number" id="orderingStar" th:field="*{orderingStar}" class="form-control"
+                                   min="1" max="4" placeholder="Ví dụ: 3" />
+                            <small class="form-help">Vị trí chỗ trống gắn dấu sao cần học viên chọn đáp án.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KHỐI 4: TRANSLATION (Dịch câu) -->
+                <div id="section_TRANSLATION" class="type-section">
+                    <h3 class="card-title text-accent mb-3"><span>🌐</span> Dịch thuật &amp; Câu dịch mẫu</h3>
+                    <div class="form-group">
+                        <label for="translationAccepted">Các bản dịch chấp nhận</label>
+                        <textarea id="translationAccepted" th:field="*{translationAccepted}" class="form-control" rows="2"
+                                  placeholder="Các câu dịch đúng, ngăn cách bằng dấu `|`" maxlength="1000"></textarea>
+                    </div>
+                    <div class="form-group mt-2">
+                        <label for="translationSample">Bản dịch mẫu chuẩn</label>
+                        <textarea id="translationSample" th:field="*{translationSample}" class="form-control" rows="2"
+                                  placeholder="Câu dịch mẫu giáo viên đưa ra..." maxlength="1000"></textarea>
+                    </div>
+                </div>
+
+                <!-- KHỐI 5: ESSAY (Viết đoạn văn) -->
+                <div id="section_ESSAY" class="type-section">
+                    <h3 class="card-title text-accent mb-3"><span>✍️</span> Viết đoạn văn &amp; Tiêu chí chấm</h3>
+                    <div class="form-group">
+                        <label for="essaySample">Bài viết mẫu (Barem)</label>
+                        <textarea id="essaySample" th:field="*{essaySample}" class="form-control font-japanese" rows="4"
+                                  placeholder="Nội dung bài viết mẫu của giáo viên..." maxlength="1000"></textarea>
+                    </div>
+                    <div class="form-group mt-2">
+                        <label for="essayKeywords">Từ khóa chấm điểm</label>
+                        <input type="text" id="essayKeywords" th:field="*{essayKeywords}" class="form-control"
+                               placeholder="Ví dụ: 週末, 友達, 映画 (ngăn cách bằng dấu phẩy)" maxlength="1000" />
+                        <small class="form-help">Các từ khóa cần xuất hiện trong bài viết để ghi điểm.</small>
+                    </div>
+                </div>
+
+                <!-- Giải thích đáp án (explanation) -->
+                <div class="form-group mt-4">
+                    <label for="explanation">Giải thích chi tiết (hiển thị khi học viên xem lại bài làm)</label>
+                    <textarea id="explanation" th:field="*{explanation}" class="form-control" rows="3"
+                              placeholder="Giải thích ngữ pháp, từ mới, cách dùng hoặc mẹo làm bài..." maxlength="1000"></textarea>
+                    <div class="field-error" th:if="${#fields.hasErrors('explanation')}" th:errors="*{explanation}">Lỗi giải thích</div>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="action-buttons mt-4 justify-content-end">
+                    <a th:href="@{/exams/admin/{id}(id=${paperId})}" class="btn btn-secondary">Hủy bỏ</a>
+                    <button type="submit" class="btn btn-primary">
+                        <span th:text="${isEdit ? '💾 Cập nhật câu hỏi' : '➕ Thêm câu hỏi'}">Lưu câu hỏi</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+</body>
+</html>
+

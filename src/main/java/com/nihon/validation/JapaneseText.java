@@ -20,6 +20,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface JapaneseText {
 
+    boolean optional() default false;
+
     String message() default ValidationMessages.JAPANESE_TEXT;
 
     Class<?>[] groups() default {};
