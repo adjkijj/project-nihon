@@ -19,7 +19,7 @@ class ExamTemplateGeneratorTest {
         byte[] bytes = service.generateTemplate();
         assertThat(bytes).isNotNull().isNotEmpty();
 
-        Path targetDir = Paths.get("src/main/resources/static/template");
+        Path targetDir = Paths.get("target");
         Files.createDirectories(targetDir);
         Path targetFile = targetDir.resolve("ExamTemplate.xlsx");
 
