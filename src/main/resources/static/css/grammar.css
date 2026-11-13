@@ -1,0 +1,230 @@
+/* ==========================================================================
+   Project Nihon - Grammar & Supplement Styles (F30-F32)
+   Calibrated for high agency, clean typography, WCAG AA compliance and strict CSP
+   ========================================================================== */
+
+/* Formula Card */
+.grammar-formula-box {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-left: 4px solid #2563eb;
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0;
+    font-size: 1.05rem;
+}
+
+.grammar-formula-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #475569;
+    margin-bottom: 0.35rem;
+}
+
+.grammar-formula-content {
+    font-family: inherit;
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 1.1rem;
+}
+
+/* Badges */
+.badge-grammar {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    display: inline-block;
+}
+
+.badge-supplement {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    display: inline-block;
+}
+
+/* Explanation Content (rendered safe HTML) */
+.grammar-explanation-body {
+    line-height: 1.65;
+    color: #334155;
+    font-size: 0.95rem;
+}
+
+.grammar-explanation-body p {
+    margin-bottom: 0.6rem;
+}
+
+.grammar-explanation-body ul {
+    margin: 0.4rem 0 0.8rem 1.5rem;
+    padding-left: 0.5rem;
+    list-style-type: disc;
+}
+
+.grammar-explanation-body li {
+    margin-bottom: 0.35rem;
+}
+
+/* Example Items */
+.grammar-example-item {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.9rem 1.1rem;
+    margin-bottom: 0.75rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.grammar-example-item:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.grammar-jp-text {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
+}
+
+.grammar-reading-text {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-bottom: 0.35rem;
+}
+
+.grammar-meaning-text {
+    font-size: 0.95rem;
+    color: #334155;
+}
+
+/* Quiz Preview Cards */
+.grammar-quiz-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.grammar-quiz-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.grammar-quiz-prompt {
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: #0f172a;
+    margin-bottom: 1rem;
+}
+
+.grammar-choices-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+}
+
+.grammar-choice-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 0.9rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #f8fafc;
+    font-size: 0.95rem;
+    color: #1e293b;
+    cursor: default;
+    transition: all 0.15s ease;
+}
+
+.grammar-choice-btn.correct-choice {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+    color: #065f46;
+    font-weight: 600;
+}
+
+.grammar-choice-index {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.grammar-choice-btn.correct-choice .grammar-choice-index {
+    background: #10b981;
+    color: #ffffff;
+}
+
+.grammar-quiz-expl {
+    background: #f1f5f9;
+    border-left: 3px solid #64748b;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.85rem;
+    color: #475569;
+    border-radius: 0 4px 4px 0;
+    margin-top: 0.5rem;
+}
+
+/* Quick Action Toolbar */
+.grammar-action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.grammar-search-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    background: #f8fafc;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    margin-bottom: 1.25rem;
+}
+
+/* Order Controls */
+.order-controls {
+    display: inline-flex;
+    gap: 0.25rem;
+}
+
+.btn-arrow {
+    padding: 0.15rem 0.45rem;
+    font-size: 0.75rem;
+    line-height: 1;
+    border-radius: 3px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    cursor: pointer;
+}
+
+.btn-arrow:hover {
+    background: #f1f5f9;
+}
+

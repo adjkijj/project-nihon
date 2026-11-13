@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${isEdit ? 'Chỉnh sửa câu hỏi trắc nghiệm - Project Nihon' : 'Thêm mới câu hỏi trắc nghiệm - Project Nihon'}">Câu hỏi trắc nghiệm - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <link rel="stylesheet" th:href="@{/css/exams-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/grammar.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('grammar')}"></header>
+
+    <main class="container my-4 max-w-800">
+        <!-- Breadcrumb điều hướng -->
+        <nav aria-label="Đường dẫn" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/grammar/admin}">Quản trị Ngữ pháp</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/grammar/admin/{id}(id=${topic.id})}" th:text="${topic.code}">N5-GR-01</a></li>
+                <li class="breadcrumb-item active" aria-current="page" th:text="${isEdit ? 'Chỉnh sửa câu hỏi' : 'Thêm câu hỏi'}">Câu hỏi</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header border-bottom pb-3 mb-4">
+                <h1 class="page-title h3 m-0" th:text="${isEdit ? '✏️ Chỉnh sửa câu hỏi trắc nghiệm' : '➕ Thêm mới câu hỏi trắc nghiệm'}">Câu hỏi trắc nghiệm</h1>
+                <p class="text-secondary font-size-sm mt-1 mb-0" th:text="'Thuộc chủ đề: ' + ${topic.title} + ' (' + ${topic.code} + ')'">Chủ đề ngữ pháp</p>
+            </div>
+
+            <!-- Thông báo lỗi -->
+            <div th:if="${errorMessage}" class="alert alert-danger mb-3" role="alert" th:text="${errorMessage}">
+                Đã có lỗi xảy ra!
+            </div>
+
+            <form th:action="${isEdit ? '/grammar/admin/questions/' + form.id + '/edit?topicId=' + topic.id : '/grammar/admin/' + topic.id + '/questions/create'}" 
+                  th:object="${form}" method="post">
+                <input type="hidden" name="_csrf" th:value="${_csrf}" />
+                <input type="hidden" th:field="*{id}" th:if="${isEdit}" />
+
+                <div class="mb-3">
+                    <label for="prompt" class="form-label font-weight-bold">Đề bài câu hỏi <span class="text-danger">*</span></label>
+                    <textarea id="prompt" th:field="*{prompt}" class="form-control" rows="3" 
+                              placeholder="Ví dụ: あしたは　テストが　ある（　）、きょうは　べんきょうします。" required maxlength="500"></textarea>
+                    <div class="text-danger font-size-xs mt-1" th:if="${#fields.hasErrors('prompt')}" th:errors="*{prompt}"></div>
+                </div>
+
+                <!-- Lựa chọn đáp án (2 đến 6 lựa chọn) -->
+                <div class="mb-3">
+                    <label class="form-label font-weight-bold">
+                        Các lựa chọn đáp án (2 - 6 lựa chọn, chọn duy nhất 1 đáp án đúng) <span class="text-danger">*</span>
+                    </label>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered mb-2">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="text-center w-10">Đúng</th>
+                                    <th class="w-10">Lựa chọn</th>
+                                    <th>Nội dung đáp án</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="choice, iter : *{choices}">
+                                    <td class="text-center align-middle">
+                                        <input type="radio" th:field="*{correctChoiceIndex}" th:value="${iter.index}" 
+                                               required aria-label="Chọn đáp án đúng" />
+                                    </td>
+                                    <td class="align-middle font-weight-bold" th:text="'Đáp án ' + ${iter.count}">Đáp án 1</td>
+                                    <td>
+                                        <input type="text" th:field="*{choices[__${iter.index}__].text}" class="form-control form-control-sm"
+                                               th:placeholder="${iter.index lt 2 ? 'Nhập đáp án ' + iter.count + ' (bắt buộc)' : 'Nhập đáp án ' + iter.count + ' (tùy chọn)'}"
+                                               th:required="${iter.index lt 2}" maxlength="300" />
+                                        <input type="hidden" th:field="*{choices[__${iter.index}__].sortOrder}" th:value="${iter.count}" />
+                                        <input type="hidden" th:field="*{choices[__${iter.index}__].id}" th:if="${choice.id != null}" />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <small class="form-text text-secondary">Chọn nút tròn tại hàng có đáp án đúng.</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="explanation" class="form-label font-weight-bold">Giải thích đáp án</label>
+                    <textarea id="explanation" th:field="*{explanation}" class="form-control" rows="3" 
+                              placeholder="Nhập giải thích ngắn vì sao chọn đáp án này..." maxlength="1000"></textarea>
+                    <div class="text-danger font-size-xs mt-1" th:if="${#fields.hasErrors('explanation')}" th:errors="*{explanation}"></div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                    <a th:href="@{/grammar/admin/{id}(id=${topic.id})}" class="btn btn-secondary">Hủy bỏ</a>
+                    <button type="submit" class="btn btn-primary" th:text="${isEdit ? 'Lưu thay đổi' : 'Thêm câu hỏi'}">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Hệ thống ghi nhớ từ vựng và ngữ pháp tiếng Nhật.</p>
+    </footer>
+</body>
+</html>

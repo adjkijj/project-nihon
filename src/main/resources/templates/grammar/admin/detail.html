@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${topic.title} + ' - Quản trị Ngữ pháp - Project Nihon'">Chi tiết Ngữ pháp - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <link rel="stylesheet" th:href="@{/css/exams-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/grammar.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('grammar')}"></header>
+
+    <main class="container my-4">
+        <!-- Thông báo Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success mb-3" role="status" th:text="${successMessage}">
+            Thao tác thành công!
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger mb-3" role="alert" th:text="${errorMessage}">
+            Đã có lỗi xảy ra!
+        </div>
+
+        <!-- Breadcrumb điều hướng -->
+        <nav aria-label="Đường dẫn" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/grammar/admin}">Quản trị Ngữ pháp</a></li>
+                <li class="breadcrumb-item active" aria-current="page" th:text="${topic.code}">N5-GR-01</li>
+            </ol>
+        </nav>
+
+        <!-- Thẻ Tổng quan Chủ đề -->
+        <section class="card mb-4" aria-labelledby="topicTitleHeader">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+                <div>
+                    <span class="badge badge-grammar" th:if="${topic.category.name() == 'GRAMMAR'}">Ngữ pháp</span>
+                    <span class="badge badge-supplement" th:if="${topic.category.name() == 'SUPPLEMENT'}">Kiến thức bổ sung</span>
+                    <span class="font-mono text-secondary ml-2 font-weight-bold" th:text="${topic.code}">N5-GR-01</span>
+                    <span class="badge badge-normal ml-2" th:if="${topic.topic != null}" th:text="'Bài: ' + ${topic.topic.name}">Bài 1</span>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <a th:href="@{/grammar/admin/{id}/preview(id=${topic.id})}" class="btn btn-sm btn-secondary">👁️ Xem trước người học</a>
+                    <a th:href="@{/grammar/admin/{id}/edit(id=${topic.id})}" class="btn btn-sm btn-outline">✏️ Sửa thông tin</a>
+                    <form th:action="@{/grammar/admin/{id}/delete(id=${topic.id})}" method="post" class="d-inline"
+                          data-confirm="Bạn có chắc chắn muốn xóa chủ đề ngữ pháp này cùng toàn bộ ví dụ và câu hỏi liên quan?">
+                        <input type="hidden" name="_csrf" th:value="${_csrf}" />
+                        <button type="submit" class="btn btn-sm btn-danger">Xóa chủ đề</button>
+                    </form>
+                </div>
+            </div>
+
+            <h1 id="topicTitleHeader" class="page-title h2 m-0" th:text="${topic.title}">Cấu trúc 〜から (Vì, bởi vì)</h1>
+
+            <!-- Công thức ngữ pháp -->
+            <div th:if="${topic.formula != null and !topic.formula.isEmpty()}" class="grammar-formula-box">
+                <div class="grammar-formula-label">CÔNG THỨC</div>
+                <div class="grammar-formula-content" th:text="${topic.formula}">[Thể thường / Thể lịch sự] + から</div>
+            </div>
+
+            <!-- Giải thích đã dựng HTML an toàn -->
+            <div th:if="${renderedExplanation != null and !renderedExplanation.isEmpty()}" class="mt-3">
+                <h3 class="h5 font-weight-bold text-secondary mb-2">Giải thích chi tiết:</h3>
+                <div class="grammar-explanation-body" th:utext="${renderedExplanation}">
+                    <p>Giải thích...</p>
+                </div>
+            </div>
+
+            <!-- Ghi chú nếu có -->
+            <div th:if="${topic.notes != null and !topic.notes.isEmpty()}" class="mt-2 text-secondary font-size-sm">
+                <strong>💡 Lưu ý:</strong> <span th:text="${topic.notes}">Ghi chú thêm...</span>
+            </div>
+        </section>
+
+        <!-- Phần 1: Quản lý Ví dụ minh họa (tối đa 20) -->
+        <section class="card mb-4" aria-labelledby="examplesSectionHeader">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 id="examplesSectionHeader" class="h4 m-0">
+                    📝 Câu ví dụ minh họa 
+                    <span class="font-size-sm font-weight-normal text-secondary" th:text="'(' + ${topic.examples.size()} + '/20 câu)'">(0/20)</span>
+                </h2>
+            </div>
+
+            <!-- Danh sách ví dụ hiện có -->
+            <div th:if="${topic.examples == null or topic.examples.isEmpty()}" class="text-secondary py-3 text-center border rounded mb-3">
+                Chưa có câu ví dụ nào. Sử dụng mẫu bên dưới để thêm câu ví dụ đầu tiên.
+            </div>
+
+            <div th:if="${topic.examples != null and !topic.examples.isEmpty()}" class="mb-3">
+                <div th:each="ex, iter : ${topic.examples}" class="grammar-example-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="grammar-jp-text" th:text="${ex.japanese}">雨が降っているから、傘を持っていきます。</div>
+                            <div th:if="${ex.reading != null and !ex.reading.isEmpty()}" class="grammar-reading-text" th:text="${ex.reading}">あめがふっているから、かさをもっていきます。</div>
+                            <div class="grammar-meaning-text" th:text="${ex.meaningVi}">Vì trời đang mưa nên tôi mang theo ô.</div>
+                        </div>
+
+                        <div class="d-inline-flex gap-1 align-items-center ml-3">
+                            <form th:action="@{/grammar/admin/examples/{id}/reorder(id=${ex.id})}" method="post" class="d-inline">
+                                <input type="hidden" name="_csrf" th:value="${_csrf}" />
+                                <input type="hidden" name="topicId" th:value="${topic.id}" />
+                                <input type="hidden" name="direction" value="up" />
+                                <button type="submit" class="btn-arrow" th:disabled="${iter.first}" title="Di chuyển lên">▲</button>
+                            </form>
+                            <form th:action="@{/grammar/admin/examples/{id}/reorder(id=${ex.id})}" method="post" class="d-inline">
+                                <input type="hidden" name="_csrf" th:value="${_csrf}" />
+                                <input type="hidden" name="topicId" th:value="${topic.id}" />
+                                <input type="hidden" name="direction" value="down" />
+                                <button type="submit" class="btn-arrow" th:disabled="${iter.last}" title="Di chuyển xuống">▼</button>
+                            </form>
+                            <form th:action="@{/grammar/admin/examples/{id}/delete(id=${ex.id})}" method="post" class="d-inline"
+                                  data-confirm="Bạn có chắc muốn xóa câu ví dụ này?">
+                                <input type="hidden" name="_csrf" th:value="${_csrf}" />
+                                <input type="hidden" name="topicId" th:value="${topic.id}" />
+                                <button type="submit" class="btn btn-xs btn-danger">Xóa</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form thêm ví dụ mới -->
+            <div th:if="${topic.examples.size() lt 20}" class="bg-light p-3 rounded border">
+                <h3 class="h6 font-weight-bold mb-2">➕ Thêm câu ví dụ mới:</h3>
+                <form th:action="@{/grammar/admin/{id}/examples(id=${topic.id})}" th:object="${exampleForm}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${_csrf}" />
+
+                    <div class="row">
+                        <div class="col-md-5 mb-2">
+                            <input type="text" th:field="*{japanese}" class="form-control form-control-sm" 
+                                   placeholder="Tiếng Nhật (ví dụ: 雨が降っているから) *" required maxlength="500">
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <input type="text" th:field="*{reading}" class="form-control form-control-sm" 
+                                   placeholder="Cách đọc Kana (tùy chọn)" maxlength="500">
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <input type="text" th:field="*{meaningVi}" class="form-control form-control-sm" 
+                                   placeholder="Nghĩa tiếng Việt *" required maxlength="500">
+                        </div>
+                    </div>
+
+                    <div class="text-right mt-1">
+                        <button type="submit" class="btn btn-sm btn-primary">Thêm ví dụ</button>
+                    </div>
+                </form>
+            </div>
+            <div th:if="${topic.examples.size() ge 20}" class="alert alert-warning mb-0">
+                Đã đạt giới hạn tối đa 20 câu ví dụ cho chủ đề này.
+            </div>
+        </section>
+
+        <!-- Phần 2: Quản lý Câu hỏi Trắc nghiệm (tối đa 20) -->
+        <section class="card" aria-labelledby="questionsSectionHeader">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 id="questionsSectionHeader" class="h4 m-0">
+                    🎯 Câu hỏi luyện tập trắc nghiệm 
+                    <span class="font-size-sm font-weight-normal text-secondary" th:text="'(' + ${topic.questions.size()} + '/20 câu)'">(0/20)</span>
+                </h2>
+
+                <a th:if="${topic.questions.size() lt 20}" th:href="@{/grammar/admin/{id}/questions/create(id=${topic.id})}" class="btn btn-sm btn-primary">
+                    ➕ Thêm câu hỏi trắc nghiệm
+                </a>
+            </div>
+
+            <!-- Danh sách câu hỏi trắc nghiệm -->
+            <div th:if="${topic.questions == null or topic.questions.isEmpty()}" class="text-secondary py-3 text-center border rounded">
+                Chưa có câu hỏi trắc nghiệm nào. Bấm <strong>"Thêm câu hỏi trắc nghiệm"</strong> để tạo câu hỏi rèn luyện cho người học.
+            </div>
+
+            <div th:if="${topic.questions != null and !topic.questions.isEmpty()}">
+                <div th:each="q, iter : ${topic.questions}" class="grammar-quiz-card">
+                    <div class="grammar-quiz-header">
+                        <span class="font-weight-bold text-primary" th:text="'Câu ' + ${iter.count}">Câu 1</span>
+
+                        <div class="d-inline-flex gap-1 align-items-center">
+                            <form th:action="@{/grammar/admin/questions/{id}/reorder(id=${q.id})}" method="post" class="d-inline">
+                                <input type="hidden" name="_csrf" th:value="${_csrf}" />
+                                <input type="hidden" name="topicId" th:value="${topic.id}" />
+                                <input type="hidden" name="direction" value="up" />
+                                <button type="submit" class="btn-arrow" th:disabled="${iter.first}" title="Di chuyển lên">▲</button>
+                            </form>
+                            <form th:action="@{/grammar/admin/questions/{id}/reorder(id=${q.id})}" method="post" class="d-inline">
+                                <input type="hidden" name="_csrf" th:value="${_csrf}" />
+                                <input type="hidden" name="topicId" th:value="${topic.id}" />
+                                <input type="hidden" name="direction" value="down" />
+                                <button type="submit" class="btn-arrow" th:disabled="${iter.last}" title="Di chuyển xuống">▼</button>
+                            </form>
+                            <a th:href="@{/grammar/admin/questions/{id}/edit(id=${q.id}, topicId=${topic.id})}" class="btn btn-xs btn-outline">Sửa</a>
+                            <form th:action="@{/grammar/admin/questions/{id}/delete(id=${q.id})}" method="post" class="d-inline"
+                                  data-confirm="Bạn có chắc muốn xóa câu hỏi trắc nghiệm này?">
+                                <input type="hidden" name="_csrf" th:value="${_csrf}" />
+                                <input type="hidden" name="topicId" th:value="${topic.id}" />
+                                <button type="submit" class="btn btn-xs btn-danger">Xóa</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="grammar-quiz-prompt" th:text="${q.prompt}">あしたは　テストが　ある（　）、きょうは　べんきょうします。</div>
+
+                    <div class="grammar-choices-grid">
+                        <div th:each="c, cIter : ${q.choices}" 
+                             class="grammar-choice-btn"
+                             th:classappend="${c.correct ? 'correct-choice' : ''}">
+                            <span class="grammar-choice-index" th:text="${cIter.count}">1</span>
+                            <span th:text="${c.text}">から</span>
+                            <span th:if="${c.correct}" class="font-size-xs ml-auto">✓ Đúng</span>
+                        </div>
+                    </div>
+
+                    <div th:if="${q.explanation != null and !q.explanation.isEmpty()}" class="grammar-quiz-expl">
+                        <strong>Giải thích:</strong> <span th:text="${q.explanation}">Điền から để chỉ lý do.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Hệ thống ghi nhớ từ vựng và ngữ pháp tiếng Nhật.</p>
+    </footer>
+</body>
+</html>
+

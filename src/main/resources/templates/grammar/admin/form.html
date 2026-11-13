@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${isEdit ? 'Chỉnh sửa chủ đề ngữ pháp - Project Nihon' : 'Thêm mới chủ đề ngữ pháp - Project Nihon'}">Chủ đề ngữ pháp - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <link rel="stylesheet" th:href="@{/css/exams-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/grammar.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('grammar')}"></header>
+
+    <main class="container my-4 max-w-800">
+        <!-- Breadcrumb điều hướng -->
+        <nav aria-label="Đường dẫn" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/grammar/admin}">Quản trị Ngữ pháp</a></li>
+                <li class="breadcrumb-item active" aria-current="page" th:text="${isEdit ? 'Chỉnh sửa chủ đề' : 'Thêm mới chủ đề'}">Thêm mới</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header border-bottom pb-3 mb-4">
+                <h1 class="page-title h3 m-0" th:text="${isEdit ? '✏️ Chỉnh sửa chủ đề ngữ pháp' : '➕ Thêm mới chủ đề ngữ pháp'}">Thêm mới</h1>
+                <p class="text-secondary font-size-sm mt-1 mb-0">Điền thông tin chi tiết về cấu trúc, công thức và văn bản giải thích.</p>
+            </div>
+
+            <!-- Thông báo lỗi tổng quát -->
+            <div th:if="${errorMessage}" class="alert alert-danger mb-3" role="alert" th:text="${errorMessage}">
+                Đã có lỗi xảy ra!
+            </div>
+
+            <form th:action="${isEdit ? '/grammar/admin/' + form.id + '/edit' : '/grammar/admin/create'}" 
+                  th:object="${form}" method="post">
+                <input type="hidden" name="_csrf" th:value="${_csrf}" />
+                <input type="hidden" th:field="*{id}" th:if="${isEdit}" />
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="code" class="form-label font-weight-bold">Mã chủ đề (Code) <span class="text-danger">*</span></label>
+                        <input type="text" id="code" th:field="*{code}" class="form-control" 
+                               placeholder="Ví dụ: N5-GR-01" required maxlength="50">
+                        <div class="text-danger font-size-xs mt-1" th:if="${#fields.hasErrors('code')}" th:errors="*{code}"></div>
+                        <small class="form-text text-secondary">Mã định danh duy nhất (chữ cái, số, gạch ngang).</small>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="category" class="form-label font-weight-bold">Phân loại <span class="text-danger">*</span></label>
+                        <select id="category" th:field="*{category}" class="form-control" required>
+                            <option th:each="cat : ${categories}" th:value="${cat.name()}" th:text="${cat.displayName}">Ngữ pháp</option>
+                        </select>
+                        <div class="text-danger font-size-xs mt-1" th:if="${#fields.hasErrors('category')}" th:errors="*{category}"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="title" class="form-label font-weight-bold">Tiêu đề cấu trúc <span class="text-danger">*</span></label>
+                    <input type="text" id="title" th:field="*{title}" class="form-control" 
+                           placeholder="Ví dụ: Cấu trúc 〜から (Vì, bởi vì)" required maxlength="255">
+                    <div class="text-danger font-size-xs mt-1" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-8 mb-3">
+                        <label for="formula" class="form-label font-weight-bold">Công thức ghép câu</label>
+                        <input type="text" id="formula" th:field="*{formula}" class="form-control" 
+                               placeholder="Ví dụ: [Thể thường / Lịch sự] + から" maxlength="500">
+                        <div class="text-danger font-size-xs mt-1" th:if="${#fields.hasErrors('formula')}" th:errors="*{formula}"></div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label for="topicId" class="form-label font-weight-bold">Gắn với bài học (Chủ đề)</label>
+                        <select id="topicId" th:field="*{topicId}" class="form-control">
+                            <option value="">-- Không gắn --</option>
+                            <option th:each="tp : ${generalTopics}" th:value="${tp.id}" th:text="${tp.name}">Bài 1</option>
+                        </select>
+                        <div class="text-danger font-size-xs mt-1" th:if="${#fields.hasErrors('topicId')}" th:errors="*{topicId}"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="explanation" class="form-label font-weight-bold">Giải thích chi tiết (Văn bản thuần)</label>
+                    <textarea id="explanation" th:field="*{explanation}" class="form-control" rows="6" 
+                              placeholder="Nhập giải thích ngữ pháp...&#10;Mỗi dòng bắt đầu bằng '- ' sẽ tự động dựng thành danh sách gạch đầu dòng.&#10;Không hỗ trợ mã HTML hoặc Markdown." maxlength="5000"></textarea>
+                    <div class="text-danger font-size-xs mt-1" th:if="${#fields.hasErrors('explanation')}" th:errors="*{explanation}"></div>
+                    <small class="form-text text-secondary">
+                        💡 Mẹo: Bắt đầu dòng bằng <code>- </code> để tạo gạch đầu dòng. Mọi mã HTML nhập vào sẽ được escape tự động nhằm bảo vệ an toàn.
+                    </small>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-8 mb-3">
+                        <label for="notes" class="form-label font-weight-bold">Ghi chú lưu ý</label>
+                        <input type="text" id="notes" th:field="*{notes}" class="form-control" 
+                               placeholder="Ví dụ: Trang trọng hơn có thể dùng 〜ので" maxlength="1000">
+                        <div class="text-danger font-size-xs mt-1" th:if="${#fields.hasErrors('notes')}" th:errors="*{notes}"></div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label for="sortOrder" class="form-label font-weight-bold">Thứ tự hiển thị</label>
+                        <input type="number" id="sortOrder" th:field="*{sortOrder}" class="form-control" min="1">
+                        <div class="text-danger font-size-xs mt-1" th:if="${#fields.hasErrors('sortOrder')}" th:errors="*{sortOrder}"></div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                    <a th:href="@{/grammar/admin}" class="btn btn-secondary">Hủy bỏ</a>
+                    <button type="submit" class="btn btn-primary" th:text="${isEdit ? 'Lưu cập nhật' : 'Tạo chủ đề'}">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Hệ thống ghi nhớ từ vựng và ngữ pháp tiếng Nhật.</p>
+    </footer>
+</body>
+</html>
+

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản trị Ngữ pháp & Kiến thức bổ sung - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <link rel="stylesheet" th:href="@{/css/exams-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/grammar.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('grammar')}"></header>
+
+    <main class="container my-4">
+        <!-- Thông báo Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success mb-3" role="status" th:text="${successMessage}">
+            Thao tác thành công!
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger mb-3" role="alert" th:text="${errorMessage}">
+            Đã có lỗi xảy ra!
+        </div>
+
+        <!-- Tiêu đề trang và thanh thao tác chính -->
+        <div class="grammar-action-bar">
+            <div>
+                <h1 class="page-title m-0">📖 Quản trị Ngữ pháp & Kiến thức bổ sung</h1>
+                <p class="text-secondary font-size-sm mt-1 mb-0">Quản lý kho cấu trúc ngữ pháp, ví dụ mẫu và câu hỏi luyện tập.</p>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                <a th:href="@{/grammar/admin/create}" class="btn btn-primary">➕ Thêm chủ đề mới</a>
+                <a th:href="@{/grammar/admin/import}" class="btn btn-secondary">📥 Nhập Excel</a>
+                <a th:href="@{/grammar/admin/export(category=${selectedCategory})}" class="btn btn-outline">📤 Xuất Excel</a>
+                <a th:href="@{/grammar/admin/template}" class="btn btn-outline" download="GrammarTemplate.xlsx">📄 Tải tệp mẫu</a>
+            </div>
+        </div>
+
+        <!-- Bộ lọc và tìm kiếm -->
+        <section class="grammar-search-bar" aria-label="Bộ lọc ngữ pháp">
+            <form th:action="@{/grammar/admin}" method="get" class="d-flex flex-wrap gap-2 align-items-center w-100">
+                <label for="categoryFilter" class="font-weight-bold font-size-sm">Phân loại:</label>
+                <select id="categoryFilter" name="category" class="form-control form-control-sm">
+                    <option value="ALL" th:selected="${selectedCategory == 'ALL'}">-- Tất cả --</option>
+                    <option th:each="cat : ${categories}" 
+                            th:value="${cat.name()}" 
+                            th:text="${cat.displayName}" 
+                            th:selected="${selectedCategory == cat.name()}">Ngữ pháp</option>
+                </select>
+
+                <label for="keywordInput" class="font-weight-bold font-size-sm ml-2">Tìm kiếm:</label>
+                <input type="text" id="keywordInput" name="keyword" th:value="${keyword}"
+                       class="form-control form-control-sm flex-grow-1" 
+                       placeholder="Nhập mã, tiêu đề hoặc công thức...">
+
+                <button type="submit" class="btn btn-sm btn-primary">Lọc</button>
+                <a th:href="@{/grammar/admin}" class="btn btn-sm btn-secondary" th:if="${selectedCategory != 'ALL' or (keyword != null and !keyword.isEmpty())}">Đặt lại</a>
+            </form>
+        </section>
+
+        <!-- Bảng danh sách chủ đề ngữ pháp -->
+        <div class="card p-0">
+            <div class="table-responsive">
+                <table class="data-table mb-0" aria-label="Danh sách chủ đề ngữ pháp">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="text-center w-5">STT</th>
+                            <th scope="col" class="w-12">Mã</th>
+                            <th scope="col" class="w-25">Tiêu đề</th>
+                            <th scope="col" class="w-15">Phân loại</th>
+                            <th scope="col">Công thức</th>
+                            <th scope="col" class="text-center w-8">Ví dụ</th>
+                            <th scope="col" class="text-center w-8">Câu hỏi</th>
+                            <th scope="col" class="text-right w-20">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${topicsPage == null or topicsPage.content.isEmpty()}">
+                            <td colspan="8" class="text-center py-4 text-secondary">
+                                Chưa có chủ đề ngữ pháp nào. Bấm <strong>"Thêm chủ đề mới"</strong> hoặc <strong>"Nhập Excel"</strong> để bắt đầu.
+                            </td>
+                        </tr>
+
+                        <tr th:each="t, iter : ${topicsPage.content}">
+                            <td class="text-center text-secondary font-weight-bold" th:text="${topicsPage.number * topicsPage.size + iter.count}">1</td>
+                            <td>
+                                <strong class="text-primary" th:text="${t.code}">N5-GR-01</strong>
+                            </td>
+                            <td>
+                                <a th:href="@{/grammar/admin/{id}(id=${t.id})}" class="font-weight-bold" th:text="${t.title}">Cấu trúc 〜から</a>
+                            </td>
+                            <td>
+                                <span class="badge badge-grammar" th:if="${t.category.name() == 'GRAMMAR'}">Ngữ pháp</span>
+                                <span class="badge badge-supplement" th:if="${t.category.name() == 'SUPPLEMENT'}">Bổ sung</span>
+                            </td>
+                            <td class="font-size-sm text-secondary" th:text="${t.formula != null and !t.formula.isEmpty() ? t.formula : '-'}">V-te + から</td>
+                            <td class="text-center font-weight-bold" th:text="${t.examples.size()}">2</td>
+                            <td class="text-center font-weight-bold" th:text="${t.questions.size()}">1</td>
+                            <td class="text-right">
+                                <div class="d-inline-flex gap-1 align-items-center">
+                                    <a th:href="@{/grammar/admin/{id}(id=${t.id})}" class="btn btn-xs btn-outline" title="Quản lý chi tiết">Chi tiết</a>
+                                    <a th:href="@{/grammar/admin/{id}/preview(id=${t.id})}" class="btn btn-xs btn-secondary" title="Xem trước người học">Xem trước</a>
+                                    <a th:href="@{/grammar/admin/{id}/edit(id=${t.id})}" class="btn btn-xs btn-outline" title="Sửa thông tin">Sửa</a>
+                                    <form th:action="@{/grammar/admin/{id}/delete(id=${t.id})}" method="post" class="d-inline"
+                                          data-confirm="Bạn có chắc chắn muốn xóa chủ đề ngữ pháp này cùng toàn bộ ví dụ và câu hỏi liên quan?">
+                                        <input type="hidden" name="_csrf" th:value="${_csrf}" />
+                                        <button type="submit" class="btn btn-xs btn-danger">Xóa</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Phân trang -->
+            <div th:if="${topicsPage != null and topicsPage.totalPages > 1}" class="card-footer d-flex justify-content-between align-items-center">
+                <span class="font-size-sm text-secondary">
+                    Hiển thị trang <span th:text="${topicsPage.number + 1}">1</span> / <span th:text="${topicsPage.totalPages}">5</span> (Tổng số: <span th:text="${topicsPage.totalElements}">50</span>)
+                </span>
+                <nav aria-label="Phân trang danh sách ngữ pháp">
+                    <ul class="pagination mb-0">
+                        <li class="page-item" th:classappend="${topicsPage.first ? 'disabled' : ''}">
+                            <a class="page-link" th:href="@{/grammar/admin(category=${selectedCategory}, keyword=${keyword}, page=${topicsPage.number - 1})}">« Trước</a>
+                        </li>
+                        <li th:each="i : ${#numbers.sequence(0, topicsPage.totalPages - 1)}" 
+                            class="page-item" th:classappend="${i == topicsPage.number ? 'active' : ''}">
+                            <a class="page-link" th:href="@{/grammar/admin(category=${selectedCategory}, keyword=${keyword}, page=${i})}" th:text="${i + 1}">1</a>
+                        </li>
+                        <li class="page-item" th:classappend="${topicsPage.last ? 'disabled' : ''}">
+                            <a class="page-link" th:href="@{/grammar/admin(category=${selectedCategory}, keyword=${keyword}, page=${topicsPage.number + 1})}">Sau »</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Hệ thống ghi nhớ từ vựng và ngữ pháp tiếng Nhật.</p>
+    </footer>
+</body>
+</html>
+

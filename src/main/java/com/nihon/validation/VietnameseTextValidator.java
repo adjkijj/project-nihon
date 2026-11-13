@@ -18,30 +18,87 @@ public class VietnameseTextValidator implements ConstraintValidator<VietnameseTe
 
     private static final String COMMON_PUNCTUATION = ".,;:!?'\"()-–—/[]{}%&+_~“”‘’…";
 
+    private boolean allowNewlines = false;
+    private boolean allowJapanese = false;
+
+    @Override
+    public void initialize(VietnameseText constraintAnnotation) {
+        if (constraintAnnotation != null) {
+            this.allowNewlines = constraintAnnotation.allowNewlines();
+            this.allowJapanese = constraintAnnotation.allowJapanese();
+        }
+    }
+
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
         if (value == null || value.isEmpty()) {
             return true;
         }
-        if (TextNormalizer.containsControlChars(value)) {
+        if (TextNormalizer.containsControlChars(value, allowNewlines)) {
             return false;
         }
         if (value.indexOf('<') >= 0 || value.indexOf('>') >= 0) {
             return false;
         }
-        String normalized = TextNormalizer.normalize(value);
-        if (normalized == null) {
-            return false;
-        }
 
-        for (int i = 0; i < normalized.length(); ) {
-            int cp = normalized.codePointAt(i);
-            if (!isAllowedVietnameseChar(cp)) {
+        if (!allowNewlines) {
+            String normalized = TextNormalizer.normalize(value);
+            if (normalized == null) {
                 return false;
             }
-            i += Character.charCount(cp);
+            for (int i = 0; i < normalized.length(); ) {
+                int cp = normalized.codePointAt(i);
+                if (!isAllowedChar(cp)) {
+                    return false;
+                }
+                i += Character.charCount(cp);
+            }
+            return true;
+        } else {
+            // Trường hợp cho phép xuống dòng
+            if (value.trim().isEmpty()) {
+                return false;
+            }
+            String nfc = java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFC);
+            boolean hasNonWhitespace = false;
+            for (int i = 0; i < nfc.length(); ) {
+                int cp = nfc.codePointAt(i);
+                if (cp == '\n' || cp == '\r') {
+                    i += Character.charCount(cp);
+                    continue;
+                }
+                if (!isAllowedChar(cp)) {
+                    return false;
+                }
+                if (!Character.isWhitespace(cp)) {
+                    hasNonWhitespace = true;
+                }
+                i += Character.charCount(cp);
+            }
+            return hasNonWhitespace;
         }
-        return true;
+    }
+
+    private boolean isAllowedChar(int cp) {
+        if (isAllowedVietnameseChar(cp)) {
+            return true;
+        }
+        if (allowJapanese) {
+            Character.UnicodeScript script = Character.UnicodeScript.of(cp);
+            if (script == Character.UnicodeScript.HIRAGANA
+                    || script == Character.UnicodeScript.KATAKANA
+                    || script == Character.UnicodeScript.HAN) {
+                return true;
+            }
+            if (cp == '〜' || cp == '～' || cp == '・' || cp == '･' || cp == 'ー'
+                    || cp == '「' || cp == '」' || cp == '『' || cp == '』'
+                    || cp == '【' || cp == '】' || cp == '、' || cp == '。'
+                    || cp == '（' || cp == '）' || cp == '？' || cp == '！'
+                    || cp == '\u3000') {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isAllowedVietnameseChar(int cp) {

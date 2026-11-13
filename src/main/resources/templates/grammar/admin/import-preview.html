@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xem trước Nhập Ngữ pháp - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <link rel="stylesheet" th:href="@{/css/exams-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/grammar.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('grammar')}"></header>
+
+    <main class="container my-4">
+        <!-- Breadcrumb điều hướng -->
+        <nav aria-label="Đường dẫn" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/grammar/admin}">Quản trị Ngữ pháp</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/grammar/admin/import}">Nhập Excel</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Xem trước thẩm định</li>
+            </ol>
+        </nav>
+
+        <div class="card mb-4">
+            <div class="card-header border-bottom pb-3 mb-3 d-flex flex-wrap justify-content-between align-items-center">
+                <div>
+                    <h1 class="page-title h3 m-0">📊 Báo cáo thẩm định tệp Excel</h1>
+                    <p class="text-secondary font-size-sm mt-1 mb-0" th:text="'Tệp: ' + ${report.filename} + ' (' + ${report.fileSize} + ' bytes)'">report.xlsx</p>
+                </div>
+
+                <div class="d-flex gap-3">
+                    <div class="text-center">
+                        <div class="font-size-xs text-secondary text-uppercase font-weight-bold">Chủ đề</div>
+                        <div class="h4 font-weight-bold m-0 text-primary" th:text="${report.totalTopics}">2</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="font-size-xs text-secondary text-uppercase font-weight-bold">Ví dụ</div>
+                        <div class="h4 font-weight-bold m-0 text-success" th:text="${report.totalExamples}">4</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="font-size-xs text-secondary text-uppercase font-weight-bold">Câu hỏi</div>
+                        <div class="h4 font-weight-bold m-0 text-info" th:text="${report.totalQuestions}">2</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Khối báo lỗi chi tiết theo dòng và cột -->
+            <div th:if="${report.errors != null and !report.errors.isEmpty()}" class="alert alert-danger mb-4">
+                <h3 class="h6 font-weight-bold mb-2">❌ Phát hiện <span th:text="${report.errors.size()}">1</span> lỗi trong tệp Excel:</h3>
+                <ul class="mb-0 pl-3">
+                    <li th:each="err : ${report.errors}" th:text="${err}">Lỗi dòng X cột Y</li>
+                </ul>
+                <div class="mt-2 font-size-sm">Vui lòng sửa các lỗi trên trong tệp Excel và tải lên lại. Toàn bộ transaction bị hủy, không có dữ liệu nào được lưu.</div>
+            </div>
+
+            <!-- Khối cảnh báo nếu có -->
+            <div th:if="${report.warnings != null and !report.warnings.isEmpty()}" class="alert alert-warning mb-4">
+                <h3 class="h6 font-weight-bold mb-2">⚠️ Cảnh báo:</h3>
+                <ul class="mb-0 pl-3">
+                    <li th:each="w : ${report.warnings}" th:text="${w}">Cảnh báo...</li>
+                </ul>
+            </div>
+
+            <!-- Danh sách Chủ đề & Ví dụ xem trước -->
+            <h2 class="h5 font-weight-bold mb-2">1. Dữ liệu Sheet "Grammar" (<span th:text="${report.topics.size()}">0</span> chủ đề)</h2>
+            <div class="table-responsive mb-4">
+                <table class="data-table" aria-label="Bảng xem trước chủ đề">
+                    <thead>
+                        <tr>
+                            <th class="w-10">Mã</th>
+                            <th class="w-25">Tiêu đề</th>
+                            <th class="w-12">Phân loại</th>
+                            <th>Công thức</th>
+                            <th class="text-center w-10">Số ví dụ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="t : ${report.topics}">
+                            <td><strong class="text-primary" th:text="${t.code}">N5-GR-01</strong></td>
+                            <td th:text="${t.title}">Cấu trúc 〜から</td>
+                            <td>
+                                <span class="badge badge-grammar" th:if="${t.category == 'GRAMMAR'}">Ngữ pháp</span>
+                                <span class="badge badge-supplement" th:if="${t.category == 'SUPPLEMENT'}">Bổ sung</span>
+                            </td>
+                            <td class="font-size-sm" th:text="${t.formula}">[Thể thường] + から</td>
+                            <td class="text-center font-weight-bold" th:text="${t.examples.size()}">2</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Danh sách Câu hỏi trắc nghiệm xem trước -->
+            <h2 class="h5 font-weight-bold mb-2">2. Dữ liệu Sheet "Quiz" (<span th:text="${report.quizQuestions.size()}">0</span> câu hỏi)</h2>
+            <div class="table-responsive mb-4">
+                <table class="data-table" aria-label="Bảng xem trước câu hỏi">
+                    <thead>
+                        <tr>
+                            <th class="w-10">Mã</th>
+                            <th class="w-30">Đề bài</th>
+                            <th>Các phương án</th>
+                            <th class="text-center w-12">Đáp án đúng</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="q : ${report.quizQuestions}">
+                            <td><strong class="text-primary" th:text="${q.grammarCode}">N5-GR-01</strong></td>
+                            <td th:text="${q.prompt}">あしたは　テストが...</td>
+                            <td>
+                                <span th:each="c, cIter : ${q.choices}" class="badge badge-normal mr-1"
+                                      th:classappend="${cIter.count == q.correctIndex ? 'badge-published' : ''}"
+                                      th:text="${cIter.count} + ': ' + ${c}">1: から</span>
+                            </td>
+                            <td class="text-center font-weight-bold text-success" th:text="'Phương án ' + ${q.correctIndex}">Phương án 1</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Nút thao tác xác nhận -->
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                <a th:href="@{/grammar/admin/import}" class="btn btn-secondary">Hủy và chọn tệp khác</a>
+
+                <form th:if="${report.canCommit()}" th:action="@{/grammar/admin/import/commit}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${_csrf}" />
+                    <input type="hidden" name="token" th:value="${report.token}" />
+                    <button type="submit" class="btn btn-success font-weight-bold">
+                        ✓ Xác nhận nhập vào CSDL
+                    </button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Hệ thống ghi nhớ từ vựng và ngữ pháp tiếng Nhật.</p>
+    </footer>
+</body>
+</html>
+

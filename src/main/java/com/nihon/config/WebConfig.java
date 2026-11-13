@@ -22,7 +22,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         // 1. Kiểm soát an ninh mạng cho tính năng import: kiểm tra enabled và dải IP được phép (allowed-ips)
         registry.addInterceptor(importSecurityInterceptor)
-                .addPathPatterns("/import/**", "/exams/admin/import/**");
+                .addPathPatterns("/import/**", "/exams/admin/import/**", "/grammar/admin/import/**");
 
         // 2. Bảo vệ chống CSRF cho toàn bộ ứng dụng
         registry.addInterceptor(csrfInterceptor)
