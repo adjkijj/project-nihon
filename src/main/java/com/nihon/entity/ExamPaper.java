@@ -118,6 +118,16 @@ public class ExamPaper {
         }
     }
 
+    public List<ExamQuestion> getAllQuestions() {
+        if (sections == null || sections.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        return sections.stream()
+                .filter(s -> s.getQuestions() != null)
+                .flatMap(s -> s.getQuestions().stream())
+                .toList();
+    }
+
     public int getTotalQuestions() {
         if (sections == null || sections.isEmpty()) {
             return 0;

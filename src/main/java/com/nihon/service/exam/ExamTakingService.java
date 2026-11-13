@@ -2,8 +2,8 @@ package com.nihon.service.exam;
 
 import com.nihon.dto.exam.taker.ExamAnswerResponse;
 import com.nihon.dto.exam.taker.ExamAnswerSubmission;
-import com.nihon.dto.exam.taker.ExamAttempt;
 import com.nihon.dto.exam.taker.ExamAttemptStatus;
+import com.nihon.dto.exam.taker.ExamSessionAttempt;
 import com.nihon.dto.exam.taker.ExamTakerChoiceDto;
 import com.nihon.dto.exam.taker.ExamTakerPaperDto;
 import com.nihon.dto.exam.taker.ExamTakerQuestionDto;
@@ -14,7 +14,9 @@ import com.nihon.entity.ExamPaper;
 import com.nihon.entity.ExamQuestion;
 import com.nihon.entity.ExamQuestionType;
 import com.nihon.entity.ExamSection;
+import com.nihon.history.LearnerContext;
 import com.nihon.repository.ExamPaperRepository;
+import com.nihon.service.exam.grading.ExamGradingService;
 import com.nihon.validation.TextNormalizer;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Service;
@@ -31,21 +33,23 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Dịch vụ điều phối quá trình làm bài thi trực tuyến của học viên (F42 - F48).
- * Quản lý vòng đời ExamAttempt trong HttpSession, đếm ngược hạn chót máy chủ,
- * xáo trộn lựa chọn theo seed, tự động lưu nháp và chống gian lận đáp án.
+ * Quản lý vòng đời ExamSessionAttempt trong HttpSession, đếm ngược hạn chót máy chủ,
+ * xáo trộn lựa chọn theo seed, tự động lưu nháp và chấm điểm bền vững qua ExamGradingService.
  */
 @Service
 @Transactional(readOnly = true)
 public class ExamTakingService {
 
     private final ExamPaperRepository paperRepository;
+    private final ExamGradingService gradingService;
 
-    public ExamTakingService(ExamPaperRepository paperRepository) {
+    public ExamTakingService(ExamPaperRepository paperRepository,
+                             ExamGradingService gradingService) {
         this.paperRepository = paperRepository;
+        this.gradingService = gradingService;
     }
 
     /**
@@ -82,10 +86,10 @@ public class ExamTakingService {
     }
 
     /**
-     * Bắt đầu một lượt làm bài thi mới, tạo ExamAttempt và lưu trong HttpSession.
+     * Bắt đầu một lượt làm bài thi mới, tạo ExamSessionAttempt và lưu trong HttpSession.
      */
     @Transactional
-    public ExamAttempt startExam(String code, HttpSession session) {
+    public ExamSessionAttempt startExam(String code, HttpSession session) {
         if (session == null) {
             throw new IllegalArgumentException("Phiên làm việc (Session) không tồn tại.");
         }
@@ -99,12 +103,14 @@ public class ExamTakingService {
         long seed = System.currentTimeMillis();
         Instant now = Instant.now();
         Instant deadline = now.plus(Duration.ofMinutes(paper.getDurationMinutes()));
+        String learnerId = LearnerContext.current().orElseGet(() -> UUID.randomUUID().toString());
 
         Map<Long, List<Long>> shuffledChoiceIds = new HashMap<>();
         ExamTakerPaperDto paperDto = sanitizePaperForTaking(paper, seed, shuffledChoiceIds);
 
-        ExamAttempt attempt = ExamAttempt.builder()
+        ExamSessionAttempt attempt = ExamSessionAttempt.builder()
                 .attemptId(attemptId)
+                .learnerId(learnerId)
                 .paperId(paper.getId())
                 .paperCode(paper.getCode())
                 .paperTitle(paper.getTitle())
@@ -127,15 +133,14 @@ public class ExamTakingService {
 
     /**
      * Lấy bài làm hiện tại theo attemptId từ HttpSession.
-     * Kiểm tra chặt chẽ quyền sở hữu của session hiện tại.
      */
-    public ExamAttempt getAttempt(String attemptId, HttpSession session) {
+    public ExamSessionAttempt getAttempt(String attemptId, HttpSession session) {
         if (session == null || attemptId == null || attemptId.isBlank()) {
             return null;
         }
 
-        Map<String, ExamAttempt> attemptsMap = getSessionAttemptsMap(session);
-        ExamAttempt attempt = attemptsMap.get(attemptId);
+        Map<String, ExamSessionAttempt> attemptsMap = getSessionAttemptsMap(session);
+        ExamSessionAttempt attempt = attemptsMap.get(attemptId);
         if (attempt == null) {
             return null;
         }
@@ -144,10 +149,21 @@ public class ExamTakingService {
         if (attempt.getStatus() == ExamAttemptStatus.RUNNING) {
             if (attempt.isExpired(Instant.now())) {
                 finalizeAttempt(attempt, ExamAttemptStatus.EXPIRED);
+                String learnerId = LearnerContext.current().orElse(attempt.getLearnerId());
+                gradingService.gradeAndPersist(attempt, learnerId);
             }
         }
 
         return attempt;
+    }
+
+    /**
+     * Lưu một ExamSessionAttempt trực tiếp vào session (dùng cho mini attempt hoặc luyện lại).
+     */
+    public void putSessionAttempt(HttpSession session, ExamSessionAttempt attempt) {
+        if (session != null && attempt != null) {
+            storeAttemptInSession(session, attempt);
+        }
     }
 
     /**
@@ -157,7 +173,7 @@ public class ExamTakingService {
         if (session == null) {
             throw new IllegalArgumentException("Phiên làm việc không hợp lệ.");
         }
-        ExamAttempt attempt = getAttempt(attemptId, session);
+        ExamSessionAttempt attempt = getAttempt(attemptId, session);
         if (attempt == null) {
             throw new IllegalArgumentException("Không tìm thấy bài làm của phiên hiện tại.");
         }
@@ -165,6 +181,9 @@ public class ExamTakingService {
         Instant now = Instant.now();
         if (attempt.getStatus() == ExamAttemptStatus.EXPIRED || attempt.isExpired(now)) {
             finalizeAttempt(attempt, ExamAttemptStatus.EXPIRED);
+            String learnerId = LearnerContext.current().orElse(attempt.getLearnerId());
+            gradingService.gradeAndPersist(attempt, learnerId);
+
             return ExamAnswerResponse.builder()
                     .status("EXPIRED")
                     .questionId(submission.getQuestionId())
@@ -213,13 +232,14 @@ public class ExamTakingService {
     }
 
     /**
-     * Kết thúc bài thi (Nộp bài). Chặn nộp lần hai.
+     * Kết thúc bài thi (Nộp bài) và chấm điểm bền vững vào CSDL (F40 - F45).
      */
-    public ExamAttempt finishExam(String attemptId, HttpSession session) {
+    @Transactional
+    public ExamSessionAttempt finishExam(String attemptId, HttpSession session) {
         if (session == null) {
             throw new IllegalArgumentException("Phiên làm việc không hợp lệ.");
         }
-        ExamAttempt attempt = getAttempt(attemptId, session);
+        ExamSessionAttempt attempt = getAttempt(attemptId, session);
         if (attempt == null) {
             throw new NoSuchElementException("Không tìm thấy bài làm thi để hoàn tất.");
         }
@@ -232,10 +252,16 @@ public class ExamTakingService {
         Instant now = Instant.now();
         ExamAttemptStatus finalStatus = attempt.isExpired(now) ? ExamAttemptStatus.EXPIRED : ExamAttemptStatus.FINISHED;
         finalizeAttempt(attempt, finalStatus);
+
+        String learnerId = (attempt.getLearnerId() != null && !attempt.getLearnerId().isBlank())
+                ? attempt.getLearnerId()
+                : LearnerContext.current().orElse(null);
+        gradingService.gradeAndPersist(attempt, learnerId);
+
         return attempt;
     }
 
-    private void finalizeAttempt(ExamAttempt attempt, ExamAttemptStatus finalStatus) {
+    private void finalizeAttempt(ExamSessionAttempt attempt, ExamAttemptStatus finalStatus) {
         if (attempt.getStatus() == ExamAttemptStatus.RUNNING) {
             attempt.setStatus(finalStatus);
             attempt.setSubmittedAt(Instant.now());
@@ -245,7 +271,6 @@ public class ExamTakingService {
     /**
      * Lọc sạch dữ liệu bài thi để hiển thị cho thí sinh.
      * TUYỆT ĐỐI KHÔNG chứa: correct, explanation hay answerKeys!
-     * Xáo trộn lựa chọn trắc nghiệm nếu shuffleChoices = true bằng seed cố định.
      */
     private ExamTakerPaperDto sanitizePaperForTaking(ExamPaper paper,
                                                      long seed,
@@ -263,7 +288,6 @@ public class ExamTakingService {
                         if (q.getType() == ExamQuestionType.MULTIPLE_CHOICE && q.getChoices() != null) {
                             List<ExamChoice> choicesCopy = new ArrayList<>(q.getChoices());
                             if (paper.isShuffleChoices() && choicesCopy.size() > 1) {
-                                // Xáo trộn cố định theo seed kết hợp questionId
                                 Collections.shuffle(choicesCopy, new Random(seed + q.getId()));
                             }
                             List<Long> orderedIds = new ArrayList<>();
@@ -278,7 +302,6 @@ public class ExamTakingService {
                             }
                             shuffledChoiceIds.put(q.getId(), orderedIds);
                         } else if (q.getType() == ExamQuestionType.ORDERING && q.getChoices() != null) {
-                            // Với ORDERING, các mảnh từ được giữ nguyên thứ tự khai báo trong đề
                             int choiceOrder = 1;
                             for (ExamChoice c : q.getChoices()) {
                                 choiceDtos.add(ExamTakerChoiceDto.builder()
@@ -328,19 +351,19 @@ public class ExamTakingService {
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, ExamAttempt> getSessionAttemptsMap(HttpSession session) {
-        Object attr = session.getAttribute(ExamAttempt.SESSION_ATTEMPTS_MAP);
+    private Map<String, ExamSessionAttempt> getSessionAttemptsMap(HttpSession session) {
+        Object attr = session.getAttribute(ExamSessionAttempt.SESSION_ATTEMPTS_MAP);
         if (attr instanceof Map<?, ?> map) {
-            return (Map<String, ExamAttempt>) map;
+            return (Map<String, ExamSessionAttempt>) map;
         }
-        Map<String, ExamAttempt> newMap = new HashMap<>();
-        session.setAttribute(ExamAttempt.SESSION_ATTEMPTS_MAP, newMap);
+        Map<String, ExamSessionAttempt> newMap = new HashMap<>();
+        session.setAttribute(ExamSessionAttempt.SESSION_ATTEMPTS_MAP, newMap);
         return newMap;
     }
 
-    private void storeAttemptInSession(HttpSession session, ExamAttempt attempt) {
-        Map<String, ExamAttempt> attemptsMap = getSessionAttemptsMap(session);
+    private void storeAttemptInSession(HttpSession session, ExamSessionAttempt attempt) {
+        Map<String, ExamSessionAttempt> attemptsMap = getSessionAttemptsMap(session);
         attemptsMap.put(attempt.getAttemptId(), attempt);
-        session.setAttribute(ExamAttempt.SESSION_ATTEMPTS_MAP, attemptsMap);
+        session.setAttribute(ExamSessionAttempt.SESSION_ATTEMPTS_MAP, attemptsMap);
     }
 }

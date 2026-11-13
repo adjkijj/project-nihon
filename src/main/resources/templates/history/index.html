@@ -57,6 +57,7 @@
                     <option value="TIMED_VI_JA" th:selected="${mode == 'TIMED_VI_JA'}">Bấm giờ Việt → Nhật</option>
                     <option value="TIMED_KANJI_READING" th:selected="${mode == 'TIMED_KANJI_READING'}">Bấm giờ Kanji</option>
                     <option value="TIMED_CHOICE" th:selected="${mode == 'TIMED_CHOICE'}">Bấm giờ trắc nghiệm</option>
+                    <option value="TOPIC_TEST" th:selected="${mode == 'TOPIC_TEST'}">Kiểm tra cuối bài</option>
                 </select>
             </div>
             <div class="filter-field">
@@ -147,6 +148,63 @@
                 <a th:if="${hasNext}" class="history-btn history-btn-ghost"
                     th:href="@{/history(mode=${mode},range=${range},page=${page + 1})}" rel="next">Sau →</a>
             </nav>
+        </section>
+
+        <section class="history-list-card" aria-labelledby="examListTitle">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 id="examListTitle" class="m-0">Bài thi đã làm</h2>
+                <form th:if="${!#lists.isEmpty(examAttempts)}" th:action="@{/history/exams/delete-all}" method="post"
+                      data-confirm="Bạn có chắc chắn muốn xóa toàn bộ lịch sử bài thi của mình?">
+                    <input type="hidden" name="_csrf" th:value="${_csrf}">
+                    <button type="submit" class="history-btn history-btn-danger font-size-sm">Xóa tất cả bài thi</button>
+                </form>
+            </div>
+
+            <div th:if="${#lists.isEmpty(examAttempts)}" class="history-empty">
+                <p>Bạn chưa nộp bài thi nào.</p>
+                <a th:href="@{/exams}" class="history-btn">Xem danh sách đề thi</a>
+            </div>
+
+            <div th:unless="${#lists.isEmpty(examAttempts)}" class="table-scroll">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Thời điểm nộp</th>
+                            <th scope="col">Đề thi</th>
+                            <th scope="col">Điểm số</th>
+                            <th scope="col">Thời gian</th>
+                            <th scope="col">Trạng thái</th>
+                            <th scope="col">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="ea : ${examAttempts}">
+                            <td data-label="Thời điểm nộp" th:text="${#temporals.format(ea.submittedAt, 'dd/MM/yyyy HH:mm')}">01/01/2026 10:00</td>
+                            <td data-label="Đề thi" th:text="${ea.paper != null ? ea.paper.title : 'Đề thi đã hoàn tất'}">JLPT N5</td>
+                            <td data-label="Điểm số">
+                                <strong th:text="${ea.totalPoints} + ' / ' + ${ea.maxPoints}">25.00 / 30.00</strong>
+                            </td>
+                            <td data-label="Thời gian">
+                                <span th:text="${ea.durationSeconds / 60}">15</span> phút <span th:text="${ea.durationSeconds % 60}">30</span> giây
+                            </td>
+                            <td data-label="Trạng thái">
+                                <span th:if="${ea.status.name() == 'FINISHED'}" class="badge badge-published">Đã nộp</span>
+                                <span th:if="${ea.status.name() == 'EXPIRED'}" class="badge badge-rejected">Hết giờ</span>
+                            </td>
+                            <td data-label="Thao tác" class="action-cell">
+                                <div class="d-flex gap-2">
+                                    <a th:href="@{'/exams/attempt/' + ${ea.id} + '/result'}" class="history-btn history-btn-ghost font-size-sm">Xem kết quả</a>
+                                    <form th:action="@{'/history/exams/' + ${ea.id} + '/delete'}" method="post" class="d-inline"
+                                          data-confirm="Bạn có chắc chắn muốn xóa kết quả bài thi này khỏi lịch sử?">
+                                        <input type="hidden" name="_csrf" th:value="${_csrf}">
+                                        <button type="submit" class="history-btn history-btn-danger font-size-sm">Xóa</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </section>
 
         <section class="history-privacy" aria-labelledby="privacyTitle">

@@ -74,6 +74,9 @@
                 <a th:href="@{/verbs(topicId=${topic.id})}" class="btn btn-secondary">
                     Xem danh sách động từ của chủ đề →
                 </a>
+                <a th:href="@{'/topics/' + ${topic.id} + '/test'}" class="btn btn-warning">
+                    📝 Kiểm tra cuối bài
+                </a>
             </div>
         </section>
 

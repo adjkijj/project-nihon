@@ -21,9 +21,12 @@ import java.util.Optional;
 public class HistoryController {
 
     private final StudyHistoryService historyService;
+    private final com.nihon.repository.ExamAttemptRepository examAttemptRepository;
 
-    public HistoryController(StudyHistoryService historyService) {
+    public HistoryController(StudyHistoryService historyService,
+                             com.nihon.repository.ExamAttemptRepository examAttemptRepository) {
         this.historyService = historyService;
+        this.examAttemptRepository = examAttemptRepository;
     }
 
     @GetMapping
@@ -54,6 +57,10 @@ public class HistoryController {
             model.addAttribute("hasNext", result.page() < result.totalPages());
             model.addAttribute("summary", historyService.summary(id, safeMode, safeRange));
             model.addAttribute("weeklyBars", historyService.weeklyAccuracy(id, safeMode));
+
+            // Danh sách bài thi đã nộp (F40 - F45)
+            List<com.nihon.entity.ExamAttempt> examAttempts = examAttemptRepository.findByLearnerIdOrderBySubmittedAtDesc(id);
+            model.addAttribute("examAttempts", examAttempts);
         } else {
             model.addAttribute("sessions", List.of());
             model.addAttribute("page", 1);
@@ -63,6 +70,7 @@ public class HistoryController {
             model.addAttribute("hasNext", false);
             model.addAttribute("summary", new HistoryViews.Summary(0, 0, 0, 0, 0, 0));
             model.addAttribute("weeklyBars", List.of());
+            model.addAttribute("examAttempts", List.of());
         }
         return "history/index";
     }
@@ -75,6 +83,35 @@ public class HistoryController {
             redirect.addFlashAttribute("historyMessage", "Đã xoá " + n + " phiên học khỏi lịch sử.");
         } else {
             redirect.addFlashAttribute("historyMessage", "Không thể xoá: trình duyệt đang tắt cookie.");
+        }
+        return "redirect:/history";
+    }
+
+    /** Xóa một bài thi của người học. */
+    @PostMapping("/exams/{attemptId}/delete")
+    @org.springframework.transaction.annotation.Transactional
+    public String deleteExamAttempt(@org.springframework.web.bind.annotation.PathVariable("attemptId") String attemptId,
+                                    RedirectAttributes redirect) {
+        Optional<String> learner = LearnerContext.current();
+        if (learner.isPresent() && attemptId != null && !attemptId.isBlank()) {
+            examAttemptRepository.deleteByLearnerIdAndId(learner.get(), attemptId);
+            redirect.addFlashAttribute("historyMessage", "Đã xóa bài thi khỏi lịch sử.");
+        } else {
+            redirect.addFlashAttribute("historyMessage", "Không thể xóa: bài thi không tồn tại hoặc cookie bị tắt.");
+        }
+        return "redirect:/history";
+    }
+
+    /** Xóa toàn bộ bài thi của người học. */
+    @PostMapping("/exams/delete-all")
+    @org.springframework.transaction.annotation.Transactional
+    public String deleteAllExamAttempts(RedirectAttributes redirect) {
+        Optional<String> learner = LearnerContext.current();
+        if (learner.isPresent()) {
+            int deleted = examAttemptRepository.deleteByLearnerId(learner.get());
+            redirect.addFlashAttribute("historyMessage", "Đã xóa " + deleted + " bài thi khỏi lịch sử.");
+        } else {
+            redirect.addFlashAttribute("historyMessage", "Không thể xóa: trình duyệt đang tắt cookie.");
         }
         return "redirect:/history";
     }

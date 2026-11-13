@@ -1,6 +1,6 @@
 package com.nihon.controller;
 
-import com.nihon.dto.exam.taker.ExamAttempt;
+import com.nihon.dto.exam.taker.ExamSessionAttempt;
 import com.nihon.entity.ExamAnswerKey;
 import com.nihon.entity.ExamAnswerKind;
 import com.nihon.entity.ExamCategory;
@@ -124,7 +124,7 @@ class ExamHtmlAnswerLeakTest {
     @DisplayName("Quét toàn bộ HTML phòng thi: TUYỆT ĐỐI KHÔNG chứa cờ correct, lời giải explanation hay nội dung answer_key")
     void testHtmlDoesNotLeakAnswersOrExplanations() throws Exception {
         MockHttpSession session = new MockHttpSession();
-        ExamAttempt attempt = takingService.startExam(secretPaper.getCode(), session);
+        ExamSessionAttempt attempt = takingService.startExam(secretPaper.getCode(), session);
 
         MvcResult result = mockMvc.perform(get("/exams/attempt/" + attempt.getAttemptId()).session(session))
                 .andExpect(status().isOk())

@@ -2,8 +2,8 @@ package com.nihon.service.exam;
 
 import com.nihon.dto.exam.taker.ExamAnswerResponse;
 import com.nihon.dto.exam.taker.ExamAnswerSubmission;
-import com.nihon.dto.exam.taker.ExamAttempt;
 import com.nihon.dto.exam.taker.ExamAttemptStatus;
+import com.nihon.dto.exam.taker.ExamSessionAttempt;
 import com.nihon.entity.ExamCategory;
 import com.nihon.entity.ExamChoice;
 import com.nihon.entity.ExamPaper;
@@ -37,6 +37,9 @@ class ExamTakingServiceTest {
 
     @Mock
     private ExamPaperRepository paperRepository;
+
+    @Mock
+    private com.nihon.service.exam.grading.ExamGradingService gradingService;
 
     @InjectMocks
     private ExamTakingService takingService;
@@ -93,7 +96,7 @@ class ExamTakingServiceTest {
     void testStartExamSuccess() {
         when(paperRepository.findByCodeAndPublishedTrue("TEST-N5-01")).thenReturn(Optional.of(testPaper));
 
-        ExamAttempt attempt = takingService.startExam("TEST-N5-01", sessionA);
+        ExamSessionAttempt attempt = takingService.startExam("TEST-N5-01", sessionA);
 
         assertThat(attempt).isNotNull();
         assertThat(attempt.getAttemptId()).isNotBlank();
@@ -108,7 +111,7 @@ class ExamTakingServiceTest {
                 .hasSize(4);
 
         // Lưu vào sessionA
-        ExamAttempt retrieved = takingService.getAttempt(attempt.getAttemptId(), sessionA);
+        ExamSessionAttempt retrieved = takingService.getAttempt(attempt.getAttemptId(), sessionA);
         assertThat(retrieved).isSameAs(attempt);
     }
 
@@ -125,7 +128,7 @@ class ExamTakingServiceTest {
     @DisplayName("Lưu câu trả lời hợp lệ và cập nhật số câu đã làm")
     void testSaveAnswerValid() {
         when(paperRepository.findByCodeAndPublishedTrue("TEST-N5-01")).thenReturn(Optional.of(testPaper));
-        ExamAttempt attempt = takingService.startExam("TEST-N5-01", sessionA);
+        ExamSessionAttempt attempt = takingService.startExam("TEST-N5-01", sessionA);
 
         ExamAnswerSubmission sub = ExamAnswerSubmission.builder()
                 .questionId(101L)
@@ -147,7 +150,7 @@ class ExamTakingServiceTest {
     @DisplayName("Câu trả lời quá 1000 ký tự bị từ chối")
     void testSaveAnswerOverlongRejected() {
         when(paperRepository.findByCodeAndPublishedTrue("TEST-N5-01")).thenReturn(Optional.of(testPaper));
-        ExamAttempt attempt = takingService.startExam("TEST-N5-01", sessionA);
+        ExamSessionAttempt attempt = takingService.startExam("TEST-N5-01", sessionA);
 
         String overlong = "A".repeat(1001);
         ExamAnswerSubmission sub = ExamAnswerSubmission.builder()
@@ -164,7 +167,7 @@ class ExamTakingServiceTest {
     @DisplayName("Trả lời sau khi hết hạn bị từ chối và bài thi chuyển sang EXPIRED")
     void testSaveAnswerAfterDeadlineRejected() {
         when(paperRepository.findByCodeAndPublishedTrue("TEST-N5-01")).thenReturn(Optional.of(testPaper));
-        ExamAttempt attempt = takingService.startExam("TEST-N5-01", sessionA);
+        ExamSessionAttempt attempt = takingService.startExam("TEST-N5-01", sessionA);
 
         // Giả lập deadline đã qua 10 giây trước
         attempt.setDeadline(Instant.now().minusSeconds(10));
@@ -184,10 +187,10 @@ class ExamTakingServiceTest {
     @DisplayName("Cách ly phiên: session khác không thể đọc hoặc sửa bài làm")
     void testSessionIsolation() {
         when(paperRepository.findByCodeAndPublishedTrue("TEST-N5-01")).thenReturn(Optional.of(testPaper));
-        ExamAttempt attemptA = takingService.startExam("TEST-N5-01", sessionA);
+        ExamSessionAttempt attemptA = takingService.startExam("TEST-N5-01", sessionA);
 
         // sessionB cố truy cập attempt của sessionA
-        ExamAttempt attemptB = takingService.getAttempt(attemptA.getAttemptId(), sessionB);
+        ExamSessionAttempt attemptB = takingService.getAttempt(attemptA.getAttemptId(), sessionB);
         assertThat(attemptB).isNull();
 
         ExamAnswerSubmission sub = ExamAnswerSubmission.builder()
@@ -203,15 +206,15 @@ class ExamTakingServiceTest {
     @DisplayName("Ngăn nộp bài 2 lần: nộp lần 2 trả về kết quả đã hoàn thành không ghi đè")
     void testFinishExamPreventDoubleSubmission() {
         when(paperRepository.findByCodeAndPublishedTrue("TEST-N5-01")).thenReturn(Optional.of(testPaper));
-        ExamAttempt attempt = takingService.startExam("TEST-N5-01", sessionA);
+        ExamSessionAttempt attempt = takingService.startExam("TEST-N5-01", sessionA);
 
-        ExamAttempt finished1 = takingService.finishExam(attempt.getAttemptId(), sessionA);
+        ExamSessionAttempt finished1 = takingService.finishExam(attempt.getAttemptId(), sessionA);
         assertThat(finished1.getStatus()).isEqualTo(ExamAttemptStatus.FINISHED);
         Instant firstSubmittedAt = finished1.getSubmittedAt();
         assertThat(firstSubmittedAt).isNotNull();
 
         // Nộp lần 2
-        ExamAttempt finished2 = takingService.finishExam(attempt.getAttemptId(), sessionA);
+        ExamSessionAttempt finished2 = takingService.finishExam(attempt.getAttemptId(), sessionA);
         assertThat(finished2.getStatus()).isEqualTo(ExamAttemptStatus.FINISHED);
         assertThat(finished2.getSubmittedAt()).isEqualTo(firstSubmittedAt);
     }

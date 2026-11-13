@@ -1,12 +1,16 @@
 package com.nihon.controller;
 
+import com.nihon.dto.exam.result.ExamResultViewDto;
 import com.nihon.dto.exam.taker.ExamAnswerResponse;
 import com.nihon.dto.exam.taker.ExamAnswerSubmission;
-import com.nihon.dto.exam.taker.ExamAttempt;
+import com.nihon.dto.exam.taker.ExamSessionAttempt;
 import com.nihon.entity.ExamCategory;
 import com.nihon.entity.ExamPaper;
+import com.nihon.history.LearnerContext;
 import com.nihon.service.exam.ExamTakingService;
+import com.nihon.service.exam.grading.ExamGradingService;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,24 +20,30 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
  * Controller phục vụ học viên làm bài thi trực tuyến (F42 - F48).
- * Quản lý danh sách đề thi, giới thiệu đề, phòng thi đếm ngược, lưu nháp tự động và nộp bài.
+ * Quản lý danh sách đề thi, giới thiệu đề, phòng thi đếm ngược, lưu nháp tự động,
+ * nộp bài, xem kết quả chi tiết, tự chấm điểm bài luận và luyện lại các câu sai.
  */
 @Controller
 @RequestMapping("/exams")
 public class ExamTakingController {
 
     private final ExamTakingService examTakingService;
+    private final ExamGradingService gradingService;
 
-    public ExamTakingController(ExamTakingService examTakingService) {
+    public ExamTakingController(ExamTakingService examTakingService,
+                                ExamGradingService gradingService) {
         this.examTakingService = examTakingService;
+        this.gradingService = gradingService;
     }
 
     /**
@@ -71,14 +81,14 @@ public class ExamTakingController {
     }
 
     /**
-     * 3. Bắt đầu lượt làm bài mới, khởi tạo ExamAttempt và chuyển hướng vào phòng thi.
+     * 3. Bắt đầu lượt làm bài mới, khởi tạo ExamSessionAttempt và chuyển hướng vào phòng thi.
      */
     @PostMapping("/{code}/start")
     public String startExam(@PathVariable("code") String code,
                             HttpSession session,
                             RedirectAttributes redirectAttributes) {
         try {
-            ExamAttempt attempt = examTakingService.startExam(code, session);
+            ExamSessionAttempt attempt = examTakingService.startExam(code, session);
             return "redirect:/exams/attempt/" + attempt.getAttemptId();
         } catch (NoSuchElementException | IllegalStateException | IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
@@ -88,14 +98,14 @@ public class ExamTakingController {
 
     /**
      * 4. Phòng làm bài thi trực tuyến (F42, F46, F47, F48).
-     * Chặn quay lại sửa sau khi đã nộp.
+     * Chặn quay lại sửa sau khi đã nộp hoặc hết hạn.
      */
     @GetMapping("/attempt/{attemptId}")
     public String examRoom(@PathVariable("attemptId") String attemptId,
                            HttpSession session,
                            Model model,
                            RedirectAttributes redirectAttributes) {
-        ExamAttempt attempt = examTakingService.getAttempt(attemptId, session);
+        ExamSessionAttempt attempt = examTakingService.getAttempt(attemptId, session);
         if (attempt == null) {
             redirectAttributes.addFlashAttribute("errorMessage",
                     "Phiên làm bài thi không tồn tại hoặc bạn không có quyền truy cập.");
@@ -162,14 +172,14 @@ public class ExamTakingController {
     }
 
     /**
-     * 6. Nộp bài thi. Ngăn nộp lần hai.
+     * 6. Nộp bài thi. Chấm điểm trên máy chủ và chuyển hướng sang trang kết quả.
      */
     @PostMapping("/attempt/{attemptId}/finish")
     public String finishExam(@PathVariable("attemptId") String attemptId,
                              HttpSession session,
                              RedirectAttributes redirectAttributes) {
         try {
-            ExamAttempt attempt = examTakingService.finishExam(attemptId, session);
+            ExamSessionAttempt attempt = examTakingService.finishExam(attemptId, session);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Bạn đã hoàn tất nộp bài thi '" + attempt.getPaperTitle() + "'.");
             return "redirect:/exams/attempt/" + attemptId + "/result";
@@ -180,27 +190,86 @@ public class ExamTakingController {
     }
 
     /**
-     * 7. Màn hình tóm tắt kết quả nộp bài thi (Prompt 20 tóm tắt, Prompt 21 kết quả chi tiết).
+     * 7. Trang kết quả bài thi chi tiết (F40 - F45).
+     * Chỉ người học có đúng learner_id mới xem được. Người khác nhận 404 Not Found.
      */
     @GetMapping("/attempt/{attemptId}/result")
     public String examResult(@PathVariable("attemptId") String attemptId,
                              HttpSession session,
-                             Model model,
-                             RedirectAttributes redirectAttributes) {
-        ExamAttempt attempt = examTakingService.getAttempt(attemptId, session);
-        if (attempt == null) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Phiên làm bài thi không tồn tại.");
-            return "redirect:/exams";
+                             Model model) {
+        ExamSessionAttempt sessionAttempt = examTakingService.getAttempt(attemptId, session);
+        String learnerId = LearnerContext.current().orElse(null);
+        if (sessionAttempt != null && sessionAttempt.getLearnerId() != null) {
+            learnerId = sessionAttempt.getLearnerId();
         }
 
-        // Nếu bài thi vẫn đang chạy thì quay lại phòng thi
-        if (attempt.isRunning()) {
+        // Nếu bài thi trong session vẫn đang RUNNING, chuyển về phòng thi
+        if (sessionAttempt != null && sessionAttempt.isRunning()) {
             return "redirect:/exams/attempt/" + attemptId;
         }
 
-        model.addAttribute("attempt", attempt);
-        model.addAttribute("paper", attempt.getPaperDto());
+        // Nếu trong session chưa được nộp nhưng đã kết thúc, tiến hành lưu và chấm
+        if (sessionAttempt != null && sessionAttempt.isCompleted()) {
+            gradingService.gradeAndPersist(sessionAttempt, learnerId != null ? learnerId : sessionAttempt.getLearnerId());
+        }
+
+        // Lấy báo cáo chi tiết từ CSDL với kiểm tra bảo mật learnerId
+        ExamResultViewDto resultView = gradingService.buildResultView(attemptId, learnerId);
+
+        model.addAttribute("result", resultView);
+        model.addAttribute("attempt", resultView.getAttempt());
+        model.addAttribute("paper", resultView.getPaper());
         model.addAttribute("currentNav", "exams");
         return "exams/taker/result";
+    }
+
+    /**
+     * 8. Tự chấm điểm cho câu hỏi tự luận (ESSAY - F45).
+     */
+    @PostMapping("/attempt/{attemptId}/grade-essay")
+    public String gradeEssay(@PathVariable("attemptId") String attemptId,
+                             @RequestParam("questionId") Long questionId,
+                             @RequestParam("points") BigDecimal points,
+                             HttpSession session,
+                             RedirectAttributes redirectAttributes) {
+        String learnerId = LearnerContext.current().orElse(null);
+        ExamSessionAttempt sessionAttempt = examTakingService.getAttempt(attemptId, session);
+        if (sessionAttempt != null && sessionAttempt.getLearnerId() != null) {
+            learnerId = sessionAttempt.getLearnerId();
+        }
+        try {
+            gradingService.gradeEssay(attemptId, questionId, points, learnerId);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật điểm tự chấm cho câu hỏi luận thành công.");
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/exams/attempt/" + attemptId + "/result";
+    }
+
+    /**
+     * 9. Luyện lại các câu sai của bài thi (F48).
+     */
+    @PostMapping("/attempt/{attemptId}/retry-incorrect")
+    public String retryIncorrect(@PathVariable("attemptId") String attemptId,
+                                 HttpSession session,
+                                 RedirectAttributes redirectAttributes) {
+        String learnerId = LearnerContext.current().orElse(null);
+        ExamSessionAttempt sessionAttempt = examTakingService.getAttempt(attemptId, session);
+        if (sessionAttempt != null && sessionAttempt.getLearnerId() != null) {
+            learnerId = sessionAttempt.getLearnerId();
+        }
+        try {
+            ExamSessionAttempt retryAttempt = gradingService.createRetryMiniAttempt(attemptId, learnerId);
+            examTakingService.putSessionAttempt(session, retryAttempt);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã khởi tạo bài luyện tập lại gồm các câu bạn đã trả lời chưa đúng.");
+            return "redirect:/exams/attempt/" + retryAttempt.getAttemptId();
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/exams/attempt/" + attemptId + "/result";
+        }
     }
 }

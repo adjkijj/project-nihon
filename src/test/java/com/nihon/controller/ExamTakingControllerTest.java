@@ -1,7 +1,7 @@
 package com.nihon.controller;
 
 import com.nihon.config.CsrfInterceptor;
-import com.nihon.dto.exam.taker.ExamAttempt;
+import com.nihon.dto.exam.taker.ExamSessionAttempt;
 import com.nihon.entity.ExamCategory;
 import com.nihon.entity.ExamChoice;
 import com.nihon.entity.ExamPaper;
@@ -168,7 +168,7 @@ class ExamTakingControllerTest {
         assertThat(location).isNotNull();
         String attemptId = location.substring(location.lastIndexOf('/') + 1);
 
-        ExamAttempt attempt = takingService.getAttempt(attemptId, session);
+        ExamSessionAttempt attempt = takingService.getAttempt(attemptId, session);
         assertThat(attempt).isNotNull();
         assertThat(attempt.getPaperCode()).isEqualTo("JLPT-N5-PUB");
     }
@@ -177,7 +177,7 @@ class ExamTakingControllerTest {
     @DisplayName("GET /exams/attempt/{id}: Phòng thi trực tuyến và bảng điều hướng câu hỏi")
     void testExamRoomDisplaysQuestionsAndPalette() throws Exception {
         MockHttpSession session = new MockHttpSession();
-        ExamAttempt attempt = takingService.startExam(publishedPaper.getCode(), session);
+        ExamSessionAttempt attempt = takingService.startExam(publishedPaper.getCode(), session);
 
         mockMvc.perform(get("/exams/attempt/" + attempt.getAttemptId()).session(session))
                 .andExpect(status().isOk())
@@ -193,7 +193,7 @@ class ExamTakingControllerTest {
     @DisplayName("GET /exams/attempt/{id}: Chặn quay lại sửa sau khi đã nộp, tự động chuyển về kết quả")
     void testExamRoomCompletedRedirectsToResult() throws Exception {
         MockHttpSession session = new MockHttpSession();
-        ExamAttempt attempt = takingService.startExam(publishedPaper.getCode(), session);
+        ExamSessionAttempt attempt = takingService.startExam(publishedPaper.getCode(), session);
         takingService.finishExam(attempt.getAttemptId(), session);
 
         mockMvc.perform(get("/exams/attempt/" + attempt.getAttemptId()).session(session))
@@ -205,7 +205,7 @@ class ExamTakingControllerTest {
     @DisplayName("POST /exams/attempt/{id}/answer: Lưu nháp qua AJAX thành công")
     void testSaveAnswerViaAjax() throws Exception {
         MockHttpSession session = new MockHttpSession();
-        ExamAttempt attempt = takingService.startExam(publishedPaper.getCode(), session);
+        ExamSessionAttempt attempt = takingService.startExam(publishedPaper.getCode(), session);
         Long questionId = attempt.getPaperDto().getSections().get(0).getQuestions().get(0).getId();
 
         mockMvc.perform(post("/exams/attempt/" + attempt.getAttemptId() + "/answer")
@@ -228,7 +228,7 @@ class ExamTakingControllerTest {
     @DisplayName("POST /exams/attempt/{id}/answer: Từ chối câu trả lời vượt quá 1000 ký tự với HTTP 400")
     void testSaveAnswerOverlongReturnsBadRequest() throws Exception {
         MockHttpSession session = new MockHttpSession();
-        ExamAttempt attempt = takingService.startExam(publishedPaper.getCode(), session);
+        ExamSessionAttempt attempt = takingService.startExam(publishedPaper.getCode(), session);
         Long questionId = attempt.getPaperDto().getSections().get(0).getQuestions().get(0).getId();
 
         String overlong = "B".repeat(1005);
@@ -248,7 +248,7 @@ class ExamTakingControllerTest {
     @DisplayName("POST /exams/attempt/{id}/finish: Nộp bài thành công và ngăn nộp lần hai")
     void testFinishExamAndPreventDoubleSubmission() throws Exception {
         MockHttpSession session = new MockHttpSession();
-        ExamAttempt attempt = takingService.startExam(publishedPaper.getCode(), session);
+        ExamSessionAttempt attempt = takingService.startExam(publishedPaper.getCode(), session);
 
         // Nộp lần 1
         mockMvc.perform(post("/exams/attempt/" + attempt.getAttemptId() + "/finish")
@@ -272,7 +272,7 @@ class ExamTakingControllerTest {
     @DisplayName("Bảo mật Session: Thí sinh từ session khác cố truy cập attemptId bị từ chối")
     void testDifferentSessionCannotAccessAttempt() throws Exception {
         MockHttpSession sessionUserA = new MockHttpSession();
-        ExamAttempt attemptA = takingService.startExam(publishedPaper.getCode(), sessionUserA);
+        ExamSessionAttempt attemptA = takingService.startExam(publishedPaper.getCode(), sessionUserA);
 
         MockHttpSession sessionUserB = new MockHttpSession();
 

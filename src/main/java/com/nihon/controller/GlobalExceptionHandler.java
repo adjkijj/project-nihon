@@ -129,6 +129,19 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Xử lý ResponseStatusException (ví dụ 404 Not Found do controller/service chủ động ném).
+     */
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public String handleResponseStatus(org.springframework.web.server.ResponseStatusException ex,
+                                       jakarta.servlet.http.HttpServletResponse response,
+                                       Model model) {
+        response.setStatus(ex.getStatusCode().value());
+        model.addAttribute("errorTitle", ex.getStatusCode().value() + " - " + (ex.getReason() != null ? ex.getReason() : "Lỗi"));
+        model.addAttribute("errorMessage", ex.getReason() != null ? ex.getReason() : "Yêu cầu không thể thực hiện.");
+        return "error";
+    }
+
+    /**
      * Bắt tất cả các lỗi không mong muốn khác: Ghi log chi tiết trên server nhưng chỉ trả về thông báo chung cho client.
      */
     @ExceptionHandler(Exception.class)

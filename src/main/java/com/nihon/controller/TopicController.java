@@ -24,10 +24,12 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -44,10 +46,14 @@ public class TopicController {
 
     private final TopicService topicService;
     private final com.nihon.service.VerbService verbService;
+    private final com.nihon.service.TopicTestService topicTestService;
 
-    public TopicController(TopicService topicService, com.nihon.service.VerbService verbService) {
+    public TopicController(TopicService topicService,
+                           com.nihon.service.VerbService verbService,
+                           com.nihon.service.TopicTestService topicTestService) {
         this.topicService = topicService;
         this.verbService = verbService;
+        this.topicTestService = topicTestService;
     }
 
     @InitBinder("form")
@@ -357,5 +363,77 @@ public class TopicController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
         }
         return "redirect:/topics";
+    }
+
+    /**
+     * Màn hình kiểm tra cuối bài theo chủ đề (F40 - mode TOPIC_TEST).
+     */
+    @GetMapping("/{id}/test")
+    public String topicTest(@PathVariable("id") Long id,
+                            @RequestParam(value = "restart", defaultValue = "false") boolean restart,
+                            jakarta.servlet.http.HttpSession session,
+                            Model model,
+                            RedirectAttributes redirectAttributes) {
+        if (id == null || id <= 0) {
+            redirectAttributes.addFlashAttribute("errorMessage", "ID chủ đề không hợp lệ.");
+            return "redirect:/topics";
+        }
+
+        try {
+            com.nihon.service.TopicTestService.TopicTestSession testSession =
+                    (com.nihon.service.TopicTestService.TopicTestSession) session.getAttribute(com.nihon.service.TopicTestService.SESSION_ATTR_TOPIC_TEST);
+
+            if (testSession == null || !id.equals(testSession.getTopicId()) || restart) {
+                testSession = topicTestService.createTest(id);
+                session.setAttribute(com.nihon.service.TopicTestService.SESSION_ATTR_TOPIC_TEST, testSession);
+            }
+
+            model.addAttribute("testSession", testSession);
+            model.addAttribute("topicId", id);
+            model.addAttribute("currentNav", "topics");
+            return "topics/test";
+        } catch (NoSuchElementException | IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/topics/" + id;
+        }
+    }
+
+    /**
+     * Nộp bài kiểm tra cuối bài, chấm điểm và lưu vào CSDL (StudySession, mode = TOPIC_TEST).
+     */
+    @PostMapping("/{id}/test/submit")
+    public String submitTopicTest(@PathVariable("id") Long id,
+                                  @RequestParam Map<String, String> allParams,
+                                  jakarta.servlet.http.HttpSession session,
+                                  Model model,
+                                  RedirectAttributes redirectAttributes) {
+        com.nihon.service.TopicTestService.TopicTestSession testSession =
+                (com.nihon.service.TopicTestService.TopicTestSession) session.getAttribute(com.nihon.service.TopicTestService.SESSION_ATTR_TOPIC_TEST);
+
+        if (testSession == null || !id.equals(testSession.getTopicId())) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Phiên làm bài kiểm tra không tồn tại hoặc đã hết hạn.");
+            return "redirect:/topics/" + id;
+        }
+
+        // Đọc các đáp án người dùng đã chọn từ form (question_1, question_2, ...)
+        Map<Integer, Integer> userAnswers = new HashMap<>();
+        for (Map.Entry<String, String> entry : allParams.entrySet()) {
+            if (entry.getKey().startsWith("question_")) {
+                try {
+                    int qIdx = Integer.parseInt(entry.getKey().substring("question_".length()));
+                    int choiceIdx = Integer.parseInt(entry.getValue());
+                    userAnswers.put(qIdx, choiceIdx);
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        }
+
+        String learnerId = com.nihon.history.LearnerContext.current().orElse(null);
+        topicTestService.submitTest(testSession, userAnswers, learnerId);
+
+        model.addAttribute("testSession", testSession);
+        model.addAttribute("topicId", id);
+        model.addAttribute("currentNav", "topics");
+        return "topics/test";
     }
 }

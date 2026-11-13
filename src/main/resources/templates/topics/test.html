@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Kiểm tra cuối bài: ' + ${testSession.topicName} + ' - Project Nihon'">Kiểm tra cuối bài - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <link rel="stylesheet" th:href="@{/css/exam-taker.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('topics')}"></header>
+
+    <div class="exam-room-container">
+        <!-- Banner thông tin bài kiểm tra -->
+        <header class="exam-sticky-topbar">
+            <div class="exam-topbar-left">
+                <a th:href="@{'/topics/' + ${topicId}}" class="exam-back-link" title="Quay lại chủ đề">
+                    <span aria-hidden="true">←</span>
+                    <span class="sr-only">Quay lại</span>
+                </a>
+                <div class="exam-paper-info">
+                    <h1 class="exam-topbar-title" th:text="'Kiểm tra cuối bài: ' + ${testSession.topicName}">
+                        Kiểm tra cuối bài: Chào hỏi
+                    </h1>
+                    <div class="exam-topbar-sub">
+                        <span class="badge badge-normal">TOPIC_TEST</span>
+                        <span class="separator-dot">•</span>
+                        <span th:text="${testSession.totalQuestions} + ' câu hỏi trắc nghiệm'">10 câu hỏi trắc nghiệm</span>
+                    </div>
+                </div>
+            </div>
+            <div class="exam-topbar-right">
+                <span th:if="${!testSession.completed}" class="badge badge-draft">Đang làm bài</span>
+                <span th:if="${testSession.completed}" class="badge badge-published">Đã nộp bài</span>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <!-- Màn hình kết quả sau khi nộp bài -->
+            <section th:if="${testSession.completed}" class="result-summary-card mb-4" aria-labelledby="resultTitle">
+                <h2 id="resultTitle" class="section-title">Kết quả kiểm tra</h2>
+                <div class="result-stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-number" th:text="${testSession.correctCount} + ' / ' + ${testSession.totalQuestions}">8 / 10</div>
+                        <div class="stat-label">Số câu đúng</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" th:text="${testSession.accuracyPercent} + '%'">80%</div>
+                        <div class="stat-label">Độ chính xác</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" th:text="${testSession.durationSeconds} + ' giây'">45 giây</div>
+                        <div class="stat-label">Thời gian làm bài</div>
+                    </div>
+                </div>
+                <div class="mt-3 text-secondary font-size-sm">
+                    ✓ Kết quả kiểm tra đã được lưu tự động vào <strong>Lịch sử học tập</strong> (mục TOPIC_TEST).
+                </div>
+                <div class="mt-4 d-flex gap-2">
+                    <a th:href="@{'/topics/' + ${topicId} + '/test?restart=true'}" class="btn btn-primary">
+                        🔄 Làm lại bài kiểm tra
+                    </a>
+                    <a th:href="@{'/topics/' + ${topicId}}" class="btn btn-secondary">
+                        ← Quay lại chủ đề
+                    </a>
+                    <a th:href="@{/history}" class="btn btn-secondary">
+                        📊 Xem lịch sử học tập
+                    </a>
+                </div>
+            </section>
+
+            <!-- Form làm bài (khi chưa nộp) -->
+            <form th:if="${!testSession.completed}" method="post" th:action="@{'/topics/' + ${topicId} + '/test/submit'}">
+                <input type="hidden" name="_csrf" th:value="${_csrf}">
+
+                <div class="exam-question-list">
+                    <article th:each="q : ${testSession.questions}"
+                             class="exam-question-card mb-4"
+                             th:id="'question-card-' + ${q.index}">
+                        <div class="question-top-bar">
+                            <div class="question-number-badge">
+                                <span class="badge badge-draft" th:text="'Câu ' + ${q.index}">Câu 1</span>
+                                <span class="question-type-badge" th:text="${q.itemType == 'KANJI' ? 'Hán tự Kanji' : 'Từ vựng'}">Từ vựng</span>
+                            </div>
+                        </div>
+
+                        <div class="question-prompts">
+                            <div class="prompt-ja-text" th:text="${q.prompt}">日本語</div>
+                            <div class="prompt-vi-text" th:if="${q.promptSub != null && !q.promptSub.isBlank()}" th:text="${q.promptSub}">Cách đọc / Âm đọc</div>
+                        </div>
+
+                        <div class="choices-container">
+                            <label th:each="choice, cStat : ${q.choices}" class="choice-option-label">
+                                <input type="radio"
+                                       class="choice-radio-input"
+                                       th:name="'question_' + ${q.index}"
+                                       th:value="${cStat.index}" />
+                                <span class="choice-index-circle" th:text="${cStat.count}">1</span>
+                                <span class="choice-text" th:text="${choice}">Phương án trả lời</span>
+                            </label>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="mt-4 mb-5 text-center">
+                    <button type="submit" class="btn btn-primary font-size-lg py-2 px-5">
+                        ✓ Nộp bài kiểm tra
+                    </button>
+                </div>
+            </form>
+
+            <!-- Danh sách câu hỏi sau khi nộp (chế độ xem lại đáp án) -->
+            <div th:if="${testSession.completed}" class="exam-question-list">
+                <h3 class="section-title mb-3">Chi tiết từng câu hỏi</h3>
+                <article th:each="q : ${testSession.questions}"
+                         class="exam-question-card mb-4"
+                         th:classappend="${testSession.results.get(q.index) ? 'border-success' : 'border-danger'}">
+                    <div class="question-top-bar">
+                        <div class="question-number-badge">
+                            <span class="badge badge-draft" th:text="'Câu ' + ${q.index}">Câu 1</span>
+                            <span th:if="${testSession.results.get(q.index)}" class="badge badge-published">✓ Đúng</span>
+                            <span th:unless="${testSession.results.get(q.index)}" class="badge badge-rejected">✗ Sai</span>
+                        </div>
+                    </div>
+
+                    <div class="question-prompts">
+                        <div class="prompt-ja-text" th:text="${q.prompt}">日本語</div>
+                        <div class="prompt-vi-text" th:if="${q.promptSub != null && !q.promptSub.isBlank()}" th:text="${q.promptSub}">Cách đọc / Âm đọc</div>
+                    </div>
+
+                    <div class="choices-container">
+                        <div th:each="choice, cStat : ${q.choices}"
+                             class="choice-option-label"
+                             th:classappend="${cStat.index == q.correctChoiceIndex ? 'selected-correct' : (testSession.userAnswers.get(q.index) == cStat.index ? 'selected-wrong' : '')}">
+                            <span class="choice-index-circle" th:text="${cStat.count}">1</span>
+                            <span class="choice-text" th:text="${choice}">Phương án</span>
+                            <span th:if="${cStat.index == q.correctChoiceIndex}" class="badge badge-published ml-auto">Đáp án đúng</span>
+                            <span th:if="${testSession.userAnswers.get(q.index) == cStat.index && cStat.index != q.correctChoiceIndex}" class="badge badge-rejected ml-auto">Lựa chọn của bạn</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 p-3 bg-light rounded text-secondary font-size-sm">
+                        <span class="font-weight-bold">Giải thích:</span>
+                        <span th:text="${q.explanation}">Đáp án đúng</span>
+                    </div>
+                </article>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>
+

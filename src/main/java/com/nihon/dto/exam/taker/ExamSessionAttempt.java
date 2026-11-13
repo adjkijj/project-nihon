@@ -16,19 +16,21 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Phiên làm bài thi của thí sinh (F42, F48).
- * Lưu trong HttpSession (hoặc chuẩn bị chuyển database ở Prompt 21).
+ * Phiên làm bài thi của thí sinh lưu tạm trong HttpSession (F42, F48).
+ * Đóng vai trò bộ đệm tốc độ cao cho quá trình làm bài và tự động lưu nháp.
+ * Được đồng bộ sang CSDL (bảng exam_attempt & exam_attempt_answer) khi nộp bài hoặc hoàn tất.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExamAttempt implements Serializable {
+public class ExamSessionAttempt implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public static final String SESSION_ATTEMPTS_MAP = "SESSION_EXAM_ATTEMPTS_MAP";
 
     private String attemptId; // UUID
+    private String learnerId; // Mã người học ẩn danh (Prompt 16)
     private Long paperId;
     private String paperCode;
     private String paperTitle;
@@ -101,3 +103,4 @@ public class ExamAttempt implements Serializable {
         return Math.max(0, getTotalQuestions() - getAnsweredCount());
     }
 }
+

@@ -205,4 +205,42 @@ CREATE TABLE IF NOT EXISTS exam_answer_key (
     CONSTRAINT fk_exam_answer_key_question FOREIGN KEY (question_id) REFERENCES exam_question (id) ON DELETE CASCADE
 );
 
+-- 13. Bảng exam_attempt: Lượt làm bài thi của học viên (F40-F45)
+CREATE TABLE IF NOT EXISTS exam_attempt (
+    id VARCHAR(36) NOT NULL,
+    paper_id BIGINT NULL,
+    learner_id CHAR(36) NOT NULL,
+    started_at TIMESTAMP NOT NULL,
+    submitted_at TIMESTAMP NULL,
+    duration_seconds INT NOT NULL DEFAULT 0,
+    total_points DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    max_points DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    status VARCHAR(30) NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_exam_attempt_paper FOREIGN KEY (paper_id) REFERENCES exam_paper (id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_exam_attempt_learner_status ON exam_attempt (learner_id, status);
+CREATE INDEX IF NOT EXISTS idx_exam_attempt_paper_id ON exam_attempt (paper_id);
+CREATE INDEX IF NOT EXISTS idx_exam_attempt_submitted_at ON exam_attempt (submitted_at);
+
+-- 14. Bảng exam_attempt_answer: Chi tiết câu trả lời và điểm số từng câu hỏi (F40-F45)
+CREATE TABLE IF NOT EXISTS exam_attempt_answer (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    attempt_id VARCHAR(36) NOT NULL,
+    question_id BIGINT NULL,
+    answer_value VARCHAR(1000) NULL,
+    points_awarded DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    correct BOOLEAN NULL,
+    flagged BOOLEAN NOT NULL DEFAULT FALSE,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_exam_attempt_answer_attempt FOREIGN KEY (attempt_id) REFERENCES exam_attempt (id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_exam_attempt_answer_attempt ON exam_attempt_answer (attempt_id);
+CREATE INDEX IF NOT EXISTS idx_exam_attempt_answer_question ON exam_attempt_answer (question_id);
+
+
 CREATE INDEX IF NOT EXISTS idx_exam_answer_key_question_kind ON exam_answer_key (question_id, kind);

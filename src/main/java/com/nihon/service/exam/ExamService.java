@@ -43,19 +43,22 @@ public class ExamService {
     private final ExamChoiceRepository choiceRepository;
     private final ExamAnswerKeyRepository answerKeyRepository;
     private final TopicRepository topicRepository;
+    private final com.nihon.repository.ExamAttemptRepository examAttemptRepository;
 
     public ExamService(ExamPaperRepository paperRepository,
                        ExamSectionRepository sectionRepository,
                        ExamQuestionRepository questionRepository,
                        ExamChoiceRepository choiceRepository,
                        ExamAnswerKeyRepository answerKeyRepository,
-                       TopicRepository topicRepository) {
+                       TopicRepository topicRepository,
+                       com.nihon.repository.ExamAttemptRepository examAttemptRepository) {
         this.paperRepository = paperRepository;
         this.sectionRepository = sectionRepository;
         this.questionRepository = questionRepository;
         this.choiceRepository = choiceRepository;
         this.answerKeyRepository = answerKeyRepository;
         this.topicRepository = topicRepository;
+        this.examAttemptRepository = examAttemptRepository;
     }
 
     // =========================================================================
@@ -148,12 +151,9 @@ public class ExamService {
     public void deleteExam(Long id) {
         ExamPaper paper = getExamById(id);
 
-        // Ghi chú Prompt 21: Khi hoàn thiện bảng exam_submission (bài làm của học viên):
-        // Nếu đề thi đã có ít nhất 1 lượt nộp bài, tuyệt đối không được phép xóa đề thi,
-        // mà chỉ cho phép chuyển trạng thái sang hủy xuất bản (published = false).
-        // Ví dụ: if (submissionRepository.existsByPaperId(id)) {
-        //     throw new IllegalStateException("Đề thi đã có bài làm của học viên, không thể xóa. Vui lòng chọn Hủy xuất bản.");
-        // }
+        if (examAttemptRepository.existsByPaperId(id)) {
+            throw new IllegalStateException("Đề thi đã có bài làm của học viên, không thể xóa. Vui lòng chọn Hủy xuất bản.");
+        }
 
         paperRepository.delete(paper);
     }
