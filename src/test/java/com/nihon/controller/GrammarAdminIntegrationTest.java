@@ -87,12 +87,13 @@ class GrammarAdminIntegrationTest {
         assertThat(saved.getCategory()).isEqualTo(GrammarCategory.GRAMMAR);
         assertThat(saved.getFormula()).isEqualTo("V-te + ください");
 
-        // 4. Mở trang chi tiết kiểm tra render HTML gạch đầu dòng an toàn
+        // 4. Mở trang chi tiết kiểm tra render văn bản giải thích an toàn (không dùng th:utext)
         mockMvc.perform(get("/grammar/admin/" + saved.getId()))
                 .andExpect(status().isOk())
                 .andExpect(view().name("grammar/admin/detail"))
-                .andExpect(model().attributeExists("topic", "renderedExplanation"))
-                .andExpect(content().string(containsString("<ul><li>Thường dùng trong lớp học</li><li>Không dùng với cấp trên</li></ul>")));
+                .andExpect(model().attributeExists("topic"))
+                .andExpect(content().string(containsString("- Thường dùng trong lớp học")))
+                .andExpect(content().string(containsString("- Không dùng với cấp trên")));
 
         // 5. Thêm câu ví dụ
         mockMvc.perform(post("/grammar/admin/" + saved.getId() + "/examples")
@@ -179,7 +180,7 @@ class GrammarAdminIntegrationTest {
                 .andExpect(view().name("grammar/admin/preview"))
                 .andExpect(content().string(not(containsString("<script>alert('xss')</script>"))))
                 .andExpect(content().string(containsString("&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;")))
-                .andExpect(content().string(containsString("<ul><li>Mục 1</li></ul>")));
+                .andExpect(content().string(containsString("- Mục 1")));
     }
 
     @Test

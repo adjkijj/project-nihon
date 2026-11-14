@@ -208,7 +208,7 @@
                     <!-- Giải thích dựng HTML an toàn (GrammarTextRenderer) -->
                     <div th:if="${topic.explanation != null and !topic.explanation.isEmpty()}" class="mb-3">
                         <div class="font-size-xs font-weight-bold text-secondary uppercase mb-1">Giải thích chi tiết:</div>
-                        <div class="grammar-explanation-body" th:utext="${topic.renderedExplanation}">
+                        <div class="grammar-explanation-body" th:text="${topic.explanation}">
                             Nội dung giải thích ngữ pháp...
                         </div>
                     </div>

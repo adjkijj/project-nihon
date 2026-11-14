@@ -63,11 +63,11 @@
                 <div class="grammar-formula-content" th:text="${topic.formula}">[Thể thường / Thể lịch sự] + から</div>
             </div>
 
-            <!-- Giải thích đã dựng HTML an toàn -->
-            <div th:if="${renderedExplanation != null and !renderedExplanation.isEmpty()}" class="mt-3">
+            <!-- Giải thích (th:text an toàn, hỗ trợ xuống dòng qua CSS pre-wrap) -->
+            <div th:if="${topic.explanation != null and !topic.explanation.isEmpty()}" class="mt-3">
                 <h3 class="h5 font-weight-bold text-secondary mb-2">Giải thích chi tiết:</h3>
-                <div class="grammar-explanation-body" th:utext="${renderedExplanation}">
-                    <p>Giải thích...</p>
+                <div class="grammar-explanation-body" th:text="${topic.explanation}">
+                    Giải thích...
                 </div>
             </div>
 

@@ -53,11 +53,13 @@
     display: inline-block;
 }
 
-/* Explanation Content (rendered safe HTML) */
+/* Explanation Content (safe pre-wrap text without th:utext) */
 .grammar-explanation-body {
     line-height: 1.65;
     color: #334155;
     font-size: 0.95rem;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .grammar-explanation-body p {

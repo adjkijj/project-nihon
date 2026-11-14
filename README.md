@@ -74,6 +74,55 @@
 - Bảng danh sách câu làm sai cần ôn tập kèm nút **"Ôn lại từ làm sai (N)"**.
 - Giới hạn tối đa **500 bản ghi mới nhất** trong session để bảo vệ tài nguyên máy chủ. Có nút **Xóa tiến độ phiên** để người học bắt đầu lại từ đầu.
 
+### 1.10. Quản lý Động từ & Phòng Biến đổi Thể (`/verbs`, `/verbs/lab`, `/verbs/practice`)
+- **Kho động từ phân loại 3 nhóm (Godan, Ichidan, Kuru/Suru):** Tra cứu từ điển, thể Masu, dạng viết Kanji/Hiragana, nghĩa tiếng Việt và chủ đề bài học.
+- **Phòng biến đổi thể (Conjugation Lab - `/verbs/lab`):**
+  - Người học nhập động từ bất kỳ ở dạng từ điển (hoặc chọn từ có sẵn).
+  - Động cơ suy luận quy tắc ngữ pháp `VerbConjugator` tự động sinh toàn bộ các thể: Thể Te (`て`), Thể Ru/Từ điển (`る`), Thể Ta/Quá khứ (`た`), Thể Nai/Phủ định (`ない`), Thể Masu (`ます`), cùng các dạng biến thể mở rộng (Khả năng, Sai khiến, Bị động, Điều kiện, Ý chí, Mệnh lệnh).
+  - Hiển thị trực quan bảng chia thể kèm quy tắc ngữ pháp ngắn gọn theo từng nhóm.
+- **Luyện chia thể tự luận & trắc nghiệm 4 lựa chọn (`/verbs/practice`):**
+  - Tự luận: Hiển thị động từ ở thể Masu và nghĩa, người học gõ thể đích (hỗ trợ cả chữ Hán lẫn Hiragana). Máy chủ chuẩn hóa NFC, loại bỏ khoảng trắng và hiển thị giải thích quy tắc khi người học chia sai.
+  - Trắc nghiệm: Sinh 4 lựa chọn với các đáp án nhiễu phổ biến (áp dụng nhầm quy tắc nhóm khác hoặc ngoại lệ), chống trùng lặp.
+- **Xuất tệp văn bản Quizlet/Anki cho Động từ (`GET /verbs/export-text`):** Lọc theo thể đích, nhóm động từ, chủ đề; áp dụng giới hạn rate limit 20 lần/phút/IP và tối đa 5000 dòng.
+
+### 1.11. Quản lý Đề thi, Làm bài & Chấm điểm Tự động (`/exams`, `/exams/admin`)
+- **Mô hình cấu trúc đề thi đa cấp:**
+  - `ExamPaper`: Mã đề độc nhất, tiêu đề, thời lượng (1–300 phút), chuyên mục (`MIDTERM`, `MOCK`, `QUICK_TEST`, `REVIEW`), chủ đề gắn kèm, trạng thái xuất bản (`published`).
+  - `ExamSection`: Các phần thi theo thứ tự (`sort_order`) kèm hướng dẫn làm bài riêng biệt.
+  - `ExamQuestion`: 5 loại câu hỏi đa dạng:
+    1. **Trắc nghiệm (`MULTIPLE_CHOICE`):** Các lựa chọn đúng/sai (`exam_choice`).
+    2. **Điền từ (`TYPING`):** Chấm khớp tập đáp án chấp nhận (`ACCEPTED`), chuẩn hóa NFKC, bỏ khoảng trắng và dấu câu cuối.
+    3. **Sắp xếp câu / Ngôi sao (`ORDERING` - F43):** Sắp xếp các mảnh ngữ pháp; hỗ trợ câu "vị trí ngôi sao" chấm điểm theo mảnh đặt đúng ngôi sao.
+    4. **Dịch câu (`TRANSLATION` - F44):** So khớp tương đối với câu mẫu và đáp án chấp nhận; nếu không khớp hoàn toàn, tự động tính độ tương đồng theo khoảng cách Levenshtein và hệ số Jaccard (ngưỡng 80% được điểm thưởng tương ứng).
+    5. **Tự luận (`ESSAY`):** Đối soát tập từ khóa bắt buộc (`KEYWORD`), tính điểm tỷ lệ theo số từ khóa xuất hiện trong bài viết của người học.
+- **Nhập hàng loạt đề thi bằng Excel (`.xlsx` đa sheet):** Hỗ trợ nạp nguyên đề thi hoàn chỉnh gồm các sheet `Paper`, `Sections`, `Questions`, `Choices`, `AnswerKeys`.
+- **Giao diện làm bài thi chuyên nghiệp:**
+  - Đồng hồ đếm ngược server-side giữ hạn chót, tự động nộp bài khi hết giờ.
+  - Bảng điều hướng câu hỏi Palette (F46): Lưới số câu trực quan với màu sắc trạng thái (chưa làm, đã làm, đánh dấu xem lại 🚩).
+  - Bật/tắt bản dịch tiếng Việt của đề bài (F47, mặc định tắt).
+  - Tự động lưu bài nháp liên tục (F48) sau mỗi câu trả lời qua AJAX mà không cần tải lại trang.
+  - Bảo mật tuyệt đối: Không lộ đáp án đúng hay gợi ý trong mã HTML của trang làm bài.
+  - Trang kết quả chấm điểm chi tiết sau khi nộp, hiển thị điểm số, tỷ lệ phần trăm, kết quả từng câu kèm giải thích chi tiết.
+
+### 1.12. Kho Ngữ pháp & Đấu trường Phản xạ Ngữ pháp (`/grammar`, `/grammar/admin`, `/grammar/arena`)
+- **Kho kiến thức ngữ pháp & bổ sung (`grammar_topic`):** Phân loại `GRAMMAR` hoặc `SUPPLEMENT`, liên kết bài học chủ đề, lưu công thức, giải thích và ghi chú.
+- **Trang học thẻ Accordion (`/grammar`):**
+  - Mở rộng từng thẻ ngữ pháp kèm công thức, giải thích (được hiển thị an toàn bằng `th:text` và CSS `white-space: pre-wrap;`, loại trừ hoàn toàn `th:utext`).
+  - Danh sách câu ví dụ minh họa (`grammar_example`) có phiên âm Furigana và nút nghe phát âm giọng đọc tự nhiên.
+  - Đánh dấu trạng thái **"Đã học"** (F30) bền vững theo `learner_id` trong bảng `grammar_progress`, hiển thị thanh tiến độ tổng thể ở đầu trang.
+  - Bài tập trắc nghiệm mini tại thẻ (F32): Làm bài và chấm điểm tức thì, không lộ cờ đúng trước khi nộp.
+- **Đấu trường phản xạ ngữ pháp (`/grammar/arena` - F33):** Chế độ ôn luyện tốc độ cao với đồng hồ đếm ngược, tổng kết chuỗi câu đúng liên tiếp (streak) và lưu lịch sử học tập.
+- **Nhập hàng loạt ngữ pháp bằng Excel (`.xlsx`):** Nhập đồng thời 4 sheet `Topics`, `Examples`, `Questions`, `Choices` có kiểm tra an toàn tệp và chống trùng mã.
+
+### 1.13. Lịch sử Học tập Bền vững & Quyền Riêng tư (`/history`)
+- **Định danh ẩn danh qua Cookie `nihon_learner`:**
+  - Nhận diện thiết bị bằng UUID v4 ngẫu nhiên lưu trong cookie `nihon_learner` (`HttpOnly=true`, `SameSite=Lax`, `Secure` trên HTTPS, thời hạn 365 ngày).
+  - Hoàn toàn không yêu cầu người dùng phải đăng ký tài khoản hay cung cấp thông tin cá nhân (Zero PII).
+  - Dữ liệu học tập (`study_session`, `study_answer`) và bài thi (`exam_attempt`, `exam_attempt_answer`) được cách ly nghiêm ngặt theo `learner_id` (Cross-Learner Data Isolation).
+- **Tự động dọn dẹp dữ liệu cũ (`Retention Policy`):**
+  - Tự động quét và xóa sạch các buổi học cũ hơn cấu hình `app.history.retention-days` (mặc định **180 ngày**) thông qua Scheduled Task chạy định kỳ lúc 03:15 sáng.
+- **Quyền tự quyết dữ liệu:** Người học có thể chủ động bấm **"Xóa toàn bộ lịch sử của tôi"** (`POST /history/delete-all`) bất cứ lúc nào.
+
 ---
 
 ## 2. Yêu cầu hệ thống (System Requirements)
@@ -319,22 +368,94 @@ Dự án cung cấp tài liệu kỹ thuật chi tiết tại thư mục [docs/]
 
 ---
 
-## 10. Giấy phép dữ liệu (Data Licenses)
+---
 
-- **Dữ liệu thứ tự nét viết Kanji:** Được trích xuất và tham chiếu từ dự án mã nguồn mở [KanjiVG](https://kanjivg.tagaini.net/) (bản quyền © 2009-2023 Ulrich Apel và các cộng tác viên KanjiVG).
-- **Điều khoản giấy phép:** Phát hành theo giấy phép [Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)](https://creativecommons.org/licenses/by-sa/3.0/). Thông tin chi tiết giấy phép lưu tại [src/main/resources/static/kanjivg/LICENSE.txt](src/main/resources/static/kanjivg/LICENSE.txt).
+## 9. Hướng dẫn Nhập Dữ liệu Hàng loạt bằng Excel (Bulk Excel Import)
 
+Hệ thống hỗ trợ 3 module nhập dữ liệu Excel chuyên dụng, tất cả đều tuân thủ kiểm định an ninh nghiêm ngặt qua `ExcelUploadValidator` (chặn macro VBA, chặn XML External Entity/XXE, kiểm tra magic bytes `PK\x03\x04`, giới hạn 5MB và rate limit 10 lần/phút/IP):
 
+### 9.1. Nhập Từ vựng & Kanji (`/import`)
+- Tệp Excel gồm 2 sheet:
+  - **`New Word`**: Cột `STT`, `Bài`, `Từ vựng`, `Cách đọc`, `Ý nghĩa`.
+  - **`Kanji`**: Cột `STT`, `Bài`, `Chữ Hán`, `Hán Việt`, `Nghĩa`, `Âm On`, `Âm Kun`.
+- Hỗ trợ 2 chế độ nạp: `Bỏ qua từ trùng` (`SKIP_DUPLICATES`) hoặc `Cập nhật từ trùng` (`UPDATE_EXISTING`).
 
-## Lịch sử học tập (F49)
+### 9.2. Nhập Đề thi Đa phần & Đa dạng Câu hỏi (`/exams/admin/import`)
+Tải tệp mẫu tại `GET /exams/admin/import/template`. Tệp `.xlsx` gồm 5 sheet liên kết:
+1. **`Paper`**: 
+   - `Code` (duy nhất, ví dụ `N5-MID-01`), `Title`, `Description`, `DurationMinutes` (1–300), `Category` (`MIDTERM`, `MOCK`, `QUICK_TEST`, `REVIEW`), `Published` (`TRUE`/`FALSE`).
+2. **`Sections`**: 
+   - `PaperCode`, `SortOrder`, `Title`, `Instructions`.
+3. **`Questions`**: 
+   - `PaperCode`, `SectionOrder`, `SortOrder`, `Type` (`MULTIPLE_CHOICE`, `TYPING`, `ORDERING`, `TRANSLATION`, `ESSAY`), `PromptJa`, `PromptVi`, `Points` (số thập phân, mặc định 1.0), `Explanation`.
+4. **`Choices`** (cho câu trắc nghiệm): 
+   - `QuestionSortOrder`, `SortOrder`, `Text`, `Correct` (`TRUE`/`FALSE`).
+5. **`AnswerKeys`** (cho các loại câu hỏi khác): 
+   - `QuestionSortOrder`, `AnswerText`, `Kind`:
+     - `ACCEPTED`: Đáp án chấp nhận cho câu điền từ hoặc dịch câu.
+     - `SAMPLE`: Câu dịch mẫu.
+     - `KEYWORD`: Từ khóa bắt buộc trong bài luận tự luận.
+     - `ORDER`: Thứ tự đúng của các mảnh ghép hoặc vị trí ngôi sao (`ORDER:3`).
 
-Lịch sử học được lưu bền vững cho từng trình duyệt, **không cần đăng nhập**.
+### 9.3. Nhập Kho Ngữ pháp & Câu hỏi Trắc nghiệm Mini (`/grammar/admin/import`)
+Tải tệp mẫu tại `GET /grammar/admin/import/template`. Tệp `.xlsx` gồm 4 sheet:
+1. **`Topics`**: 
+   - `Code` (duy nhất, ví dụ `N5-GR-01`), `Title`, `Category` (`GRAMMAR` hoặc `SUPPLEMENT`), `Formula`, `Explanation` (văn bản thuần, gạch đầu dòng `- ...`), `Notes`, `SortOrder`.
+2. **`Examples`**: 
+   - `TopicCode`, `SortOrder`, `Japanese` (có thể chứa Furigana dạng `漢字（かんじ）`), `Reading`, `MeaningVi`.
+3. **`Questions`**: 
+   - `TopicCode`, `SortOrder`, `Prompt`, `Explanation`.
+4. **`Choices`**: 
+   - `TopicCode`, `QuestionSortOrder`, `SortOrder`, `Text`, `Correct` (`TRUE`/`FALSE`).
 
-- **Cookie**: `nihon_learner` = UUID ngẫu nhiên (HttpOnly, SameSite=Lax, Secure khi HTTPS, Max-Age 365 ngày, path `/`). Mã người học chỉ lấy từ cookie, không bao giờ từ URL/form. Cookie sai định dạng sẽ bị thay mới.
-- **Dữ liệu lưu** (`study_session`, `study_answer`): chế độ, chủ đề, số câu, số câu đúng, thời lượng, thời điểm; đúng/sai theo mã từ/kanji. **Không lưu** tên, email, IP, hay nội dung câu trả lời.
-- **Khi nào lưu**: phiên luyện tập tính giờ lưu một lần khi kết thúc/hết giờ; các chế độ khác lưu khi người học bấm lưu (`POST /history/end-session`). Không lưu theo từng câu.
-- **Tắt cookie**: ứng dụng vẫn dùng bình thường, chỉ riêng lịch sử bị vô hiệu.
-- **Xoá**: `POST /history/delete-all` xoá toàn bộ lịch sử của trình duyệt hiện tại (có CSRF).
-- **Lưu trữ**: tự động xoá phiên cũ hơn `app.history.retention-days` (mặc định 180 ngày) bằng job hằng ngày 03:15 (`app.history.cleanup-cron`).
-- **Triển khai sau lớp xác thực**: cookie ẩn danh không phải danh tính người dùng. Nếu đặt ứng dụng sau reverse proxy/SSO, lịch sử vẫn gắn với trình duyệt chứ không gắn với tài khoản; các trình duyệt dùng chung máy sẽ thấy chung lịch sử. Hãy bảo đảm proxy chuyển `X-Forwarded-Proto` để cookie được đặt cờ `Secure`.
-- **Migration**: `V8__create_study_history.sql` (đồng thời có trong `schema.sql`).
+---
+
+## 10. Lịch sử Học tập Bền vững, Cookie Định danh & Quyền Riêng tư (F49)
+
+Hệ thống áp dụng mô hình định danh **Zero PII (Không thu thập thông tin định danh cá nhân)**:
+
+- **Cookie định danh `nihon_learner`**:
+  - Tự động sinh mã UUID v4 ngẫu nhiên cho mỗi trình duyệt/thiết bị lần đầu truy cập.
+  - Cấu hình an toàn: `HttpOnly = true`, `SameSite = Lax`, `Secure = true` (khi chạy HTTPS), thời hạn lưu trữ `Max-Age = 365 ngày` (31,536,000 giây), đường dẫn `Path = /`.
+  - Giá trị định danh chỉ được đọc từ cookie, tuyệt đối không nhận từ tham số URL hoặc trường ẩn form để chống Session Fixation.
+- **Phân tách & Cách ly Dữ liệu Học viên (Cross-Learner Data Isolation)**:
+  - Toàn bộ kết quả buổi học (`study_session`, `study_answer`), bài làm thi (`exam_attempt`, `exam_attempt_answer`), và tiến độ ngữ pháp (`grammar_progress`) đều gắn chặt với `learner_id`.
+  - Mọi câu truy vấn dữ liệu học tập đều có điều kiện bắt buộc `WHERE learner_id = :learnerId`. Học viên không thể xem hoặc can thiệp dữ liệu của học viên khác.
+- **Cấu hình thời hạn lưu trữ (`app.history.retention-days`)**:
+  - Tham số cấu hình tại `application.properties`:
+    ```properties
+    app.history.retention-days=180
+    app.history.cleanup-cron=0 15 3 * * *
+    ```
+  - Tác vụ dọn dẹp chạy nền định kỳ lúc 03:15 sáng mỗi ngày sẽ tự động xóa sạch các buổi học cũ hơn 180 ngày.
+- **Quyền tự quyết của người học**:
+  - Người học có thể chủ động bấm **"Xóa toàn bộ lịch sử của tôi"** (`POST /history/delete-all`, được bảo vệ bởi CSRF token) để xóa sạch dữ liệu của mình khỏi máy chủ bất cứ lúc nào.
+
+---
+
+## 11. Kiến trúc Bảo mật & Mô hình Định danh Hạ tầng (Decoupled Identity Model)
+
+### 11.1. Triết lý thiết kế (Design Philosophy)
+Ứng dụng được thiết kế theo triết lý **Decoupled Architecture**: tách rời trải nghiệm học tập cốt lõi khỏi hệ thống quản trị người dùng phức tạp. Người học có thể truy cập, học từ vựng, luyện phản xạ và làm bài thi ngay lập tức mà không gặp bất kỳ rào cản nào về đăng ký tài khoản, xác thực email hay quên mật khẩu.
+
+### 11.2. Bảo vệ các tuyến đường Quản trị trên Môi trường Production
+Trong môi trường nội bộ hoặc phát triển cục bộ, các tuyến đường quản trị (`/topics/**`, `/vocabulary/**`, `/kanji/**`, `/verbs/admin/**`, `/exams/admin/**`, `/grammar/admin/**`, `/import/**`) được mở cho người dùng và được bảo vệ nhiều lớp:
+1. **CSRF Protection:** Mọi request thay đổi trạng thái (POST) đều bắt buộc mang CSRF token hợp lệ sinh từ phiên làm việc (`CsrfInterceptor`).
+2. **Rate Limiting:** Chặn tấn công từ chối dịch vụ (DoS) và brute-force thông qua bộ đếm trượt `RateLimiterService`.
+3. **Mã hóa xem trước:** Mọi thao tác import Excel đều yêu cầu xác thực qua token ký ngẫu nhiên có thời hạn 10 phút.
+
+Khi đưa hệ thống ra môi trường Internet công khai, các tuyến đường quản trị nội dung (`/topics/new`, `/topics/*/edit`, `/vocabulary/bulk-*`, `/import/**`, `*/admin/**`) cần được đặt phía sau lớp bảo vệ của **Hạ tầng mạng / Cổng xác thực (Infrastructure Authentication)**:
+- **Reverse Proxy Authentication:** Sử dụng chỉ thị `auth_request` của Nginx hoặc ForwardAuth của Traefik kết nối tới hệ thống Single Sign-On (Authelia, Keycloak, Authentik).
+- **Zero Trust Network Access:** Sử dụng Cloudflare Access, AWS Verified Access hoặc Google Cloud Identity-Aware Proxy (IAP) để giới hạn quyền truy cập trang quản trị chỉ cho các kỹ sư/giáo viên được cấp quyền.
+- **VPN / Internal Network:** Chỉ cho phép truy cập các URL quản trị từ dải địa chỉ IP nội bộ của trường học/tổ chức.
+
+---
+
+## 12. Giấy phép Dữ liệu & Bản quyền (Licenses & Attribution)
+
+- **Dữ liệu Thứ tự nét viết chữ Hán (Kanji Stroke Order):**
+  - Trích xuất và tham chiếu từ dự án mã nguồn mở **[KanjiVG](https://kanjivg.tagaini.net/)**.
+  - Bản quyền: © 2009–2023 Ulrich Apel và các cộng tác viên KanjiVG.
+  - Giấy phép: Được phát hành theo giấy phép **Creative Commons Attribution-ShareAlike 3.0 Unported ([CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/))**.
+  - Toàn văn giấy phép được lưu trữ tại [src/main/resources/static/kanjivg/LICENSE.txt](src/main/resources/static/kanjivg/LICENSE.txt).
+- **Mã nguồn ứng dụng:** Phát hành cho mục đích học tập và đào tạo tiếng Nhật phi thương mại.

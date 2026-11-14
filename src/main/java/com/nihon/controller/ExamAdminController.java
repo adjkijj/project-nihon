@@ -92,7 +92,7 @@ public class ExamAdminController {
                        @RequestParam(value = "keyword", required = false) String keyword,
                        @RequestParam(value = "page", defaultValue = "0") int page,
                        Model model) {
-        int safePage = Math.max(0, page);
+        int safePage = Math.min(Math.max(0, page), 100_000);
         Pageable pageable = PageRequest.of(safePage, DEFAULT_PAGE_SIZE, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         ExamCategory category = ExamCategory.isValid(categoryStr) ? ExamCategory.fromString(categoryStr) : null;

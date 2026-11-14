@@ -63,5 +63,10 @@ application-secret*.yml
 Thumbs.db
 .idea/
 
+### Internal Intermediary Analysis Documents (Excluded from Release) ###
+docs/FEATURE_GAP.md
+docs/REFERENCE_FEATURES.md
+docs/HANDOVER_CLEANUP_REPORT.md
+
 
 

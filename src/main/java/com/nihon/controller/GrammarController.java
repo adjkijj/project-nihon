@@ -130,7 +130,7 @@ public class GrammarController {
             }
         }
 
-        int validPage = Math.max(0, page);
+        int validPage = Math.min(Math.max(0, page), 100_000);
         int pageSize = 20; // Yêu cầu phân trang 20
         Pageable pageable = PageRequest.of(validPage, pageSize, Sort.by("sortOrder").ascending().and(Sort.by("id").ascending()));
 
@@ -313,7 +313,7 @@ public class GrammarController {
             }
         }
 
-        int validPage = Math.max(0, page);
+        int validPage = Math.min(Math.max(0, page), 100_000);
         int validSize = (size > 0 && size <= 100) ? size : DEFAULT_PAGE_SIZE;
         Pageable pageable = PageRequest.of(validPage, validSize, Sort.by("sortOrder").ascending().and(Sort.by("id").ascending()));
 

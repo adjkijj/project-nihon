@@ -44,11 +44,11 @@
                 <div class="grammar-formula-content" th:text="${topic.formula}">[Thể thường / Thể lịch sự] + から</div>
             </div>
 
-            <!-- Giải thích đã qua HTML escape và dựng cấu trúc danh sách -->
+            <!-- Giải thích (th:text an toàn, hỗ trợ xuống dòng qua CSS pre-wrap) -->
             <div class="mt-4">
                 <h2 class="h5 font-weight-bold text-secondary mb-2">📌 Ý nghĩa và Cách dùng:</h2>
-                <div class="grammar-explanation-body" th:utext="${renderedExplanation}">
-                    <p>Giải thích...</p>
+                <div class="grammar-explanation-body" th:text="${topic.explanation}">
+                    Giải thích...
                 </div>
             </div>
 

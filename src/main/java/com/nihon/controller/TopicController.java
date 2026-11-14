@@ -5,6 +5,8 @@ import com.nihon.dto.TopicForm;
 import com.nihon.entity.Topic;
 import com.nihon.service.TopicService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;

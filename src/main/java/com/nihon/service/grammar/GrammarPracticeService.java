@@ -182,7 +182,14 @@ public class GrammarPracticeService {
 
         List<GrammarQuizQuestion> questions = questionRepository.findByGrammarTopicIdOrderBySortOrderAsc(topic.getId());
         if (questions.isEmpty()) {
-            throw new IllegalStateException("Chủ đề ngữ pháp này chưa có câu hỏi trắc nghiệm.");
+            return GrammarQuizCheckResult.builder()
+                    .grammarId(topic.getId())
+                    .totalQuestions(0)
+                    .correctCount(0)
+                    .allCorrect(false)
+                    .scorePercent(0)
+                    .questionResults(Collections.emptyList())
+                    .build();
         }
 
         Map<Long, Long> userChoiceMap = new HashMap<>();

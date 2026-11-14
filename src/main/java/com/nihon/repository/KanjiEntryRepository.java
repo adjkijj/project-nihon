@@ -32,6 +32,9 @@ public interface KanjiEntryRepository extends JpaRepository<KanjiEntry, Long> {
 
     long countByTopicId(Long topicId);
 
+    @Query("SELECT k.topic.id, COUNT(k) FROM KanjiEntry k WHERE k.topic.id IN :topicIds GROUP BY k.topic.id")
+    List<Object[]> countByTopicIdInGrouped(@Param("topicIds") java.util.Collection<Long> topicIds);
+
     @Query(
         "SELECT k FROM KanjiEntry k " +
         "JOIN k.topic t " +

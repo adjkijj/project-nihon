@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -189,19 +190,44 @@ public class TopicService {
 
     /**
      * Trả về bản đồ (topicId -> lý do không xóa được) cho danh sách chủ đề.
+     * Sử dụng GROUP BY theo lô để tránh N+1 query.
      */
     @Transactional(readOnly = true)
     public Map<Long, String> getCannotDeleteReasons(List<Topic> topics) {
         if (topics == null || topics.isEmpty()) {
             return Collections.emptyMap();
         }
+        List<Long> ids = topics.stream()
+                .filter(t -> t != null && t.getId() != null)
+                .map(Topic::getId)
+                .toList();
+        if (ids.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<Long, Long> childCountMap = new HashMap<>();
+        for (Object[] row : topicRepository.countByParentIdInGrouped(ids)) {
+            childCountMap.put((Long) row[0], (Long) row[1]);
+        }
+
+        Map<Long, Long> vocabCountMap = new HashMap<>();
+        for (Object[] row : vocabularyRepository.countByTopicIdInGrouped(ids)) {
+            vocabCountMap.put((Long) row[0], (Long) row[1]);
+        }
+
+        Map<Long, Long> kanjiCountMap = new HashMap<>();
+        for (Object[] row : kanjiEntryRepository.countByTopicIdInGrouped(ids)) {
+            kanjiCountMap.put((Long) row[0], (Long) row[1]);
+        }
+
         Map<Long, String> map = new LinkedHashMap<>();
-        for (Topic t : topics) {
-            if (t != null && t.getId() != null) {
-                String reason = getCannotDeleteReason(t.getId());
-                if (reason != null) {
-                    map.put(t.getId(), reason);
-                }
+        for (Long id : ids) {
+            long childCount = childCountMap.getOrDefault(id, 0L);
+            long vocabCount = vocabCountMap.getOrDefault(id, 0L);
+            long kanjiCount = kanjiCountMap.getOrDefault(id, 0L);
+            String reason = buildCannotDeleteReason(childCount, vocabCount, kanjiCount);
+            if (reason != null) {
+                map.put(id, reason);
             }
         }
         return map;

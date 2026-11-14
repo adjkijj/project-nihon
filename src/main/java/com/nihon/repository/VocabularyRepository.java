@@ -28,6 +28,9 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
 
     long countByTopicId(Long topicId);
 
+    @Query("SELECT v.topic.id, COUNT(v) FROM Vocabulary v WHERE v.topic.id IN :topicIds GROUP BY v.topic.id")
+    List<Object[]> countByTopicIdInGrouped(@Param("topicIds") java.util.Collection<Long> topicIds);
+
     List<Vocabulary> findTop10ByJapaneseTextContainingOrderBySourceLineAsc(String character);
 
     @Query("SELECT v FROM Vocabulary v WHERE v.topic.id = :topicId AND v.japaneseText LIKE CONCAT('%', :character, '%') ORDER BY v.id ASC")
