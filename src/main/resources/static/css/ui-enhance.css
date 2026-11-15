@@ -188,6 +188,51 @@
     display: none;
 }
 
+/* TTS Speed Control on Navbar */
+.app-header .nav-extra {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.tts-speed-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.tts-speed-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #94a3b8);
+    font-weight: 500;
+}
+
+.tts-speed-select {
+    padding: 0.35rem 0.55rem;
+    font-size: 0.825rem;
+    font-family: inherit;
+    font-weight: 600;
+    color: var(--text-primary, #f8fafc);
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color, #334155);
+    border-radius: 6px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.tts-speed-select:hover,
+.tts-speed-select:focus {
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.4);
+    background-color: var(--bg-surface, #1e293b);
+}
+
+.tts-speed-select option {
+    background-color: #1e293b;
+    color: #f8fafc;
+}
+
 /* ==========================================================================
    2. Responsive Mobile Drawer (F02: max-width 767.98px)
    ========================================================================== */
@@ -323,7 +368,10 @@
         border-top: 1px solid var(--border-color, #334155);
         display: flex;
         justify-content: center;
+        align-items: center;
+        gap: 0.75rem;
         width: 100%;
+        flex-wrap: wrap;
     }
 }
 

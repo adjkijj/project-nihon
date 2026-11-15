@@ -44,6 +44,16 @@
     <th:block th:fragment="scripts">
         <script th:src="@{/js/nihon-speech.js}" defer></script>
     </th:block>
+
+    <!-- Fragment select điều chỉnh tốc độ phát âm tiếng Nhật trên navbar -->
+    <div th:fragment="speedSelect" class="tts-speed-control">
+        <label for="tts-speed-select" class="tts-speed-label" title="Tốc độ phát âm tiếng Nhật">Tốc độ:</label>
+        <select id="tts-speed-select" name="ttsSpeed" class="tts-speed-select" aria-label="Tốc độ phát âm tiếng Nhật">
+            <option value="1.0">1.0x</option>
+            <option value="0.85">0.85x</option>
+            <option value="0.75">0.75x</option>
+        </select>
+    </div>
 </body>
 </html>
 

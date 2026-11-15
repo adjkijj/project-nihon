@@ -16,6 +16,58 @@
     var noticeShown = false;
     var currentSpeakingBtn = null;
 
+    var DEFAULT_RATE = 0.9;
+    var ALLOWED_SPEEDS = ['1.0', '1', '0.85', '0.75'];
+
+    /**
+     * Đọc cấu hình tốc độ phát âm từ localStorage với khóa nihon_tts_speed.
+     * Kiểm tra giá trị nằm trong danh sách cho phép; nếu là giá trị lạ hoặc ngoài danh sách thì dùng mặc định 0.9.
+     */
+    function getTtsSpeed() {
+        try {
+            var raw = localStorage.getItem('nihon_tts_speed');
+            if (raw && ALLOWED_SPEEDS.indexOf(raw) !== -1) {
+                var parsed = parseFloat(raw);
+                if (!isNaN(parsed) && parsed > 0) {
+                    return parsed;
+                }
+            }
+        } catch (e) {
+            // An toàn khi localStorage bị chặn hoặc hạn chế
+        }
+        return DEFAULT_RATE;
+    }
+
+    /**
+     * Đồng bộ giá trị select trên thanh điều hướng navbar
+     */
+    function initSpeedSelect() {
+        var select = document.getElementById('tts-speed-select') || document.querySelector('.tts-speed-select');
+        if (!select) {
+            return;
+        }
+
+        try {
+            var stored = localStorage.getItem('nihon_tts_speed');
+            if (stored && ALLOWED_SPEEDS.indexOf(stored) !== -1) {
+                select.value = stored;
+            }
+        } catch (e) {
+            // Ignored
+        }
+
+        select.addEventListener('change', function () {
+            var val = select.value;
+            if (ALLOWED_SPEEDS.indexOf(val) !== -1) {
+                try {
+                    localStorage.setItem('nihon_tts_speed', val);
+                } catch (e) {
+                    // Ignored
+                }
+            }
+        });
+    }
+
     /**
      * Ẩn tất cả nút loa trên trang
      */
@@ -149,7 +201,7 @@
             clearSpeakingState();
 
             var utterance = new SpeechSynthesisUtterance(text.trim());
-            utterance.rate = 0.9;
+            utterance.rate = getTtsSpeed();
             utterance.lang = 'ja-JP';
 
             if (selectedVoice) {
@@ -201,5 +253,21 @@
 
     // 3. Khởi động nạp giọng đọc
     initVoices();
+
+    // 4. Đồng bộ select tốc độ phát âm trên navbar
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSpeedSelect);
+    } else {
+        initSpeedSelect();
+    }
+
+    // 5. Expose helper kiểm thử nếu cần
+    if (typeof window !== 'undefined') {
+        window.NihonSpeech = {
+            getSpeed: getTtsSpeed,
+            DEFAULT_RATE: DEFAULT_RATE,
+            ALLOWED_SPEEDS: ALLOWED_SPEEDS
+        };
+    }
 })();
 

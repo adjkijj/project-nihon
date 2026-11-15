@@ -12,6 +12,7 @@
         initAccessibleConfirm();
         initGlobalKeyboardNav();
         initVocabViewPersistence();
+        initTtsSpeedNavSync();
     });
 
     /* ==========================================================================
@@ -456,6 +457,37 @@
         } catch (e) {
             // Bỏ qua lỗi
         }
+    }
+
+    /* ==========================================================================
+       6. TTS Speed Selector Persistence (nihon_tts_speed)
+       ========================================================================== */
+    function initTtsSpeedNavSync() {
+        var ALLOWED = ['1.0', '1', '0.85', '0.75'];
+        var speedSelect = document.getElementById('tts-speed-select') || document.querySelector('.tts-speed-select');
+        if (!speedSelect) {
+            return;
+        }
+
+        try {
+            var saved = localStorage.getItem('nihon_tts_speed');
+            if (saved && ALLOWED.indexOf(saved) !== -1) {
+                speedSelect.value = saved;
+            }
+        } catch (e) {
+            // Safe fallback
+        }
+
+        speedSelect.addEventListener('change', function () {
+            var val = speedSelect.value;
+            if (ALLOWED.indexOf(val) !== -1) {
+                try {
+                    localStorage.setItem('nihon_tts_speed', val);
+                } catch (e) {
+                    // Safe fallback
+                }
+            }
+        });
     }
 
 })();

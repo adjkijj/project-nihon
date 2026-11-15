@@ -82,9 +82,10 @@
                 <a href="/import" th:classappend="${currentNav == 'import' ? 'active' : ''}">Nhập Excel</a>
             </div>
 
-            <!-- Nút bật/tắt phiên âm Furigana -->
+            <!-- Nút bật/tắt phiên âm Furigana & Tốc độ phát âm -->
             <div class="nav-extra">
                 <th:block th:replace="~{fragments/furigana :: toggleBtn}"></th:block>
+                <th:block th:replace="~{fragments/speech :: speedSelect}"></th:block>
             </div>
         </nav>
 

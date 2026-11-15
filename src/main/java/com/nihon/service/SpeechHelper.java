@@ -10,6 +10,32 @@ import org.springframework.stereotype.Component;
 @Component("speechHelper")
 public class SpeechHelper {
 
+    public static final double DEFAULT_SPEED = 0.9;
+    public static final java.util.List<String> ALLOWED_SPEEDS = java.util.List.of("1.0", "1", "0.85", "0.75");
+
+    /**
+     * Xác định và kiểm tra tốc độ phát âm (TTS speed) hợp lệ.
+     * Mặc định 0.9 để giữ hành vi cũ.
+     * Giá trị lạ hoặc ngoài danh sách cho phép (1.0x, 0.85x, 0.75x) sẽ được đưa về mặc định 0.9.
+     *
+     * @param rawSpeed Chuỗi tốc độ từ client (ví dụ: "1.0", "0.85", "0.75")
+     * @return Tốc độ hợp lệ dạng double (1.0, 0.85, 0.75 hoặc 0.9)
+     */
+    public static double resolveTtsSpeed(String rawSpeed) {
+        if (rawSpeed == null || rawSpeed.isBlank()) {
+            return DEFAULT_SPEED;
+        }
+        String trimmed = rawSpeed.trim();
+        if (!ALLOWED_SPEEDS.contains(trimmed)) {
+            return DEFAULT_SPEED;
+        }
+        try {
+            return Double.parseDouble(trimmed);
+        } catch (NumberFormatException e) {
+            return DEFAULT_SPEED;
+        }
+    }
+
     /**
      * Xác định chuỗi văn bản dùng cho phát âm tiếng Nhật.
      *

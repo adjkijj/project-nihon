@@ -45,5 +45,28 @@ class SpeechHelperTest {
         assertThat(SpeechHelper.resolveSpeechText(null, "わたし")).isEqualTo("わたし");
         assertThat(SpeechHelper.resolveSpeechText("私", null)).isEqualTo("私");
     }
+
+    @Test
+    @DisplayName("6. Tốc độ hợp lệ trong danh sách (1.0, 0.85, 0.75) được giữ nguyên")
+    void resolveTtsSpeed_allowedSpeeds() {
+        assertThat(SpeechHelper.resolveTtsSpeed("1.0")).isEqualTo(1.0);
+        assertThat(SpeechHelper.resolveTtsSpeed("1")).isEqualTo(1.0);
+        assertThat(SpeechHelper.resolveTtsSpeed("0.85")).isEqualTo(0.85);
+        assertThat(SpeechHelper.resolveTtsSpeed("0.75")).isEqualTo(0.75);
+    }
+
+    @Test
+    @DisplayName("7. Giá trị lạ hoặc ngoài danh sách cho phép thì dùng mặc định 0.9")
+    void resolveTtsSpeed_unusualOrOutsideListUsesDefault() {
+        assertThat(SpeechHelper.resolveTtsSpeed(null)).isEqualTo(0.9);
+        assertThat(SpeechHelper.resolveTtsSpeed("")).isEqualTo(0.9);
+        assertThat(SpeechHelper.resolveTtsSpeed("   ")).isEqualTo(0.9);
+        assertThat(SpeechHelper.resolveTtsSpeed("invalid")).isEqualTo(0.9);
+        assertThat(SpeechHelper.resolveTtsSpeed("abc")).isEqualTo(0.9);
+        assertThat(SpeechHelper.resolveTtsSpeed("2.0")).isEqualTo(0.9);
+        assertThat(SpeechHelper.resolveTtsSpeed("0.5")).isEqualTo(0.9);
+        assertThat(SpeechHelper.resolveTtsSpeed("-1")).isEqualTo(0.9);
+        assertThat(SpeechHelper.resolveTtsSpeed("999")).isEqualTo(0.9);
+    }
 }
 
