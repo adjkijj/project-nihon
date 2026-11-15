@@ -162,6 +162,8 @@
                                   th:text="'+' + ${q.pointsAwarded} + ' / ' + ${q.maxPoints} + ' đ'">
                                 +1.00 / 1.00 đ
                             </span>
+                            <span class="badge badge-normal text-accent font-size-xs self-approved-badge"
+                                  th:if="${q.selfApproved}">Tự xác nhận</span>
                         </div>
                     </div>
 
@@ -198,6 +200,27 @@
                              class="alert alert-info font-size-xs p-2 mb-2"
                              th:text="${q.gradingResult.feedback}">
                             Độ tương đồng: 95.0%. Chấm tự động tham khảo.
+                        </div>
+
+                        <!-- Khu vực tự xác nhận điểm tối đa và hủy xác nhận cho câu hỏi dịch câu (TRANSLATION) -->
+                        <div th:if="${q.question.type.name() == 'TRANSLATION' && q.answerId != null}" class="self-approve-action-box mt-2">
+                            <form th:if="${!q.selfApproved}"
+                                  th:action="@{'/exams/attempt/' + ${attempt.id} + '/answer/' + ${q.answerId} + '/self-approve'}"
+                                  method="post" class="d-inline-block">
+                                <input type="hidden" name="_csrf" th:value="${_csrf}">
+                                <button type="submit" class="btn btn-sm btn-outline-primary font-size-xs">
+                                    ✓ Tự xác nhận
+                                </button>
+                            </form>
+                            <form th:if="${q.selfApproved}"
+                                  th:action="@{'/exams/attempt/' + ${attempt.id} + '/answer/' + ${q.answerId} + '/self-approve'}"
+                                  method="post" class="d-inline-block">
+                                <input type="hidden" name="_csrf" th:value="${_csrf}">
+                                <input type="hidden" name="action" value="cancel">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary font-size-xs">
+                                    ↺ Hủy xác nhận
+                                </button>
+                            </form>
                         </div>
                     </div>
 

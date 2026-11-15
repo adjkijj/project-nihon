@@ -247,6 +247,8 @@ public class ExamGradingService {
 
         for (ExamQuestion q : questions) {
             ExamAttemptAnswer ans = answerMap.get(q.getId());
+            Long answerId = ans != null ? ans.getId() : null;
+            boolean selfApproved = ans != null && ans.isSelfApproved();
             String studentAnswer = ans != null ? ans.getAnswerValue() : null;
             boolean flagged = ans != null && ans.isFlagged();
             BigDecimal awarded = ans != null ? ans.getPointsAwarded() : BigDecimal.ZERO;
@@ -263,6 +265,14 @@ public class ExamGradingService {
                 }
             }
 
+            // Nếu câu dịch thuật đã được tự xác nhận, cập nhật kết quả tương ứng
+            if (q.getType() == ExamQuestionType.TRANSLATION && selfApproved) {
+                if (gradingResult != null) {
+                    gradingResult.setPointsAwarded(awarded);
+                    gradingResult.setCorrect(true);
+                }
+            }
+
             if (correct == null) {
                 essayCount++;
             } else if (Boolean.TRUE.equals(correct)) {
@@ -275,6 +285,7 @@ public class ExamGradingService {
 
             ExamQuestionResultDto qDto = ExamQuestionResultDto.builder()
                     .questionId(q.getId())
+                    .answerId(answerId)
                     .questionIndex(globalIndex++)
                     .sectionId(q.getSection() != null ? q.getSection().getId() : null)
                     .sectionTitle(q.getSection() != null ? q.getSection().getTitle() : "Phần thi")
@@ -285,6 +296,7 @@ public class ExamGradingService {
                     .maxPoints(q.getPoints() != null ? q.getPoints() : BigDecimal.ONE)
                     .correct(correct)
                     .flagged(flagged)
+                    .selfApproved(selfApproved)
                     .gradingResult(gradingResult)
                     .build();
 
@@ -382,6 +394,89 @@ public class ExamGradingService {
         attemptAnswerRepository.save(targetAnswer);
 
         // Tính lại tổng điểm của bài thi
+        BigDecimal newTotal = attempt.getAnswers().stream()
+                .map(ExamAttemptAnswer::getPointsAwarded)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        attempt.setTotalPoints(newTotal.setScale(2, RoundingMode.HALF_UP));
+        attemptRepository.save(attempt);
+    }
+
+    /**
+     * Tự xác nhận hoặc hủy tự xác nhận điểm cho câu hỏi dịch thuật (TRANSLATION).
+     * Chỉ áp dụng cho câu hỏi loại TRANSLATION, sau khi nộp bài và xem kết quả.
+     *
+     * @param attemptId ID lượt làm bài
+     * @param answerId ID câu trả lời trong exam_attempt_answer
+     * @param approve true nếu tự xác nhận (lấy điểm tối đa), false nếu hủy xác nhận (khôi phục điểm tự động)
+     * @param currentLearnerId learner_id từ cookie
+     */
+    @Transactional
+    public void selfApproveTranslation(String attemptId, Long answerId, boolean approve, String currentLearnerId) {
+        if (attemptId == null || answerId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Dữ liệu xác nhận không hợp lệ.");
+        }
+
+        ExamAttempt attempt = attemptRepository.findByIdWithDetails(attemptId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy bài thi."));
+
+        // Kiểm tra learner_id trong cookie khớp với attempt
+        if (currentLearnerId == null || !currentLearnerId.equals(attempt.getLearnerId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Mã học viên trong cookie không khớp với bài thi.");
+        }
+
+        // Chỉ áp dụng sau khi nộp bài và xem kết quả
+        if (attempt.getStatus() == ExamAttemptStatus.RUNNING) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chỉ được phép tự xác nhận sau khi nộp bài thi.");
+        }
+
+        // Kiểm tra câu trả lời thuộc về bài thi
+        ExamAttemptAnswer foundAnswer = attempt.getAnswers().stream()
+                .filter(a -> answerId.equals(a.getId()))
+                .findFirst()
+                .orElse(null);
+
+        if (foundAnswer == null) {
+            // Kiểm tra xem answer có tồn tại nhưng thuộc attempt khác hay không
+            ExamAttemptAnswer existAns = attemptAnswerRepository.findById(answerId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy câu trả lời với ID: " + answerId));
+            if (existAns.getAttempt() == null || !attemptId.equals(existAns.getAttempt().getId())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Câu trả lời không thuộc bài thi được chỉ định.");
+            }
+            foundAnswer = existAns;
+        }
+
+        final ExamAttemptAnswer targetAnswer = foundAnswer;
+
+        ExamQuestion question = questionRepository.findById(targetAnswer.getQuestionId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy câu hỏi với ID: " + targetAnswer.getQuestionId()));
+
+        // Chỉ áp dụng cho câu hỏi loại TRANSLATION
+        if (question.getType() != ExamQuestionType.TRANSLATION) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chỉ câu hỏi dịch thuật (TRANSLATION) mới được phép tự xác nhận.");
+        }
+
+        BigDecimal maxPoints = question.getPoints() != null ? question.getPoints() : BigDecimal.ONE;
+
+        if (approve) {
+            // Điểm cập nhật bằng điểm tối đa của câu
+            targetAnswer.setSelfApproved(true);
+            targetAnswer.setPointsAwarded(maxPoints.setScale(2, RoundingMode.HALF_UP));
+            targetAnswer.setCorrect(true);
+        } else {
+            // Hủy xác nhận: khôi phục điểm chấm tự động ban đầu
+            targetAnswer.setSelfApproved(false);
+            QuestionGrader grader = graders.get(ExamQuestionType.TRANSLATION);
+            GradingResult autoResult = grader != null ? grader.grade(question, targetAnswer.getAnswerValue()) : null;
+            BigDecimal autoPoints = autoResult != null ? autoResult.getPointsAwarded() : BigDecimal.ZERO;
+            Boolean autoCorrect = autoResult != null ? autoResult.getCorrect() : false;
+            targetAnswer.setPointsAwarded(autoPoints.setScale(2, RoundingMode.HALF_UP));
+            targetAnswer.setCorrect(autoCorrect);
+        }
+
+        attemptAnswerRepository.save(targetAnswer);
+
+        // Tổng điểm và xếp loại tính lại
         BigDecimal newTotal = attempt.getAnswers().stream()
                 .map(ExamAttemptAnswer::getPointsAwarded)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);

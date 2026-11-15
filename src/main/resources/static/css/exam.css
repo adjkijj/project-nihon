@@ -1024,4 +1024,11 @@ body.hide-translation .prompt-vi-text {
     border: 1px solid rgba(148, 163, 184, 0.4);
 }
 
+.self-approved-badge {
+    background-color: rgba(234, 179, 8, 0.2);
+    color: #ca8a04;
+    border: 1px solid rgba(234, 179, 8, 0.5);
+    font-weight: 700;
+}
+
 

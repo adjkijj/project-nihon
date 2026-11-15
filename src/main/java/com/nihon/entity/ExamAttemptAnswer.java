@@ -58,5 +58,9 @@ public class ExamAttemptAnswer {
     @Builder.Default
     @Column(name = "flagged", nullable = false)
     private boolean flagged = false; // Đánh dấu xem lại
+
+    @Builder.Default
+    @Column(name = "self_approved", nullable = false)
+    private boolean selfApproved = false; // Tự xác nhận đạt điểm tối đa (TRANSLATION)
 }
 

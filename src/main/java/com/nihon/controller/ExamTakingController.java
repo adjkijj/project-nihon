@@ -7,6 +7,7 @@ import com.nihon.dto.exam.taker.ExamSessionAttempt;
 import com.nihon.entity.ExamCategory;
 import com.nihon.entity.ExamPaper;
 import com.nihon.history.LearnerContext;
+import com.nihon.history.LearnerIdentityFilter;
 import com.nihon.service.exam.ExamTakingService;
 import com.nihon.service.exam.grading.ExamGradingService;
 import jakarta.servlet.http.HttpSession;
@@ -14,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -241,6 +243,33 @@ public class ExamTakingController {
         try {
             gradingService.gradeEssay(attemptId, questionId, points, learnerId);
             redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật điểm tự chấm cho câu hỏi luận thành công.");
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/exams/attempt/" + attemptId + "/result";
+    }
+
+    /**
+     * 8b. Tự xác nhận hoặc hủy tự xác nhận điểm tối đa cho câu dịch thuật (TRANSLATION).
+     */
+    @PostMapping("/attempt/{attemptId}/answer/{answerId}/self-approve")
+    public String selfApproveTranslation(@PathVariable("attemptId") String attemptId,
+                                        @PathVariable("answerId") Long answerId,
+                                        @RequestParam(value = "action", required = false) String action,
+                                        @CookieValue(value = LearnerIdentityFilter.COOKIE_NAME, required = false) String cookieLearnerId,
+                                        RedirectAttributes redirectAttributes) {
+        String learnerId = cookieLearnerId != null ? cookieLearnerId : LearnerContext.current().orElse(null);
+        boolean isCancel = "cancel".equalsIgnoreCase(action) || "unapprove".equalsIgnoreCase(action);
+
+        try {
+            gradingService.selfApproveTranslation(attemptId, answerId, !isCancel, learnerId);
+            if (isCancel) {
+                redirectAttributes.addFlashAttribute("successMessage", "Đã hủy tự xác nhận câu dịch thuật, khôi phục điểm tự động.");
+            } else {
+                redirectAttributes.addFlashAttribute("successMessage", "Đã tự xác nhận đạt điểm tối đa cho câu dịch thuật thành công.");
+            }
         } catch (ResponseStatusException e) {
             throw e;
         } catch (RuntimeException e) {

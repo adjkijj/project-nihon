@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 public class ExamQuestionResultDto {
 
     private Long questionId;
+    private Long answerId;
     private int questionIndex;
     private Long sectionId;
     private String sectionTitle;
@@ -33,6 +34,7 @@ public class ExamQuestionResultDto {
 
     private Boolean correct; // true, false, null (tự luận)
     private boolean flagged;
+    private boolean selfApproved; // Tự xác nhận đạt điểm tối đa (TRANSLATION)
 
     private GradingResult gradingResult;
 }
