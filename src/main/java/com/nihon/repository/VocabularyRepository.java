@@ -46,6 +46,42 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
     @Query("SELECT v FROM Vocabulary v JOIN FETCH v.topic t WHERE v.japaneseText LIKE CONCAT('%', :escapedKanji, '%') ESCAPE '\\' ORDER BY v.japaneseText ASC, v.id ASC")
     List<Vocabulary> findAllByJapaneseTextContainingKanji(@Param("escapedKanji") String escapedKanji);
 
+    @Query(value = "SELECT MIN(v.id) FROM Vocabulary v WHERE " +
+           "(:topicId IS NULL OR v.topic.id = :topicId) AND " +
+           "(:filterMode = 'ALL' OR " +
+           " (:filterMode = 'HAS_KANJI' AND v.hasKanji = true) OR " +
+           " (:filterMode = 'NO_READING' AND (v.reading IS NULL OR TRIM(v.reading) = '')) OR " +
+           " (:filterMode = 'NO_MEANING' AND (v.meaningVi IS NULL OR TRIM(v.meaningVi) = ''))) AND " +
+           "(:escapedKeyword IS NULL OR :escapedKeyword = '' OR " +
+           " LOWER(v.japaneseText) LIKE CONCAT('%', :escapedKeyword, '%') ESCAPE '\\' OR " +
+           " (v.reading IS NOT NULL AND LOWER(v.reading) LIKE CONCAT('%', :escapedKeyword, '%') ESCAPE '\\') OR " +
+           " (v.meaningVi IS NOT NULL AND LOWER(v.meaningVi) LIKE CONCAT('%', :escapedKeyword, '%') ESCAPE '\\') OR " +
+           " (v.romaji IS NOT NULL AND LOWER(v.romaji) LIKE CONCAT('%', :escapedKeyword, '%') ESCAPE '\\')) " +
+           "GROUP BY v.japaneseText, v.reading, v.meaningVi " +
+           "ORDER BY MIN(v.id) DESC",
+           countQuery = "SELECT COUNT(DISTINCT CONCAT(v.japaneseText, '#', COALESCE(v.reading, ''), '#', LOWER(COALESCE(v.meaningVi, '')))) FROM Vocabulary v WHERE " +
+           "(:topicId IS NULL OR v.topic.id = :topicId) AND " +
+           "(:filterMode = 'ALL' OR " +
+           " (:filterMode = 'HAS_KANJI' AND v.hasKanji = true) OR " +
+           " (:filterMode = 'NO_READING' AND (v.reading IS NULL OR TRIM(v.reading) = '')) OR " +
+           " (:filterMode = 'NO_MEANING' AND (v.meaningVi IS NULL OR TRIM(v.meaningVi) = ''))) AND " +
+           "(:escapedKeyword IS NULL OR :escapedKeyword = '' OR " +
+           " LOWER(v.japaneseText) LIKE CONCAT('%', :escapedKeyword, '%') ESCAPE '\\' OR " +
+           " (v.reading IS NOT NULL AND LOWER(v.reading) LIKE CONCAT('%', :escapedKeyword, '%') ESCAPE '\\') OR " +
+           " (v.meaningVi IS NOT NULL AND LOWER(v.meaningVi) LIKE CONCAT('%', :escapedKeyword, '%') ESCAPE '\\') OR " +
+           " (v.romaji IS NOT NULL AND LOWER(v.romaji) LIKE CONCAT('%', :escapedKeyword, '%') ESCAPE '\\'))")
+    Page<Long> findDistinctRepresentativeIds(
+            @Param("topicId") Long topicId,
+            @Param("escapedKeyword") String escapedKeyword,
+            @Param("filterMode") String filterMode,
+            Pageable pageable);
+
+    @Query("SELECT v FROM Vocabulary v JOIN FETCH v.topic t WHERE v.id IN :ids ORDER BY v.id DESC")
+    List<Vocabulary> findAllByIdInWithTopic(@Param("ids") List<Long> ids);
+
+    @Query("SELECT v FROM Vocabulary v JOIN FETCH v.topic t WHERE v.japaneseText IN :japaneseTexts ORDER BY v.id DESC")
+    List<Vocabulary> findByJapaneseTextInWithTopic(@Param("japaneseTexts") List<String> japaneseTexts);
+
     @Query("SELECT v FROM Vocabulary v WHERE " +
            "(:topicId IS NULL OR v.topic.id = :topicId) AND " +
            "(:keyword IS NULL OR :keyword = '' OR " +
