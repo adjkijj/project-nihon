@@ -718,4 +718,53 @@ tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
     width: 16% !important;
 }
 
+/* ==========================================================================
+   Ẩn / Hiện nghĩa tiếng Việt (.hide-meaning .meaning-cell)
+   ========================================================================== */
+button.view-toggle-btn {
+    cursor: pointer;
+    font-family: inherit;
+    line-height: inherit;
+    background: transparent;
+}
+
+button.view-toggle-btn:hover {
+    color: var(--text-primary);
+    background-color: var(--border-color);
+}
+
+button.view-toggle-btn.active {
+    background-color: var(--border-color);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.meaning-cell {
+    transition: filter 0.2s ease, opacity 0.2s ease, background-color 0.2s ease;
+    outline: none;
+}
+
+.hide-meaning .meaning-cell {
+    filter: blur(5px);
+    opacity: 0.35;
+    user-select: none;
+    cursor: pointer;
+}
+
+.hide-meaning .meaning-cell:hover,
+.hide-meaning .meaning-cell:focus,
+.hide-meaning .meaning-cell:focus-visible {
+    filter: none;
+    opacity: 1;
+    user-select: auto;
+    background-color: rgba(56, 189, 248, 0.08);
+}
+
+.hide-meaning .meaning-cell:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+    border-radius: var(--radius-sm);
+}
+
+
 

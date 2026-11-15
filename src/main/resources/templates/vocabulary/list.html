@@ -14,6 +14,7 @@
     <script th:src="@{/js/app.js}" defer></script>
     <script th:src="@{/js/ui-enhance.js}" defer></script>
     <script th:src="@{/js/kanji-stroke-player.js}" defer></script>
+    <script th:src="@{/js/vocabulary-meaning-toggle.js}" defer></script>
 </head>
 
 <body>
@@ -123,7 +124,7 @@
                     — đang lọc kết quả
                 </span>
             </div>
-            <div class="view-mode-toggle-group">
+            <div class="view-mode-toggle-group" role="toolbar" aria-label="Thanh công cụ chế độ xem và hiển thị">
                 <span class="view-label">Chế độ xem:</span>
                 <a th:href="@{/vocabulary(topicId=${selectedTopicId}, keyword=${keyword}, filter=${filter}, view='COMPACT')}"
                    id="view-compact-btn"
@@ -133,6 +134,11 @@
                    id="view-full-btn"
                    class="view-toggle-btn"
                    th:classappend="${view == 'FULL' ? 'active' : ''}">Bảng đầy đủ</a>
+                <button type="button"
+                        id="btn-hide-meaning"
+                        class="view-toggle-btn hide-meaning-btn btn-toggle-meaning"
+                        aria-pressed="false"
+                        title="Bật/tắt ẩn nghĩa tiếng Việt để tự kiểm tra">Ẩn nghĩa</button>
             </div>
         </div>
 
@@ -161,7 +167,7 @@
                 </form>
             </div>
 
-            <table>
+            <table id="vocab-table">
                 <thead>
                     <tr>
                         <th class="col-checkbox">
@@ -219,7 +225,7 @@
                             </div>
                             <span th:if="${v.constituentKanji == null or v.constituentKanji.empty}" class="u-color-var-text-muted-font-size-0-8rem">—</span>
                         </td>
-                        <td th:text="${(v.meaningVi != null && !v.meaningVi.isBlank()) ? v.meaningVi : '-'}">Tôi</td>
+                        <td class="meaning-cell" tabindex="0" th:text="${(v.meaningVi != null && !v.meaningVi.isBlank()) ? v.meaningVi : '-'}">Tôi</td>
                         <td>
                             <div class="topic-list">
                                 <span th:each="t : ${v.topics}" class="topic-badge" th:text="${t.name}"
