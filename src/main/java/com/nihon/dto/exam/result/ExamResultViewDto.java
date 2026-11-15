@@ -28,6 +28,7 @@ public class ExamResultViewDto {
     private BigDecimal totalPoints;
     private BigDecimal maxPoints;
     private double percentage;
+    private String grade;
     private int durationSeconds;
 
     private int totalQuestions;

@@ -219,6 +219,7 @@ public class ExamTakingController {
         model.addAttribute("result", resultView);
         model.addAttribute("attempt", resultView.getAttempt());
         model.addAttribute("paper", resultView.getPaper());
+        model.addAttribute("grade", resultView.getGrade());
         model.addAttribute("currentNav", "exams");
         return "exams/taker/result";
     }

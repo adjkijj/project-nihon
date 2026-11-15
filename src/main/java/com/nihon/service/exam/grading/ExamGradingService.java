@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
  * Điều phối chấm điểm từng dạng câu hỏi, lưu bền vững vào CSDL,
  * tạo báo cáo kết quả chi tiết, tự chấm điểm bài luận và luyện lại các câu sai.
  */
-@Service
+@Service("examGradingService")
 public class ExamGradingService {
 
     private static final Logger log = LoggerFactory.getLogger(ExamGradingService.class);
@@ -63,6 +63,53 @@ public class ExamGradingService {
 
     @org.springframework.beans.factory.annotation.Value("${app.history.retention-days:180}")
     private int retentionDays = 180;
+
+    @org.springframework.beans.factory.annotation.Value("${app.exam.grade.s:90}")
+    private BigDecimal gradeSThreshold = new BigDecimal("90");
+
+    @org.springframework.beans.factory.annotation.Value("${app.exam.grade.a:80}")
+    private BigDecimal gradeAThreshold = new BigDecimal("80");
+
+    @org.springframework.beans.factory.annotation.Value("${app.exam.grade.b:65}")
+    private BigDecimal gradeBThreshold = new BigDecimal("65");
+
+    /**
+     * Tính xếp hạng bài thi (S, A, B hoặc C) dựa theo tỷ lệ phần trăm điểm đạt được.
+     * Ngưỡng được cấu hình trong application.properties:
+     * - app.exam.grade.s=90 (S)
+     * - app.exam.grade.a=80 (A)
+     * - app.exam.grade.b=65 (B)
+     * - Dưới ngưỡng B trả về C.
+     * Đây là ngưỡng riêng của Project Nihon, không ghi là chuẩn JLPT.
+     *
+     * @param percentage Tỷ lệ phần trăm điểm (0 - 100)
+     * @return Mã xếp hạng: "S", "A", "B", hoặc "C"
+     */
+    public String calculateGrade(BigDecimal percentage) {
+        if (percentage == null) {
+            return "C";
+        }
+        if (percentage.compareTo(gradeSThreshold) >= 0) {
+            return "S";
+        }
+        if (percentage.compareTo(gradeAThreshold) >= 0) {
+            return "A";
+        }
+        if (percentage.compareTo(gradeBThreshold) >= 0) {
+            return "B";
+        }
+        return "C";
+    }
+
+    public String calculateGrade(double percentage) {
+        return calculateGrade(BigDecimal.valueOf(percentage));
+    }
+
+    public void setGradeThresholds(BigDecimal s, BigDecimal a, BigDecimal b) {
+        if (s != null) this.gradeSThreshold = s;
+        if (a != null) this.gradeAThreshold = a;
+        if (b != null) this.gradeBThreshold = b;
+    }
 
     public ExamGradingService(ExamAttemptRepository attemptRepository,
                               ExamAttemptAnswerRepository attemptAnswerRepository,
@@ -273,9 +320,11 @@ public class ExamGradingService {
             }
         }
 
-        double percentage = attempt.getMaxPoints().compareTo(BigDecimal.ZERO) > 0
-                ? attempt.getTotalPoints().multiply(BigDecimal.valueOf(100)).divide(attempt.getMaxPoints(), 1, RoundingMode.HALF_UP).doubleValue()
-                : 0.0;
+        BigDecimal pctBd = attempt.getMaxPoints().compareTo(BigDecimal.ZERO) > 0
+                ? attempt.getTotalPoints().multiply(BigDecimal.valueOf(100)).divide(attempt.getMaxPoints(), 2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+        double percentage = pctBd.setScale(1, RoundingMode.HALF_UP).doubleValue();
+        String grade = calculateGrade(pctBd);
 
         return ExamResultViewDto.builder()
                 .attempt(attempt)
@@ -283,6 +332,7 @@ public class ExamGradingService {
                 .totalPoints(attempt.getTotalPoints())
                 .maxPoints(attempt.getMaxPoints())
                 .percentage(percentage)
+                .grade(grade)
                 .durationSeconds(attempt.getDurationSeconds())
                 .totalQuestions(questions.size())
                 .correctCount(correctCount)
