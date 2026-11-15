@@ -12,8 +12,8 @@ import java.util.List;
 
 /**
  * Tiện ích phân giải địa chỉ IP của Client một cách an toàn.
- * Chỉ đọc tiêu đề X-Forwarded-For khi kết nối đến từ các Reverse Proxy đáng tin cậy (trusted-proxies).
- * Ngăn chặn tuyệt đối kỹ thuật giả mạo IP (IP Spoofing) qua header HTTP.
+ * Sử dụng trực tiếp request.getRemoteAddr() đã được xử lý bởi máy chủ web / Tomcat RemoteIpValve.
+ * Không tự phân tích thủ công tiêu đề X-Forwarded-For để ngăn chặn kỹ thuật giả mạo IP (IP Spoofing).
  */
 @Component
 public class ClientIpResolver {
@@ -22,12 +22,17 @@ public class ClientIpResolver {
 
     private final List<String> trustedProxies;
 
-    public ClientIpResolver(@Value("${app.import.trusted-proxies:127.0.0.1,::1,0:0:0:0:0:0:0:1}") String trustedProxiesConfig) {
+    public ClientIpResolver() {
+        this.trustedProxies = List.of();
+    }
+
+    public ClientIpResolver(@Value("${app.import.trusted-proxies:}") String trustedProxiesConfig) {
         this.trustedProxies = parseList(trustedProxiesConfig);
     }
 
     /**
      * Xác định địa chỉ IP thực tế của Client gửi yêu cầu.
+     * Sử dụng trực tiếp request.getRemoteAddr() do servlet container / Tomcat phân giải an toàn.
      *
      * @param request Yêu cầu HTTP
      * @return Chuỗi địa chỉ IP đã xác minh hoặc "anonymous" nếu không xác định được
@@ -38,28 +43,8 @@ public class ClientIpResolver {
         }
 
         String remoteAddr = request.getRemoteAddr();
-        if (remoteAddr != null) {
-            remoteAddr = remoteAddr.trim();
-        }
-
-        // Chỉ đọc header X-Forwarded-For khi remoteAddr là proxy tin cậy được cấu hình
-        if (isTrustedProxy(remoteAddr)) {
-            String xForwardedFor = request.getHeader("X-Forwarded-For");
-            if (xForwardedFor != null && !xForwardedFor.isBlank()) {
-                String[] parts = xForwardedFor.split(",");
-                if (parts.length > 0 && !parts[0].trim().isBlank()) {
-                    String clientIp = parts[0].trim();
-                    // Loại bỏ port nếu có (dạng 1.2.3.4:5678)
-                    if (clientIp.contains(":") && !clientIp.contains("::") && clientIp.indexOf(':') == clientIp.lastIndexOf(':')) {
-                        clientIp = clientIp.substring(0, clientIp.indexOf(':'));
-                    }
-                    return clientIp;
-                }
-            }
-        }
-
         if (remoteAddr != null && !remoteAddr.isBlank()) {
-            return remoteAddr;
+            return remoteAddr.trim();
         }
 
         return "anonymous";
