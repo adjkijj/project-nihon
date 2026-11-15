@@ -65,7 +65,10 @@
             </div>
 
             <div class="detail-links">
-                <a th:href="@{/vocabulary(topicId=${topic.id})}" class="btn btn-primary">
+                <a th:href="@{'/topics/' + ${topic.id} + '/hub'}" class="btn btn-primary font-weight-bold">
+                    🌟 Cẩm nang Tổng hợp All-in-One →
+                </a>
+                <a th:href="@{/vocabulary(topicId=${topic.id})}" class="btn btn-secondary">
                     Xem danh sách từ vựng của chủ đề →
                 </a>
                 <a th:href="@{/kanji(topicId=${topic.id})}" class="btn btn-secondary">

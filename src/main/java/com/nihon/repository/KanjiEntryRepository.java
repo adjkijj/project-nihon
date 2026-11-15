@@ -91,4 +91,7 @@ public interface KanjiEntryRepository extends JpaRepository<KanjiEntry, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE KanjiEntry k SET k.importBatchId = :batchId, k.updatedAt = k.createdAt WHERE k.id IN :ids")
     void assignImportBatchId(@Param("ids") List<Long> ids, @Param("batchId") Long batchId);
+
+    @Query("SELECT k FROM KanjiEntry k JOIN FETCH k.topic t WHERE k.topic.id = :topicId ORDER BY k.id ASC")
+    List<KanjiEntry> findByTopicIdWithTopic(@Param("topicId") Long topicId);
 }

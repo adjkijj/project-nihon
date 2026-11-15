@@ -50,4 +50,7 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Topic t SET t.importBatchId = :batchId WHERE t.id IN :ids")
     void assignImportBatchId(@Param("ids") List<Long> ids, @Param("batchId") Long batchId);
+
+    @Query("SELECT t FROM Topic t LEFT JOIN FETCH t.parent WHERE t.id = :id")
+    Optional<Topic> findByIdWithParent(@Param("id") Long id);
 }

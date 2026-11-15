@@ -46,5 +46,8 @@ public interface VerbRepository extends JpaRepository<Verb, Long> {
 
     List<Verb> findByTopicId(Long topicId);
 
+    @Query("SELECT v FROM Verb v LEFT JOIN FETCH v.topic t WHERE v.topic.id = :topicId ORDER BY v.id ASC")
+    List<Verb> findByTopicIdWithTopic(@Param("topicId") Long topicId);
+
     long countByTopicId(Long topicId);
 }

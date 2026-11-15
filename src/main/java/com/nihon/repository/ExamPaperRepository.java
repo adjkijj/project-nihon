@@ -40,5 +40,8 @@ public interface ExamPaperRepository extends JpaRepository<ExamPaper, Long> {
     java.util.List<ExamPaper> findPublishedExams(@Param("category") ExamCategory category);
 
     Optional<ExamPaper> findByCodeAndPublishedTrue(String code);
+
+    @Query("SELECT p FROM ExamPaper p LEFT JOIN FETCH p.topic t WHERE p.topic.id = :topicId AND p.published = true ORDER BY p.id ASC")
+    java.util.List<ExamPaper> findPublishedByTopicId(@Param("topicId") Long topicId);
 }
 
