@@ -103,6 +103,109 @@ class QuestionGradersTest {
             assertThat(res.getCorrect()).isTrue();
             assertThat(res.getPointsAwarded()).isEqualByComparingTo(BigDecimal.valueOf(1.0));
         }
+
+        @Test
+        @DisplayName("Test bắt buộc: 'タベル' với đáp án 'たべる' được chấm đúng")
+        void testTypingKatakanaInputForHiraganaAnswer() {
+            ExamQuestion q = ExamQuestion.builder()
+                    .type(ExamQuestionType.TYPING)
+                    .points(BigDecimal.valueOf(2.0))
+                    .answerKeys(new ArrayList<>())
+                    .build();
+
+            q.addAnswerKey(ExamAnswerKey.builder()
+                    .kind(ExamAnswerKind.ACCEPTED)
+                    .answerText("たべる")
+                    .build());
+
+            GradingResult res = grader.grade(q, "タベル");
+            assertThat(res.getCorrect()).isTrue();
+            assertThat(res.getPointsAwarded()).isEqualByComparingTo(BigDecimal.valueOf(2.0));
+            assertThat(res.getFeedback()).isEqualTo("Chính xác.");
+        }
+
+        @Test
+        @DisplayName("Test bắt buộc: 'コーヒー' với đáp án 'コーヒー' được chấm đúng")
+        void testTypingKatakanaInputForKatakanaAnswer() {
+            ExamQuestion q = ExamQuestion.builder()
+                    .type(ExamQuestionType.TYPING)
+                    .points(BigDecimal.valueOf(2.0))
+                    .answerKeys(new ArrayList<>())
+                    .build();
+
+            q.addAnswerKey(ExamAnswerKey.builder()
+                    .kind(ExamAnswerKind.ACCEPTED)
+                    .answerText("コーヒー")
+                    .build());
+
+            GradingResult res = grader.grade(q, "コーヒー");
+            assertThat(res.getCorrect()).isTrue();
+            assertThat(res.getPointsAwarded()).isEqualByComparingTo(BigDecimal.valueOf(2.0));
+            assertThat(res.getFeedback()).isEqualTo("Chính xác.");
+        }
+
+        @Test
+        @DisplayName("Test bắt buộc: 'こーひー' với đáp án 'コーヒー' giữ hành vi cũ (chấm sai khi không có cờ)")
+        void testTypingHiraganaInputForKatakanaAnswer_KeepsOldBehavior() {
+            ExamQuestion q = ExamQuestion.builder()
+                    .type(ExamQuestionType.TYPING)
+                    .points(BigDecimal.valueOf(2.0))
+                    .answerKeys(new ArrayList<>())
+                    .build();
+
+            q.addAnswerKey(ExamAnswerKey.builder()
+                    .kind(ExamAnswerKind.ACCEPTED)
+                    .answerText("コーヒー")
+                    .build());
+
+            // Không có cờ [CONVERT_KANA], đáp án đúng là Katakana (từ mượn) -> không chuyển đổi, chấm sai
+            GradingResult res = grader.grade(q, "こーひー");
+            assertThat(res.getCorrect()).isFalse();
+            assertThat(res.getPointsAwarded()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(res.getFeedback()).isEqualTo("Chưa chính xác.");
+        }
+
+        @Test
+        @DisplayName("Khoảng trắng và dấu câu cuối: ' タベル 。 ' với đáp án 'たべる' được chấm đúng")
+        void testTypingKatakanaWithWhitespaceAndPunctuation() {
+            ExamQuestion q = ExamQuestion.builder()
+                    .type(ExamQuestionType.TYPING)
+                    .points(BigDecimal.valueOf(1.5))
+                    .answerKeys(new ArrayList<>())
+                    .build();
+
+            q.addAnswerKey(ExamAnswerKey.builder()
+                    .kind(ExamAnswerKind.ACCEPTED)
+                    .answerText("たべる")
+                    .build());
+
+            GradingResult res = grader.grade(q, "  タベル  。 ");
+            assertThat(res.getCorrect()).isTrue();
+            assertThat(res.getPointsAwarded()).isEqualByComparingTo(BigDecimal.valueOf(1.5));
+        }
+
+        @Test
+        @DisplayName("Nhiều đáp án đúng ACCEPTED (Kanji và Hiragana): gõ Katakana khớp với key Hiragana")
+        void testTypingMultipleAcceptedKeys_KatakanaMatchesHiraganaKey() {
+            ExamQuestion q = ExamQuestion.builder()
+                    .type(ExamQuestionType.TYPING)
+                    .points(BigDecimal.valueOf(3.0))
+                    .answerKeys(new ArrayList<>())
+                    .build();
+
+            q.addAnswerKey(ExamAnswerKey.builder()
+                    .kind(ExamAnswerKind.ACCEPTED)
+                    .answerText("食べる")
+                    .build());
+            q.addAnswerKey(ExamAnswerKey.builder()
+                    .kind(ExamAnswerKind.ACCEPTED)
+                    .answerText("たべる")
+                    .build());
+
+            GradingResult res = grader.grade(q, "タベル");
+            assertThat(res.getCorrect()).isTrue();
+            assertThat(res.getPointsAwarded()).isEqualByComparingTo(BigDecimal.valueOf(3.0));
+        }
     }
 
     @Nested

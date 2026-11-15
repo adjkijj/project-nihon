@@ -96,5 +96,68 @@ class TextNormalizerTest {
     void containsControlChars_normalText_returnsFalse(String input, boolean expected) {
         assertThat(TextNormalizer.containsControlChars(input)).isEqualTo(expected);
     }
+
+    @Test
+    @DisplayName("katakanaToHiragana: chuyển đổi Katakana sang Hiragana và giữ nguyên trường âm U+30FC")
+    void katakanaToHiragana_convertsAndPreservesProlongedSound() {
+        // Test ca cơ bản
+        assertThat(TextNormalizer.katakanaToHiragana("タベル")).isEqualTo("たべる");
+        assertThat(TextNormalizer.katakanaToHiragana("コーヒー")).isEqualTo("こーひー");
+
+        // Giữ nguyên ký tự trường âm U+30FC (ー)
+        assertThat(TextNormalizer.katakanaToHiragana("\u30FC")).isEqualTo("\u30FC");
+
+        // Biên khoảng U+30A1 (ァ) đến U+30F6 (ヶ) dịch mã 0x60
+        assertThat(TextNormalizer.katakanaToHiragana("\u30A1")).isEqualTo("\u3041"); // ァ -> ぁ
+        assertThat(TextNormalizer.katakanaToHiragana("\u30F6")).isEqualTo("\u3096"); // ヶ -> ゖ
+
+        // Ngoài khoảng U+30A1..U+30F6 được giữ nguyên
+        assertThat(TextNormalizer.katakanaToHiragana("\u30A0")).isEqualTo("\u30A0"); // ゠ (U+30A0)
+        assertThat(TextNormalizer.katakanaToHiragana("\u30F7")).isEqualTo("\u30F7"); // ヷ (U+30F7)
+
+        // Hỗn hợp Hiragana, Kanji, Latin, số, dấu câu
+        assertThat(TextNormalizer.katakanaToHiragana("日本語タベル123! 私")).isEqualTo("日本語たべる123! 私");
+
+        // Chuỗi đã là Hiragana giữ nguyên
+        assertThat(TextNormalizer.katakanaToHiragana("たべる")).isEqualTo("たべる");
+
+        // Null và chuỗi rỗng
+        assertThat(TextNormalizer.katakanaToHiragana(null)).isNull();
+        assertThat(TextNormalizer.katakanaToHiragana("")).isEqualTo("");
+    }
+
+    @Test
+    @DisplayName("containsKatakana: phát hiện chính xác ký tự Katakana bao gồm trường âm")
+    void containsKatakana_detectsProperly() {
+        assertThat(TextNormalizer.containsKatakana("コーヒー")).isTrue();
+        assertThat(TextNormalizer.containsKatakana("タベル")).isTrue();
+        assertThat(TextNormalizer.containsKatakana("たべる")).isFalse();
+        assertThat(TextNormalizer.containsKatakana("日本語")).isFalse();
+        assertThat(TextNormalizer.containsKatakana(null)).isFalse();
+        assertThat(TextNormalizer.containsKatakana("")).isFalse();
+    }
+
+    @Test
+    @DisplayName("containsHiragana: phát hiện chính xác ký tự Hiragana")
+    void containsHiragana_detectsProperly() {
+        assertThat(TextNormalizer.containsHiragana("たべる")).isTrue();
+        assertThat(TextNormalizer.containsHiragana("食べる")).isTrue();
+        assertThat(TextNormalizer.containsHiragana("コーヒー")).isFalse();
+        assertThat(TextNormalizer.containsHiragana("学生")).isFalse();
+        assertThat(TextNormalizer.containsHiragana(null)).isFalse();
+        assertThat(TextNormalizer.containsHiragana("")).isFalse();
+    }
+
+    @Test
+    @DisplayName("isHiraganaAnswer: chỉ chấp nhận đáp án lưu ở dạng Hiragana và không chứa Katakana")
+    void isHiraganaAnswer_validatesCondition() {
+        assertThat(TextNormalizer.isHiraganaAnswer("たべる")).isTrue();
+        assertThat(TextNormalizer.isHiraganaAnswer("がくせい")).isTrue();
+        assertThat(TextNormalizer.isHiraganaAnswer("コーヒー")).isFalse();
+        assertThat(TextNormalizer.isHiraganaAnswer("パン")).isFalse();
+        assertThat(TextNormalizer.isHiraganaAnswer("学生")).isFalse();
+        assertThat(TextNormalizer.isHiraganaAnswer(null)).isFalse();
+        assertThat(TextNormalizer.isHiraganaAnswer("")).isFalse();
+    }
 }
 

@@ -5,6 +5,7 @@ import com.nihon.entity.ExamAnswerKey;
 import com.nihon.entity.ExamQuestion;
 import com.nihon.entity.ExamQuestionType;
 import com.nihon.service.RomajiConverter;
+import com.nihon.validation.TextNormalizer;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -59,7 +60,23 @@ public class TypingGrader implements QuestionGrader {
         for (ExamAnswerKey key : acceptedKeys) {
             String keyText = cleanKeyText(key.getAnswerText());
             String normalizedKey = normalizeAnswer(keyText, convertKana);
-            if (!normalizedKey.isEmpty() && normalizedStudent.equals(normalizedKey)) {
+            if (normalizedKey.isEmpty()) {
+                continue;
+            }
+
+            // Chuẩn bị chuỗi so khớp của thí sinh trước bước so sánh:
+            // Chỉ áp dụng chuyển Katakana sang Hiragana khi đáp án đúng lưu ở dạng Hiragana
+            // và không chứa Katakana (từ mượn).
+            String candidateStudent = normalizedStudent;
+            if (!convertKana && TextNormalizer.isHiraganaAnswer(normalizedKey)) {
+                String hiraganaStudent = TextNormalizer.katakanaToHiragana(normalizedStudent);
+                if (hiraganaStudent != null) {
+                    candidateStudent = hiraganaStudent;
+                }
+            }
+
+            // Bước so sánh
+            if (candidateStudent.equals(normalizedKey) || normalizedStudent.equals(normalizedKey)) {
                 isCorrect = true;
                 break;
             }
@@ -91,7 +108,7 @@ public class TypingGrader implements QuestionGrader {
         // Bỏ dấu câu ở cuối chuỗi (cả ký tự Nhật và ASCII)
         normalized = normalized.replaceAll("[。、.!,?!？]+$", "");
         if (convertKana) {
-            normalized = RomajiConverter.katakanaToHiragana(normalized);
+            normalized = TextNormalizer.katakanaToHiragana(normalized);
         }
         return normalized;
     }

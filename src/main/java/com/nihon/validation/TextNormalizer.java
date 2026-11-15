@@ -85,5 +85,82 @@ public final class TextNormalizer {
         }
         return false;
     }
+
+    /**
+     * Chuyển đổi các ký tự Katakana sang Hiragana tương ứng bằng cách dịch mã 0x60
+     * cho khoảng Unicode từ U+30A1 (ァ) đến U+30F6 (ヶ), và giữ nguyên ký tự trường âm U+30FC (ー).
+     *
+     * @param input chuỗi đầu vào cần chuyển đổi
+     * @return chuỗi đã chuyển Katakana sang Hiragana, hoặc null nếu input là null
+     */
+    public static String katakanaToHiragana(String input) {
+        if (input == null) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder(input.length());
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            if (c >= 0x30A1 && c <= 0x30F6) {
+                sb.append((char) (c - 0x60));
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Kiểm tra chuỗi có chứa ký tự Katakana hay không (bao gồm cả ký tự trường âm U+30FC).
+     *
+     * @param input chuỗi cần kiểm tra
+     * @return true nếu có ít nhất một ký tự Katakana
+     */
+    public static boolean containsKatakana(String input) {
+        if (input == null || input.isEmpty()) {
+            return false;
+        }
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            Character.UnicodeBlock block = Character.UnicodeBlock.of(c);
+            if (block == Character.UnicodeBlock.KATAKANA
+                    || block == Character.UnicodeBlock.KATAKANA_PHONETIC_EXTENSIONS
+                    || (c >= 0xFF66 && c <= 0xFF9F)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Kiểm tra chuỗi có chứa ký tự Hiragana hay không (khoảng U+3040 đến U+309F).
+     *
+     * @param input chuỗi cần kiểm tra
+     * @return true nếu có ít nhất một ký tự Hiragana
+     */
+    public static boolean containsHiragana(String input) {
+        if (input == null || input.isEmpty()) {
+            return false;
+        }
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            if (Character.UnicodeBlock.of(c) == Character.UnicodeBlock.HIRAGANA) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Kiểm tra đáp án có phải lưu ở dạng Hiragana và không chứa Katakana (từ mượn) hay không.
+     *
+     * @param text chuỗi đáp án
+     * @return true nếu đáp án chứa Hiragana và không chứa Katakana
+     */
+    public static boolean isHiraganaAnswer(String text) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+        return containsHiragana(text) && !containsKatakana(text);
+    }
 }
 
