@@ -77,4 +77,7 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Vocabulary v SET v.importBatchId = :batchId, v.updatedAt = v.createdAt WHERE v.id IN :ids")
     void assignImportBatchId(@Param("ids") List<Long> ids, @Param("batchId") Long batchId);
+
+    @Query("SELECT v FROM Vocabulary v JOIN FETCH v.topic t WHERE v.topic.id = :topicId ORDER BY v.id ASC")
+    List<Vocabulary> findByTopicIdWithTopic(@Param("topicId") Long topicId);
 }

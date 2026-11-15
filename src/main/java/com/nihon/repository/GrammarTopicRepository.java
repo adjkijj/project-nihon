@@ -36,5 +36,8 @@ public interface GrammarTopicRepository extends JpaRepository<GrammarTopic, Long
 
     @Query("SELECT DISTINCT g FROM GrammarTopic g LEFT JOIN FETCH g.questions q LEFT JOIN FETCH q.choices WHERE g.id = :id")
     Optional<GrammarTopic> findByIdWithQuestions(@Param("id") Long id);
+
+    @Query("SELECT DISTINCT g FROM GrammarTopic g LEFT JOIN FETCH g.examples WHERE g.topic.id = :topicId ORDER BY g.sortOrder ASC, g.id ASC")
+    List<GrammarTopic> findByTopicIdWithExamples(@Param("topicId") Long topicId);
 }
 
