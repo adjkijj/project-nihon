@@ -51,6 +51,12 @@
                         <button type="button" id="btn-stroke-replay" class="btn-stroke">↻ Phát lại</button>
                         <button type="button" id="btn-stroke-numbers" class="btn-stroke">🔢 Hiện số nét</button>
                     </div>
+                    <div class="stroke-speed-controls" role="group" aria-label="Tốc độ vẽ nét Kanji">
+                        <span class="stroke-speed-label">Tốc độ:</span>
+                        <button type="button" class="btn-stroke btn-stroke-speed" data-speed="0.5" id="btn-stroke-speed-05" aria-pressed="false">0.5x</button>
+                        <button type="button" class="btn-stroke btn-stroke-speed active" data-speed="1.0" id="btn-stroke-speed-1" aria-pressed="true">1x</button>
+                        <button type="button" class="btn-stroke btn-stroke-speed" data-speed="2.0" id="btn-stroke-speed-2" aria-pressed="false">2x</button>
+                    </div>
                     <div id="stroke-error-msg" class="stroke-error-msg u-hidden">Không tải được dữ liệu nét viết.</div>
                 </div>
 

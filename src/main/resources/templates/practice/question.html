@@ -10,6 +10,7 @@
     <script th:src="@{/js/app.js}" defer></script>
     <script th:src="@{/js/ui-enhance.js}" defer></script>
     <script th:src="@{/js/practice-question.js}" defer></script>
+    <script th:src="@{/js/practice-next.js}" defer></script>
 </head>
 <body>
     <header th:replace="~{fragments/navbar :: headerNav('practice')}"></header>
@@ -81,6 +82,13 @@
             <div class="card-actions">
                 <a th:href="@{/practice(topicId=${question.topicId})}" class="btn-link">← Đổi chủ đề khác</a>
                 <a th:href="@{/practice/question(topicId=${question.topicId}, excludeId=${question.vocabId}, retryWrongOnly=${retryWrongOnly})}" class="btn-link">Bỏ qua từ này ↷</a>
+            </div>
+
+            <div class="auto-next-setting">
+                <label class="auto-next-label" for="autoNextToggle">
+                    <input type="checkbox" id="autoNextToggle" class="auto-next-checkbox">
+                    <span>Tự chuyển câu</span>
+                </label>
             </div>
         </div>
     </main>

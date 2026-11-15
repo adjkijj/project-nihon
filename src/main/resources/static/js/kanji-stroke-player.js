@@ -35,6 +35,53 @@
         return '/kanjivg/' + hex + '.svg';
     }
 
+    var SPEED_STORAGE_KEY = 'nihon_kanji_speed';
+    var DEFAULT_SPEED = 1.0;
+    var BASE_STROKE_DELAY = 520;
+    var BASE_TRANSITION_SEC = 0.5;
+
+    /**
+     * Lấy tốc độ vẽ nét hiện tại từ localStorage (mặc định 1.0) - F84
+     */
+    function getSavedSpeed() {
+        try {
+            var raw = localStorage.getItem(SPEED_STORAGE_KEY);
+            if (raw) {
+                var val = parseFloat(raw);
+                if (val === 0.5 || val === 1 || val === 1.0 || val === 2 || val === 2.0) {
+                    return val;
+                }
+            }
+        } catch (e) {
+            // localStorage có thể bị vô hiệu hóa
+        }
+        return DEFAULT_SPEED;
+    }
+
+    /**
+     * Lưu tốc độ vẽ nét vào localStorage - F84
+     */
+    function saveSpeed(speed) {
+        try {
+            localStorage.setItem(SPEED_STORAGE_KEY, speed.toString());
+        } catch (e) {
+            // Dự phòng
+        }
+    }
+
+    /**
+     * Cập nhật giao diện trạng thái của các nút tốc độ
+     */
+    function updateSpeedButtonsUI(activeSpeed) {
+        var buttons = document.querySelectorAll('.btn-stroke-speed, [data-speed]');
+        buttons.forEach(function (btn) {
+            var btnSpeed = parseFloat(btn.getAttribute('data-speed'));
+            var isActive = (btnSpeed === activeSpeed);
+            btn.classList.toggle('active', isActive);
+            btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+    }
+
     /**
      * Động cơ hoạt ảnh thứ tự nét viết chữ Hán (Core Stroke Player Animation Engine).
      * Được dùng chung giữa khung nội dòng trên /kanji/{id} và hộp thoại nổi trên /vocabulary.
@@ -109,6 +156,7 @@
 
             for (var j = 0; j < animatedPaths.length; j++) {
                 var l = pathLengths[j];
+                animatedPaths[j].style.transition = 'none';
                 animatedPaths[j].style.strokeDasharray = l + ' ' + l;
                 animatedPaths[j].style.strokeDashoffset = l;
                 animatedPaths[j].classList.remove('stroke-active', 'stroke-drawn');
@@ -134,16 +182,20 @@
                     return;
                 }
 
+                var speed = getSavedSpeed();
                 var current = animatedPaths[currentIdx];
                 current.classList.add('stroke-active');
+                var transitionSec = (BASE_TRANSITION_SEC / speed).toFixed(2);
+                current.style.transition = 'stroke-dashoffset ' + transitionSec + 's ease-in-out';
                 current.style.strokeDashoffset = '0';
 
+                var strokeDelay = Math.round(BASE_STROKE_DELAY / speed);
                 animationTimer = setTimeout(function() {
                     current.classList.remove('stroke-active');
                     current.classList.add('stroke-drawn');
                     currentIdx++;
                     runNextStroke();
-                }, 520);
+                }, strokeDelay);
             }
 
             runNextStroke();
@@ -343,7 +395,7 @@
     }
 
     /**
-     * Khởi tạo khung hiển thị nét viết nội dòng trên trang /kanji/{id} (F19).
+     * Khởi tạo khung hiển thị nét viết nội dòng trên trang /kanji/{id} (F19, F84).
      */
     function initInlineStrokePlayer() {
         var box = document.getElementById('stroke-order-box');
@@ -355,6 +407,21 @@
         if (!strokeUrl) {
             return;
         }
+
+        // Khởi tạo các nút chọn tốc độ vẽ nét 0.5x, 1x, 2x
+        var speedButtons = box.querySelectorAll('.btn-stroke-speed, [data-speed]');
+        speedButtons.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var speedVal = parseFloat(btn.getAttribute('data-speed'));
+                if (speedVal === 0.5 || speedVal === 1 || speedVal === 1.0 || speedVal === 2 || speedVal === 2.0) {
+                    saveSpeed(speedVal);
+                    updateSpeedButtonsUI(speedVal);
+                }
+            });
+        });
+
+        // Đồng bộ trạng thái giao diện tốc độ ban đầu từ localStorage
+        updateSpeedButtonsUI(getSavedSpeed());
 
         var engine = createStrokePlayerEngine({
             canvasArea: document.getElementById('stroke-canvas-area'),
@@ -453,6 +520,38 @@
         controls.appendChild(btnNumbers);
 
         body.appendChild(controls);
+
+        // Nút tốc độ vẽ nét trong hộp thoại nổi (F84)
+        var speedControls = document.createElement('div');
+        speedControls.className = 'stroke-speed-controls';
+        speedControls.setAttribute('role', 'group');
+        speedControls.setAttribute('aria-label', 'Tốc độ vẽ nét Kanji');
+
+        var speedLabel = document.createElement('span');
+        speedLabel.className = 'stroke-speed-label';
+        speedLabel.textContent = 'Tốc độ:';
+        speedControls.appendChild(speedLabel);
+
+        [
+            { speed: '0.5', text: '0.5x' },
+            { speed: '1.0', text: '1x' },
+            { speed: '2.0', text: '2x' }
+        ].forEach(function (item) {
+            var btnSpeed = document.createElement('button');
+            btnSpeed.type = 'button';
+            btnSpeed.className = 'btn-stroke btn-stroke-speed';
+            btnSpeed.setAttribute('data-speed', item.speed);
+            btnSpeed.textContent = item.text;
+            btnSpeed.addEventListener('click', function () {
+                var s = parseFloat(item.speed);
+                saveSpeed(s);
+                updateSpeedButtonsUI(s);
+            });
+            speedControls.appendChild(btnSpeed);
+        });
+
+        body.appendChild(speedControls);
+        updateSpeedButtonsUI(getSavedSpeed());
 
         var errorMsg = document.createElement('div');
         errorMsg.id = 'floating-stroke-error';

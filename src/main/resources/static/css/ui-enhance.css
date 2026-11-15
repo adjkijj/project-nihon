@@ -587,3 +587,43 @@ a.btn:active,
     display: none;
 }
 
+/* ==========================================================================
+   Practice Auto-Next Setting (nihon_auto_next)
+   ========================================================================== */
+
+.auto-next-setting {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.85rem;
+    margin-bottom: 0.5rem;
+}
+
+.auto-next-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary, #94a3b8);
+    cursor: pointer;
+    user-select: none;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color, #334155);
+    background-color: var(--bg-card, #1e293b);
+    transition: all 0.2s ease;
+}
+
+.auto-next-label:hover {
+    color: var(--text-primary, #f8fafc);
+    border-color: var(--accent, #38bdf8);
+}
+
+.auto-next-checkbox {
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: var(--accent, #38bdf8);
+    cursor: pointer;
+}
+
+

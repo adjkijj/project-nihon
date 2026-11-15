@@ -100,6 +100,28 @@
     width: 100%;
 }
 
+.stroke-speed-controls {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.5rem;
+    width: 100%;
+}
+
+.stroke-speed-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.btn-stroke-speed.active {
+    background-color: var(--accent);
+    color: #0f172a;
+    border-color: var(--accent);
+    font-weight: 700;
+}
+
 .btn-stroke {
     font-size: 0.78rem;
     padding: 0.35rem 0.65rem;

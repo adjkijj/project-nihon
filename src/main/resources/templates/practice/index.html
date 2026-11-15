@@ -9,6 +9,7 @@
     <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
     <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/practice-next.js}" defer></script>
 </head>
 <body>
     <header th:replace="~{fragments/navbar :: headerNav('practice')}"></header>
@@ -55,6 +56,13 @@
                             Chủ đề 1
                         </option>
                     </select>
+                </div>
+
+                <div class="auto-next-setting">
+                    <label class="auto-next-label" for="autoNextToggle">
+                        <input type="checkbox" id="autoNextToggle" class="auto-next-checkbox">
+                        <span>Tự chuyển câu</span>
+                    </label>
                 </div>
 
                 <div class="practice-action-buttons">

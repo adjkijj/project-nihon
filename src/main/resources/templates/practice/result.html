@@ -22,7 +22,7 @@
     <header th:replace="~{fragments/navbar :: headerNav('practice')}"></header>
 
     <main>
-        <div class="result-card">
+        <div class="result-card" th:attr="data-practice-correct=${result.overallCorrect}">
             <!-- Status Banner -->
             <div th:if="${result.overallCorrect}" class="status-banner status-banner-success">
                 <div class="status-icon">✓</div>
@@ -132,6 +132,13 @@
                     class="btn-next" id="btnNext" autofocus>
                     Chuyển sang từ tiếp theo (Enter) ➔
                 </a>
+            </div>
+
+            <div class="auto-next-setting">
+                <label class="auto-next-label" for="autoNextToggle">
+                    <input type="checkbox" id="autoNextToggle" class="auto-next-checkbox">
+                    <span>Tự chuyển câu</span>
+                </label>
             </div>
 
             <div class="retry-action-box">
