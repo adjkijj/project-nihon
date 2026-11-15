@@ -7,12 +7,14 @@
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
     <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
     <link rel="stylesheet" th:href="@{/css/grammar.css}">
+    <link rel="stylesheet" th:href="@{/css/counter-people.css}">
     <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
     <script th:src="@{/js/ui-enhance.js}" defer></script>
     <script th:src="@{/js/grammar.js}" defer></script>
     <script th:src="@{/js/grammar-verb-lab.js}" defer></script>
+    <script th:src="@{/js/counter-people.js}" defer></script>
 </head>
 <body>
     <header th:replace="~{fragments/navbar :: headerNav('grammar')}"></header>
@@ -114,6 +116,9 @@
                 <div id="grammarVerbLabResult" class="mt-2" aria-live="polite"></div>
             </div>
         </section>
+
+        <!-- Bảng đếm số người (~人) từ 1 đến 10 người -->
+        <th:block th:replace="~{fragments/counter-people :: counterPeople}"></th:block>
 
         <!-- F35: Tabs chọn Phân loại: Ngữ pháp / Kiến thức bổ sung -->
         <nav class="grammar-nav-tabs" aria-label="Phân loại ngữ pháp">

@@ -1,0 +1,180 @@
+/*
+ * Counter People CSS - Project Nihon
+ * Bảng đếm số người (~人): 1 đến 10 người
+ * Đánh dấu màu cam cho các trường hợp đặc biệt: ひとり, ふたり, よにん, ななにん
+ */
+
+.counter-people-section {
+    background-color: var(--bg-surface, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-lg, 12px);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.counter-people-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.counter-people-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary, #0f172a);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.counter-people-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #64748b);
+    margin: 0.25rem 0 0 0;
+}
+
+.counter-people-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary, #64748b);
+}
+
+.legend-badge-orange {
+    background-color: #f97316;
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+}
+
+.counter-people-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.75rem;
+}
+
+@media (max-width: 768px) {
+    .counter-people-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 769px) and (max-width: 992px) {
+    .counter-people-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.counter-person-btn {
+    background-color: var(--bg-card, #f8fafc);
+    border: 2px solid var(--border-color, #e2e8f0);
+    border-radius: var(--radius-md, 8px);
+    padding: 0.75rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    position: relative;
+    font-family: inherit;
+    color: var(--text-primary, #0f172a);
+    min-height: 95px;
+}
+
+.counter-person-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border-color: var(--accent, #38bdf8);
+}
+
+.counter-person-btn:focus-visible {
+    outline: 2px solid var(--accent, #38bdf8);
+    outline-offset: 2px;
+}
+
+.counter-person-btn.is-speaking {
+    animation: counterPulse 1s infinite alternate;
+}
+
+@keyframes counterPulse {
+    from {
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4);
+    }
+    to {
+        box-shadow: 0 0 0 8px rgba(249, 115, 22, 0);
+    }
+}
+
+/* Đánh dấu màu cam cho ひとり, ふたり, よにん, ななにん */
+.counter-person-btn.highlight-orange {
+    background-color: #fff7ed;
+    border-color: #f97316;
+    color: #9a3412;
+}
+
+.counter-person-btn.highlight-orange:hover {
+    background-color: #ffedd5;
+    border-color: #ea580c;
+}
+
+.counter-person-btn.highlight-orange .counter-kana {
+    color: #ea580c;
+    font-weight: 700;
+}
+
+.counter-person-btn.highlight-orange .counter-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background-color: #f97316;
+    color: #ffffff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 3px;
+    text-transform: uppercase;
+}
+
+.counter-num {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--text-primary, #0f172a);
+}
+
+.counter-person-btn.highlight-orange .counter-num {
+    color: #c2410c;
+}
+
+.counter-kana {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-secondary, #334155);
+    font-family: "Noto Sans JP", sans-serif;
+}
+
+.counter-meaning {
+    font-size: 0.78rem;
+    color: var(--text-muted, #64748b);
+}
+
+.counter-speak-icon {
+    font-size: 0.75rem;
+    opacity: 0.6;
+    margin-top: 0.15rem;
+}
+
+.counter-person-btn:hover .counter-speak-icon {
+    opacity: 1;
+}
+
