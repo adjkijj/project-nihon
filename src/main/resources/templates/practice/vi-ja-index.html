@@ -19,6 +19,7 @@
             <a href="/practice" class="mode-tab">🇯🇵 → 🇻🇳 Nhật → Việt</a>
             <a href="/practice/vi-ja" class="mode-tab active">🇻🇳 → 🇯🇵 Việt → Nhật</a>
             <a href="/practice/choice" class="mode-tab">🎯 Trắc nghiệm 4 lựa chọn</a>
+            <a href="/practice/studio" class="mode-tab">🎙️ Typing Studio</a>
         </div>
 
         <div th:if="${errorMessage}" class="alert-error">
@@ -26,7 +27,7 @@
             <span th:text="${errorMessage}">Đã xảy ra lỗi.</span>
         </div>
 
-        <div class="card">
+        <div class="card" th:fragment="viJaCard">
             <div class="card-header">
                 <h1><span>🇯🇵</span> Kiểm Tra Từ Vựng (Việt → Nhật)</h1>
                 <p>Thử thách ghi nhớ và tự gõ chính xác cách viết tiếng Nhật (Kanji/Kana) từ nghĩa tiếng Việt.</p>

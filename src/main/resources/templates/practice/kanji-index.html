@@ -21,6 +21,7 @@
             <a href="/practice/vi-ja" class="mode-tab">🇻🇳 → 🇯🇵 Việt → Nhật</a>
             <a href="/practice/choice" class="mode-tab">🎯 Trắc nghiệm từ vựng</a>
             <a href="/practice/kanji" class="mode-tab active">漢 Luyện tập Kanji</a>
+            <a href="/practice/studio" class="mode-tab">🎙️ Typing Studio</a>
         </div>
 
         <div th:if="${errorMessage}" class="alert-error">
@@ -33,7 +34,7 @@
             <span th:text="${successMessage}">Thao tác thành công.</span>
         </div>
 
-        <div class="card kanji-practice-card">
+        <div class="card kanji-practice-card" th:fragment="kanjiCard">
             <div class="card-header">
                 <h1><span>漢</span> Chế Độ Luyện Tập Chữ Hán (Kanji)</h1>
                 <p>Nâng cao khả năng ghi nhớ âm đọc On/Kun, phản xạ viết chữ Kanji và nhận diện mặt chữ qua trắc nghiệm.</p>
