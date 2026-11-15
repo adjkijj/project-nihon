@@ -9,6 +9,7 @@
     <link rel="stylesheet" th:href="@{/css/grammar.css}">
     <script th:src="@{/js/app.js}" defer></script>
     <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/confetti.js}" defer></script>
 </head>
 <body>
     <header th:replace="~{fragments/navbar :: headerNav('grammar')}"></header>
@@ -45,6 +46,7 @@
                 <div class="p-3 border rounded min-w-160 bg-light">
                     <div class="font-size-xs text-secondary font-weight-bold uppercase">Độ chính xác</div>
                     <div class="h3 font-weight-bold text-success m-0 mt-1"
+                         th:attr="data-percentage=${result.accuracyPercent}"
                          th:text="${result.accuracyPercent} + '%'">
                         80%
                     </div>

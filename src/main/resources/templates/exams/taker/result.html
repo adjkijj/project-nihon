@@ -13,6 +13,7 @@
     <script th:src="@{/js/app.js}" defer></script>
     <script th:src="@{/js/ui-enhance.js}" defer></script>
     <script th:src="@{/js/exam-result.js}" defer></script>
+    <script th:src="@{/js/confetti.js}" defer></script>
 </head>
 
 <body>
@@ -28,7 +29,7 @@
         </div>
 
         <!-- Thẻ tổng quan kết quả bài thi -->
-        <section class="result-header-card" aria-labelledby="examResultTitle">
+        <section class="result-header-card" aria-labelledby="examResultTitle" th:attr="data-percentage=${result.percentage}">
             <div class="result-score-banner">
                 <div>
                     <div class="mb-2">
@@ -49,7 +50,7 @@
                         <span class="font-size-md text-secondary" th:text="${result.maxPoints}">30.00</span>
                     </div>
                     <div class="d-flex align-items-center justify-content-end gap-2 mt-1">
-                        <div class="text-secondary font-weight-bold" th:text="${result.percentage} + '%'">83.3%</div>
+                        <div class="text-secondary font-weight-bold" th:attr="data-percentage=${result.percentage}" th:text="${result.percentage} + '%'">83.3%</div>
                         <span class="exam-grade-badge"
                               th:classappend="'grade-' + ${#strings.toLowerCase(result.grade)}"
                               th:text="'Hạng ' + ${result.grade}">Hạng A</span>
