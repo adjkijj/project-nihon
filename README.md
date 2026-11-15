@@ -449,6 +449,61 @@ Khi đưa hệ thống ra môi trường Internet công khai, các tuyến đư�
 - **Zero Trust Network Access:** Sử dụng Cloudflare Access, AWS Verified Access hoặc Google Cloud Identity-Aware Proxy (IAP) để giới hạn quyền truy cập trang quản trị chỉ cho các kỹ sư/giáo viên được cấp quyền.
 - **VPN / Internal Network:** Chỉ cho phép truy cập các URL quản trị từ dải địa chỉ IP nội bộ của trường học/tổ chức.
 
+### 11.3. Cơ chế Bảo vệ Tập trung Phân hệ Quản trị (`AdminAccessInterceptor` - SEC-001)
+
+Nhằm tuân thủ nguyên tắc không tạo bảng tài khoản hay hệ thống quản lý người dùng phức tạp nhưng vẫn bảo vệ các trang quản trị và thao tác thay đổi học liệu gốc (tạo, sửa, xóa từ vựng, Kanji, ngữ pháp, đề thi, import/undo), hệ thống triển khai cơ chế kiểm soát tập trung qua `AdminAccessInterceptor`:
+
+1. **Cờ kích hoạt tính năng (`app.admin.enabled`):**
+   - Mặc định tắt (`false`) trên môi trường Production (`application-prod.properties`).
+   - Khi cờ tắt, toàn bộ các endpoint thuộc nhóm quản trị sẽ trả về **HTTP 404 Not Found**, che giấu hoàn toàn sự tồn tại của các chức năng quản trị khỏi người dùng bên ngoài.
+   - Để kích hoạt trên Production, thiết lập biến môi trường: `APP_ADMIN_ENABLED=true`.
+
+2. **Xác thực HTTP Basic với `APP_ADMIN_PASSWORD`:**
+   - Khi phân hệ quản trị được bật, mọi yêu cầu truy cập các tuyến đường quản trị bắt buộc phải có tiêu đề `Authorization: Basic <base64(username:password)>`.
+   - **Mật khẩu quản trị đọc 100% từ biến môi trường `APP_ADMIN_PASSWORD`**, tuyệt đối không lưu trữ trong bất kỳ tệp tin cấu hình nào (`application.properties`, v.v.).
+   - Khi khởi động, hệ thống tạo mã băm BCrypt (`BCrypt.hashpw`) từ mật khẩu và chỉ lưu trữ chuỗi hash trong bộ nhớ.
+   - Khi kiểm tra mật khẩu, hệ thống băm mật khẩu do người dùng gửi lên với cùng salt và thực hiện so sánh hằng số thời gian bằng `MessageDigest.isEqual` để phòng chống triệt để tấn công Timing Attack.
+
+3. **Kiểm soát dải mạng (`app.admin.allowed-cidrs`):**
+   - Chỉ cho phép các yêu cầu xuất phát từ các địa chỉ IP hoặc dải mạng CIDR được cấu hình trước (mặc định gồm `127.0.0.1`, `::1`, `localhost` và các dải mạng nội bộ private RFC 1918 / RFC 4193).
+   - Địa chỉ IP thực tế của client được phân giải an toàn qua `ClientIpResolver` (dựa trên `request.getRemoteAddr()` và bộ lọc proxy của Tomcat RemoteIpValve). Khi IP không thuộc danh sách cho phép, hệ thống trả về **HTTP 403 Forbidden**.
+
+4. **Chống tấn công dò mật khẩu (Brute-Force Protection):**
+   - Tích hợp với `RateLimiterService`: Giới hạn tối đa **5 lần nhập sai mật khẩu mỗi phút trên mỗi địa chỉ IP**.
+   - Khi một IP vượt quá 5 lần sai trong vòng 60 giây, mọi yêu cầu tiếp theo từ IP đó tới các trang quản trị sẽ bị từ chối ngay lập tức với mã phản hồi **HTTP 429 Too Many Requests**.
+
+5. **Ghi vết kiểm toán (Audit Logging):**
+   - Mọi lần truy cập quản trị (thành công hoặc thất bại) đều được ghi nhận vào nhật ký hệ thống kèm IP, phương thức HTTP và URI. Tuyệt đối không bao giờ ghi nhận mật khẩu quản trị vào log.
+
+#### Hướng dẫn Thiết lập `APP_ADMIN_PASSWORD`:
+
+- **Thiết lập qua tệp `.env` (Khuyến nghị cho triển khai qua Docker / Docker Compose):**
+  ```bash
+  # Kích hoạt phân hệ quản trị
+  APP_ADMIN_ENABLED=true
+  # Đặt mật khẩu quản trị mạnh
+  APP_ADMIN_PASSWORD=MyStr0ng!AdminPass#2026
+  # Cấu hình IP/CIDR cho phép (ví dụ: máy chủ VPN nội bộ hoặc IP tĩnh văn phòng)
+  APP_ADMIN_ALLOWED_CIDRS=127.0.0.1,::1,10.8.0.0/24,192.168.1.100
+  ```
+
+- **Thiết lập trên Linux / MacOS qua biến môi trường dòng lệnh:**
+  ```bash
+  export APP_ADMIN_ENABLED=true
+  export APP_ADMIN_PASSWORD="MyStr0ng!AdminPass#2026"
+  ./mvnw spring-boot:run
+  ```
+
+- **Thiết lập trên Windows PowerShell:**
+  ```powershell
+  $env:APP_ADMIN_ENABLED="true"
+  $env:APP_ADMIN_PASSWORD="MyStr0ng!AdminPass#2026"
+  .\mvnw.cmd spring-boot:run
+  ```
+
+- **Truy cập từ trình duyệt:** Khi truy cập các đường dẫn quản trị (ví dụ: `/exams/admin`, `/vocabulary/new`, `/import`), trình duyệt sẽ hiển thị hộp thoại đăng nhập HTTP Basic. Bạn có thể nhập `admin` làm tên người dùng và mật khẩu đã đặt ở `APP_ADMIN_PASSWORD`.
+
+
 ---
 
 ## 12. Giấy phép Dữ liệu & Bản quyền (Licenses & Attribution)
