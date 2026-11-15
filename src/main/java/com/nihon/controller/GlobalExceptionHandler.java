@@ -81,14 +81,40 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Xử lý trường hợp người dùng vượt quá tần suất tải lên cho phép (HTTP 429).
+     * Xử lý trường hợp người dùng vượt quá tần suất yêu cầu cho phép (HTTP 429 Too Many Requests).
+     * Trả về thông báo chung, tuyệt đối không để lộ chi tiết nội bộ, địa chỉ IP hay cấu trúc hệ thống.
+     * Tự động trả về JSON nếu client yêu cầu (AJAX/REST) hoặc render trang lỗi nếu là form HTML.
      */
     @ExceptionHandler(com.nihon.service.excel.RateLimitExceededException.class)
     @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
-    public String handleRateLimitExceeded(com.nihon.service.excel.RateLimitExceededException ex, Model model) {
+    public Object handleRateLimitExceeded(com.nihon.service.excel.RateLimitExceededException ex,
+                                          jakarta.servlet.http.HttpServletRequest request,
+                                          jakarta.servlet.http.HttpServletResponse response,
+                                          Model model) {
         log.warn("Rate limit exceeded: {}", com.nihon.service.excel.ExcelCellUtils.sanitizeForLog(ex.getMessage()));
+        response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+
+        String accept = request.getHeader("Accept");
+        String requestedWith = request.getHeader("X-Requested-With");
+        String uri = request.getRequestURI();
+        boolean isJson = (accept != null && accept.contains("application/json"))
+                || "XMLHttpRequest".equalsIgnoreCase(requestedWith)
+                || (uri != null && uri.endsWith("/answer"));
+
+        String displayMessage = (ex.getMessage() != null && !ex.getMessage().isBlank())
+                ? ex.getMessage()
+                : "Bạn đã thực hiện quá nhiều yêu cầu trong thời gian ngắn. Vui lòng thử lại sau.";
+
+        if (isJson) {
+            java.util.Map<String, Object> body = new java.util.LinkedHashMap<>();
+            body.put("status", HttpStatus.TOO_MANY_REQUESTS.value());
+            body.put("error", "Too Many Requests");
+            body.put("message", displayMessage);
+            return org.springframework.http.ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(body);
+        }
+
         model.addAttribute("errorTitle", "429 - Quá giới hạn tần suất");
-        model.addAttribute("errorMessage", ex.getMessage());
+        model.addAttribute("errorMessage", displayMessage);
         return "error";
     }
 

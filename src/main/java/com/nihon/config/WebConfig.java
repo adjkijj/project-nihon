@@ -17,14 +17,17 @@ public class WebConfig implements WebMvcConfigurer {
     private final CsrfInterceptor csrfInterceptor;
     private final ImportSecurityInterceptor importSecurityInterceptor;
     private final AdminAccessInterceptor adminAccessInterceptor;
+    private final RateLimitInterceptor rateLimitInterceptor;
 
     public WebConfig(
             CsrfInterceptor csrfInterceptor,
             @Autowired(required = false) ImportSecurityInterceptor importSecurityInterceptor,
-            @Autowired(required = false) AdminAccessInterceptor adminAccessInterceptor) {
+            @Autowired(required = false) AdminAccessInterceptor adminAccessInterceptor,
+            @Autowired(required = false) RateLimitInterceptor rateLimitInterceptor) {
         this.csrfInterceptor = csrfInterceptor;
         this.importSecurityInterceptor = importSecurityInterceptor;
         this.adminAccessInterceptor = adminAccessInterceptor;
+        this.rateLimitInterceptor = rateLimitInterceptor;
     }
 
     @Override
@@ -64,7 +67,21 @@ public class WebConfig implements WebMvcConfigurer {
                     .addPathPatterns("/import", "/import/**", "/exams/admin/import/**", "/grammar/admin/import/**");
         }
 
-        // 3. Bảo vệ chống CSRF cho toàn bộ ứng dụng
+        // 3. Giới hạn tần suất thao tác của người học (Rate Limiting)
+        if (rateLimitInterceptor != null) {
+            registry.addInterceptor(rateLimitInterceptor)
+                    .addPathPatterns(
+                            "/exams/*/start",
+                            "/exams/attempt/*/answer",
+                            "/exams/attempt/*/finish",
+                            "/grammar/*/quiz/check",
+                            "/history/delete-all",
+                            "/history/exams/delete-all",
+                            "/history/exams/*/delete"
+                    );
+        }
+
+        // 4. Bảo vệ chống CSRF cho toàn bộ ứng dụng
         registry.addInterceptor(csrfInterceptor)
                 .addPathPatterns("/**")
                 .excludePathPatterns("/css/**", "/js/**", "/images/**", "/favicon.ico");
