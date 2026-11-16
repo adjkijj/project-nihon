@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS verb (
     masu_form VARCHAR(100) NOT NULL,
     dictionary_form VARCHAR(100) NOT NULL,
     kanji_text VARCHAR(100) NULL,
-    verb_group TINYINT NOT NULL,
+    verb_group INT NOT NULL,
     meaning_vi VARCHAR(255) NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
@@ -18,6 +18,6 @@ CREATE TABLE IF NOT EXISTS verb (
     CONSTRAINT fk_verb_topic FOREIGN KEY (topic_id) REFERENCES topic (id) ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_verb_dictionary_form ON verb (dictionary_form);
-CREATE INDEX IF NOT EXISTS idx_verb_topic_id ON verb (topic_id);
-CREATE INDEX IF NOT EXISTS idx_verb_verb_group ON verb (verb_group);
+CREATE INDEX idx_verb_dictionary_form ON verb (dictionary_form);
+CREATE INDEX idx_verb_topic_id ON verb (topic_id);
+CREATE INDEX idx_verb_verb_group ON verb (verb_group);

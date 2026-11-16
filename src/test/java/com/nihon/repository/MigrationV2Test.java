@@ -27,8 +27,11 @@ class MigrationV2Test {
 
         JdbcTemplate jdbcTemplate = new JdbcTemplate(ds);
 
-        // 1. Khởi tạo schema từ schema.sql
-        ResourceDatabasePopulator populator = new ResourceDatabasePopulator(new ClassPathResource("schema.sql"));
+        // 1. Khởi tạo schema từ migration V1 và áp dụng V2
+        ResourceDatabasePopulator populator = new ResourceDatabasePopulator(
+                new ClassPathResource("db/migration/V1__create_initial_schema.sql"),
+                new ClassPathResource("db/migration/V2__allow_null_for_optional_import_fields.sql")
+        );
         populator.execute(ds);
 
         // 2. Chèn dữ liệu mẫu có đầy đủ cột

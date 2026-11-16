@@ -1,5 +1,6 @@
 package com.nihon.repository;
 
+import org.flywaydb.core.Flyway;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,27 +13,33 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Kiểm thử tính đúng đắn và khả năng thực thi của file migration schema.sql trên database trống
+ * Kiểm thử tính đúng đắn và khả năng thực thi của các script Flyway migration (V1 đến V15) trên database trống
  * cũng như migration V7 đổi tên bảng kanji_word sang bảng sao lưu kanji_word_backup_20261109.
  */
 class MigrationSchemaTest {
 
     @Test
-    @DisplayName("Migration schema.sql chạy thành công trên database trống và hỗ trợ Idempotency khi chạy lại")
+    @DisplayName("Flyway migrations V1 đến V15 chạy thành công trên database trống và hỗ trợ Idempotency khi chạy lại")
     void testMigrationOnBlankDatabase() {
-        // Khởi tạo một in-memory database H2 hoàn toàn trống biệt lập
+        // Khởi tạo một in-memory database H2 hoàn toàn trống biệt lập với MODE=MySQL
         JdbcDataSource ds = new JdbcDataSource();
-        ds.setURL("jdbc:h2:mem:blank_test_db;DB_CLOSE_DELAY=-1");
+        ds.setURL("jdbc:h2:mem:blank_test_db;MODE=MySQL;DB_CLOSE_DELAY=-1");
         ds.setUser("sa");
         ds.setPassword("");
 
         JdbcTemplate jdbcTemplate = new JdbcTemplate(ds);
 
-        // 1. Chạy migration schema.sql lần đầu
-        ResourceDatabasePopulator populator = new ResourceDatabasePopulator(new ClassPathResource("schema.sql"));
-        populator.execute(ds);
+        // 1. Chạy Flyway migration tự động từ classpath:db/migration
+        Flyway flyway = Flyway.configure()
+                .dataSource(ds)
+                .locations("classpath:db/migration")
+                .cleanDisabled(false)
+                .load();
 
-        // 2. Xác thực 4 bảng cốt lõi hiện tại đã được tạo thành công
+        int applied = flyway.migrate().migrationsExecuted;
+        assertThat(applied).isGreaterThanOrEqualTo(15);
+
+        // 2. Xác thực toàn bộ các bảng nghiệp vụ cốt lõi đã được tạo thành công
         List<String> tables = jdbcTemplate.query(
                 "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'PUBLIC'",
                 (rs, rowNum) -> rs.getString("TABLE_NAME").toLowerCase()
@@ -44,7 +51,7 @@ class MigrationSchemaTest {
                 "exam_paper", "exam_section", "exam_question", "exam_choice", "exam_answer_key",
                 "exam_attempt", "exam_attempt_answer",
                 "grammar_topic", "grammar_example", "grammar_quiz_question", "grammar_quiz_choice",
-                "grammar_progress"
+                "grammar_progress", "kanji_word_backup_20261109"
         );
         assertThat(tables).doesNotContain("kanji_word");
 
@@ -112,8 +119,9 @@ class MigrationSchemaTest {
         Integer progressCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM grammar_progress WHERE learner_id = ?", Integer.class, "00000000-0000-0000-0000-000000000001");
         assertThat(progressCount).isEqualTo(1);
 
-        // 4. Chạy lại migration schema.sql lần 2 trên DB đã có dữ liệu -> Phải thành công không lỗi (Idempotent)
-        populator.execute(ds);
+        // 4. Chạy lại Flyway migration lần 2 trên DB đã có dữ liệu -> Phải thành công, 0 migration mới (Idempotent)
+        int secondRun = flyway.migrate().migrationsExecuted;
+        assertThat(secondRun).isEqualTo(0);
 
         // Dữ liệu cũ vẫn được bảo toàn nguyên vẹn
         Integer vocabCountAfter = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM vocabulary", Integer.class);

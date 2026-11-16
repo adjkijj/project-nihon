@@ -7,7 +7,7 @@
 CREATE TABLE IF NOT EXISTS exam_attempt (
     id VARCHAR(36) NOT NULL,
     paper_id BIGINT NULL,
-    learner_id CHAR(36) NOT NULL,
+    learner_id VARCHAR(36) NOT NULL,
     started_at TIMESTAMP NOT NULL,
     submitted_at TIMESTAMP NULL,
     duration_seconds INT NOT NULL DEFAULT 0,
@@ -20,9 +20,9 @@ CREATE TABLE IF NOT EXISTS exam_attempt (
     CONSTRAINT fk_exam_attempt_paper FOREIGN KEY (paper_id) REFERENCES exam_paper (id) ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_exam_attempt_learner_status ON exam_attempt (learner_id, status);
-CREATE INDEX IF NOT EXISTS idx_exam_attempt_paper_id ON exam_attempt (paper_id);
-CREATE INDEX IF NOT EXISTS idx_exam_attempt_submitted_at ON exam_attempt (submitted_at);
+CREATE INDEX idx_exam_attempt_learner_status ON exam_attempt (learner_id, status);
+CREATE INDEX idx_exam_attempt_paper_id ON exam_attempt (paper_id);
+CREATE INDEX idx_exam_attempt_submitted_at ON exam_attempt (submitted_at);
 
 -- 2. Bảng exam_attempt_answer: Chi tiết câu trả lời và điểm số từng câu hỏi
 CREATE TABLE IF NOT EXISTS exam_attempt_answer (
@@ -37,6 +37,6 @@ CREATE TABLE IF NOT EXISTS exam_attempt_answer (
     CONSTRAINT fk_exam_attempt_answer_attempt FOREIGN KEY (attempt_id) REFERENCES exam_attempt (id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_exam_attempt_answer_attempt ON exam_attempt_answer (attempt_id);
-CREATE INDEX IF NOT EXISTS idx_exam_attempt_answer_question ON exam_attempt_answer (question_id);
+CREATE INDEX idx_exam_attempt_answer_attempt ON exam_attempt_answer (attempt_id);
+CREATE INDEX idx_exam_attempt_answer_question ON exam_attempt_answer (question_id);
 

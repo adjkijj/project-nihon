@@ -21,9 +21,9 @@ CREATE TABLE IF NOT EXISTS grammar_topic (
     CONSTRAINT fk_grammar_topic_topic FOREIGN KEY (topic_id) REFERENCES topic (id) ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_grammar_topic_category ON grammar_topic (category);
-CREATE INDEX IF NOT EXISTS idx_grammar_topic_topic_id ON grammar_topic (topic_id);
-CREATE INDEX IF NOT EXISTS idx_grammar_topic_sort_order ON grammar_topic (sort_order);
+CREATE INDEX idx_grammar_topic_category ON grammar_topic (category);
+CREATE INDEX idx_grammar_topic_topic_id ON grammar_topic (topic_id);
+CREATE INDEX idx_grammar_topic_sort_order ON grammar_topic (sort_order);
 
 -- 2. Bảng grammar_example: Các câu ví dụ của chủ đề ngữ pháp
 CREATE TABLE IF NOT EXISTS grammar_example (
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS grammar_example (
     CONSTRAINT fk_grammar_example_grammar FOREIGN KEY (grammar_id) REFERENCES grammar_topic (id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_grammar_example_grammar_sort ON grammar_example (grammar_id, sort_order);
+CREATE INDEX idx_grammar_example_grammar_sort ON grammar_example (grammar_id, sort_order);
 
 -- 3. Bảng grammar_quiz_question: Câu hỏi luyện tập ngữ pháp
 CREATE TABLE IF NOT EXISTS grammar_quiz_question (
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS grammar_quiz_question (
     CONSTRAINT fk_grammar_quiz_q_grammar FOREIGN KEY (grammar_id) REFERENCES grammar_topic (id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_grammar_quiz_q_grammar_sort ON grammar_quiz_question (grammar_id, sort_order);
+CREATE INDEX idx_grammar_quiz_q_grammar_sort ON grammar_quiz_question (grammar_id, sort_order);
 
 -- 4. Bảng grammar_quiz_choice: Lựa chọn trắc nghiệm cho câu hỏi
 CREATE TABLE IF NOT EXISTS grammar_quiz_choice (
@@ -63,5 +63,5 @@ CREATE TABLE IF NOT EXISTS grammar_quiz_choice (
     CONSTRAINT fk_grammar_quiz_choice_q FOREIGN KEY (question_id) REFERENCES grammar_quiz_question (id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_grammar_quiz_choice_q_sort ON grammar_quiz_choice (question_id, sort_order);
+CREATE INDEX idx_grammar_quiz_choice_q_sort ON grammar_quiz_choice (question_id, sort_order);
 
