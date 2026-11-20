@@ -144,12 +144,17 @@ CREATE DATABASE IF NOT EXISTS nihon_db
     COLLATE utf8mb4_unicode_ci;
 ```
 
-Cấu trúc các bảng (`topic`, `vocabulary`, `kanji_entry`, `import_audit_log`) được định nghĩa chuẩn tại [src/main/resources/schema.sql](src/main/resources/schema.sql). Khởi tạo schema bằng lệnh:
+Cấu trúc toàn bộ 20 bảng cơ sở dữ liệu hoàn chỉnh (gộp toàn bộ các migration từ V1 đến V15) được định nghĩa tập trung trong tệp duy nhất [nihon_database.sql](nihon_database.sql) và công cụ thực thi tự động 1-click [init_database.bat](init_database.bat):
 
+**Cách 1: Bấm đúp chạy tự động trên Windows (Khuyến nghị):**
+Bấm đúp trực tiếp vào tệp `init_database.bat` trong thư mục gốc dự án. Script sẽ tự động nhận diện MySQL, nạp cấu hình từ `.env` và thực thi toàn bộ script tạo database `nihon_db` cùng 20 bảng nghiệp vụ.
+
+**Cách 2: Chạy trực tiếp qua MySQL CLI hoặc MySQL Workbench:**
 ```bash
-# Sử dụng mysql client
-mysql -u <username> -p nihon_db < src/main/resources/schema.sql
+# Mở trong terminal / command prompt:
+mysql -u <username> -p < nihon_database.sql
 ```
+Hoặc mở tệp `nihon_database.sql` trong **MySQL Workbench** / **DBeaver** / **HeidiSQL** và bấm nút **Execute (biểu tượng tia sét ⚡)** để tạo toàn bộ cơ sở dữ liệu.
 
 *(Lưu ý: Trong môi trường `dev`, Spring Data JPA cấu hình `spring.jpa.hibernate.ddl-auto=update` sẽ tự động tạo/cập nhật cấu trúc bảng nếu database trống).*
 
