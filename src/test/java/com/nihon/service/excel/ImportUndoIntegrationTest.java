@@ -378,7 +378,10 @@ class ImportUndoIntegrationTest {
         ds.setPassword("");
 
         JdbcTemplate jdbc = new JdbcTemplate(ds);
-        new ResourceDatabasePopulator(new ClassPathResource("schema.sql")).execute(ds);
+        new ResourceDatabasePopulator(
+                new ClassPathResource("db/migration/V1__create_initial_schema.sql"),
+                new ClassPathResource("db/migration/V2__allow_null_for_optional_import_fields.sql")
+        ).execute(ds);
         new ResourceDatabasePopulator(
                 new ClassPathResource("db/migration/V6__add_import_batch_id_and_undone_at.sql")).execute(ds);
         // Chạy lại V6 lần 2 (idempotent)

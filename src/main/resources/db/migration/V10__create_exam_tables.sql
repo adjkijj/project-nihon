@@ -20,9 +20,9 @@ CREATE TABLE IF NOT EXISTS exam_paper (
     CONSTRAINT fk_exam_paper_topic FOREIGN KEY (topic_id) REFERENCES topic (id) ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_exam_paper_topic_id ON exam_paper (topic_id);
-CREATE INDEX IF NOT EXISTS idx_exam_paper_category ON exam_paper (category);
-CREATE INDEX IF NOT EXISTS idx_exam_paper_published ON exam_paper (published);
+CREATE INDEX idx_exam_paper_topic_id ON exam_paper (topic_id);
+CREATE INDEX idx_exam_paper_category ON exam_paper (category);
+CREATE INDEX idx_exam_paper_published ON exam_paper (published);
 
 -- 2. Bảng exam_section: Phần thi trong đề thi
 CREATE TABLE IF NOT EXISTS exam_section (
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS exam_section (
     CONSTRAINT fk_exam_section_paper FOREIGN KEY (paper_id) REFERENCES exam_paper (id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_exam_section_paper_sort ON exam_section (paper_id, sort_order);
+CREATE INDEX idx_exam_section_paper_sort ON exam_section (paper_id, sort_order);
 
 -- 3. Bảng exam_question: Câu hỏi thi
 CREATE TABLE IF NOT EXISTS exam_question (
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS exam_question (
     CONSTRAINT fk_exam_question_section FOREIGN KEY (section_id) REFERENCES exam_section (id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_exam_question_section_sort ON exam_question (section_id, sort_order);
+CREATE INDEX idx_exam_question_section_sort ON exam_question (section_id, sort_order);
 
 -- 4. Bảng exam_choice: Lựa chọn câu hỏi (cho MULTIPLE_CHOICE hoặc các mảnh ORDERING)
 CREATE TABLE IF NOT EXISTS exam_choice (
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS exam_choice (
     CONSTRAINT fk_exam_choice_question FOREIGN KEY (question_id) REFERENCES exam_question (id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_exam_choice_question_sort ON exam_choice (question_id, sort_order);
+CREATE INDEX idx_exam_choice_question_sort ON exam_choice (question_id, sort_order);
 
 -- 5. Bảng exam_answer_key: Đáp án chấp nhận, bài mẫu, từ khóa hoặc thứ tự
 CREATE TABLE IF NOT EXISTS exam_answer_key (
@@ -76,5 +76,5 @@ CREATE TABLE IF NOT EXISTS exam_answer_key (
     CONSTRAINT fk_exam_answer_key_question FOREIGN KEY (question_id) REFERENCES exam_question (id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_exam_answer_key_question_kind ON exam_answer_key (question_id, kind);
+CREATE INDEX idx_exam_answer_key_question_kind ON exam_answer_key (question_id, kind);
 

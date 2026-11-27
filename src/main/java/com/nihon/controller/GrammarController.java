@@ -28,6 +28,7 @@ import com.nihon.service.grammar.GrammarExcelService;
 import com.nihon.service.grammar.GrammarPracticeService;
 import com.nihon.service.grammar.GrammarService;
 import com.nihon.service.grammar.GrammarTextRenderer;
+import com.nihon.validation.SafeRedirect;
 import com.nihon.validation.TextNormalizer;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -187,7 +188,7 @@ public class GrammarController {
         }
 
         redirectAttributes.addFlashAttribute("successMessage", res.getMessage());
-        return "redirect:" + (redirectUrl != null && !redirectUrl.isBlank() ? redirectUrl : "/grammar");
+        return "redirect:" + SafeRedirect.sanitize(redirectUrl, "/grammar");
     }
 
     /**

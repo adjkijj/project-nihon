@@ -28,13 +28,12 @@ class MigrationV4Test {
 
         JdbcTemplate jdbcTemplate = new JdbcTemplate(ds);
 
-        // 1. Giả lập database cũ trước V4: khởi tạo schema khi han_viet, onyomi, kunyomi còn là VARCHAR(100)
-        ResourceDatabasePopulator v1Populator = new ResourceDatabasePopulator(new ClassPathResource("schema.sql"));
+        // 1. Giả lập database cũ trước V4: khởi tạo schema từ V1 và V2 (khi han_viet, onyomi, kunyomi còn là VARCHAR(100))
+        ResourceDatabasePopulator v1Populator = new ResourceDatabasePopulator(
+                new ClassPathResource("db/migration/V1__create_initial_schema.sql"),
+                new ClassPathResource("db/migration/V2__allow_null_for_optional_import_fields.sql")
+        );
         v1Populator.execute(ds);
-
-        jdbcTemplate.execute("ALTER TABLE kanji_entry MODIFY COLUMN han_viet VARCHAR(100) NULL");
-        jdbcTemplate.execute("ALTER TABLE kanji_entry MODIFY COLUMN onyomi VARCHAR(100) NULL");
-        jdbcTemplate.execute("ALTER TABLE kanji_entry MODIFY COLUMN kunyomi VARCHAR(100) NULL");
 
         // 2. Chèn dữ liệu sẵn có trước khi chạy V4
         jdbcTemplate.update(

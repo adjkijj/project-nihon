@@ -46,6 +46,8 @@ public class VocabularyService {
     private static final Logger log = LoggerFactory.getLogger(VocabularyService.class);
     public static final int MAX_KEYWORD_LENGTH = 50;
     public static final int MAX_BULK_IDS = 200;
+    public static final int MAX_PAGE_SIZE = 100;
+    private static final int DEFAULT_PAGE_SIZE = 20;
     private static final int LARGE_DATASET_WARN_THRESHOLD = 20000;
 
     public record BulkDeleteResult(int deletedCount, int skippedCount) {}
@@ -74,28 +76,110 @@ public class VocabularyService {
                                          VocabQuickFilter filter,
                                          VocabViewMode viewMode,
                                          Pageable pageable) {
-        List<VocabularyRowDto> rows = findAllMatching(topicId, keyword, filter != null ? filter : VocabQuickFilter.ALL);
+        int safePage = 0;
+        int safeSize = DEFAULT_PAGE_SIZE;
+        if (pageable != null) {
+            safePage = Math.max(0, pageable.getPageNumber());
+            int rawSize = pageable.getPageSize();
+            safeSize = (rawSize < 1) ? DEFAULT_PAGE_SIZE : Math.min(MAX_PAGE_SIZE, rawSize);
+        }
 
-        int total = rows.size();
-        int page = Math.max(0, pageable.getPageNumber());
-        int size = Math.max(1, pageable.getPageSize());
-        long fromIndexLong = (long) page * (long) size;
-        List<VocabularyRowDto> pageContent;
-        if (fromIndexLong >= total || fromIndexLong < 0) {
-            pageContent = Collections.emptyList();
-        } else {
-            int fromIndex = (int) fromIndexLong;
-            int toIndex = (int) Math.min(fromIndexLong + size, total);
-            pageContent = rows.subList(fromIndex, toIndex);
+        String sanitized = sanitizeKeyword(keyword);
+        String escapedKeyword = (sanitized != null && !sanitized.isBlank())
+                ? KanjiExtractor.escapeLikePattern(sanitized.toLowerCase(Locale.ROOT))
+                : "";
+        String filterMode = (filter != null) ? filter.name() : VocabQuickFilter.ALL.name();
+
+        // Phòng chống tràn số nguyên (Integer Overflow) khi tính offset (page * size)
+        long offsetLong = (long) safePage * (long) safeSize;
+        if (offsetLong > Integer.MAX_VALUE || safePage > 1_000_000) {
+            long total = vocabularyRepository.findDistinctRepresentativeIds(
+                    topicId, escapedKeyword, filterMode, PageRequest.of(0, 1)).getTotalElements();
+            return new PageImpl<>(Collections.emptyList(), PageRequest.of(safePage, safeSize), total);
+        }
+
+        Pageable safePageable = PageRequest.of(safePage, safeSize);
+        Page<Long> pagedIds = vocabularyRepository.findDistinctRepresentativeIds(
+                topicId, escapedKeyword, filterMode, safePageable);
+
+        long total = pagedIds.getTotalElements();
+        List<Long> ids = pagedIds.getContent();
+        if (ids.isEmpty()) {
+            return new PageImpl<>(Collections.emptyList(), safePageable, total);
+        }
+
+        // Chỉ tải đúng các bản ghi đại diện của trang hiện tại (tối đa safeSize <= 100 bản ghi)
+        List<Vocabulary> repVocabs = vocabularyRepository.findAllByIdInWithTopic(ids);
+
+        // Lấy danh sách tiếng Nhật của trang để tải thông tin các chủ đề liên kết (nếu có từ trùng ở nhiều chủ đề)
+        List<String> pageJapaneseTexts = repVocabs.stream()
+                .map(Vocabulary::getJapaneseText)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        List<Vocabulary> allSiblings = pageJapaneseTexts.isEmpty()
+                ? Collections.emptyList()
+                : vocabularyRepository.findByJapaneseTextInWithTopic(pageJapaneseTexts);
+
+        // Gom nhóm các từ trong trang bằng VocabularyDeduplicationKey
+        Map<VocabularyDeduplicationKey, List<Vocabulary>> grouped = new LinkedHashMap<>();
+        for (Vocabulary v : allSiblings) {
+            VocabularyDeduplicationKey key = VocabularyDeduplicationKey.of(v);
+            grouped.computeIfAbsent(key, k -> new ArrayList<>()).add(v);
+        }
+
+        List<VocabularyRowDto> rows = new ArrayList<>();
+        Set<VocabularyDeduplicationKey> processedKeys = new HashSet<>();
+
+        for (Vocabulary rep : repVocabs) {
+            VocabularyDeduplicationKey key = VocabularyDeduplicationKey.of(rep);
+            if (!processedKeys.add(key)) {
+                continue;
+            }
+            List<Vocabulary> list = grouped.getOrDefault(key, List.of(rep));
+
+            // Nếu lọc theo topicId, ưu tiên bản ghi đại diện thuộc topicId đó
+            Vocabulary chosenRep = rep;
+            if (topicId != null) {
+                for (Vocabulary v : list) {
+                    if (v.getTopic() != null && topicId.equals(v.getTopic().getId())) {
+                        chosenRep = v;
+                        break;
+                    }
+                }
+            }
+
+            // Tổng hợp tất cả các chủ đề mà từ vựng này xuất hiện, sắp xếp theo sortOrder
+            List<Topic> topics = list.stream()
+                    .map(Vocabulary::getTopic)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toMap(Topic::getId, t -> t, (existing, replacement) -> existing, LinkedHashMap::new))
+                    .values()
+                    .stream()
+                    .sorted(Comparator.comparing(Topic::getSortOrder, Comparator.nullsLast(Comparator.naturalOrder())))
+                    .toList();
+
+            List<Long> allIds = list.stream().map(Vocabulary::getId).toList();
+
+            rows.add(VocabularyRowDto.builder()
+                    .id(chosenRep.getId())
+                    .japaneseText(chosenRep.getJapaneseText())
+                    .reading(chosenRep.getReading())
+                    .romaji(chosenRep.getRomaji())
+                    .meaningVi(chosenRep.getMeaningVi())
+                    .hasKanji(chosenRep.isHasKanji())
+                    .topics(topics)
+                    .allIds(allIds)
+                    .build());
         }
 
         // Nếu là chế độ xem FULL (Bảng đầy đủ): nạp Hán Việt của các Kanji cấu thành (tối đa 4 Kanji)
-        // Thực hiện đúng 1 câu SQL duy nhất cho cả trang (findByCharacterIn) để chống N+1
-        if (viewMode == VocabViewMode.FULL && !pageContent.isEmpty()) {
-            populateConstituentKanji(pageContent);
+        if (viewMode == VocabViewMode.FULL && !rows.isEmpty()) {
+            populateConstituentKanji(rows);
         }
 
-        return new PageImpl<>(pageContent, pageable, total);
+        return new PageImpl<>(rows, safePageable, total);
     }
 
     @Transactional(readOnly = true)

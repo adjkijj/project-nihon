@@ -4,11 +4,14 @@
 -- theo (sort_order ASC, id ASC).
 -- =============================================================================
 
-UPDATE topic t
-JOIN (
-    SELECT id,
-           ROW_NUMBER() OVER (ORDER BY sort_order ASC, id ASC) AS new_sort_order
-    FROM topic
-) ranked ON t.id = ranked.id
-SET t.sort_order = ranked.new_sort_order;
+UPDATE topic
+SET sort_order = (
+    SELECT ranked.new_sort_order
+    FROM (
+        SELECT id,
+               ROW_NUMBER() OVER (ORDER BY sort_order ASC, id ASC) AS new_sort_order
+        FROM topic
+    ) ranked
+    WHERE ranked.id = topic.id
+);
 

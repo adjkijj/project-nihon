@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS study_session (
     CONSTRAINT fk_study_session_topic FOREIGN KEY (topic_id) REFERENCES topic (id) ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_study_session_learner_completed ON study_session (learner_id, completed_at);
+CREATE INDEX idx_study_session_learner_completed ON study_session (learner_id, completed_at);
 
 
 -- Bảng study_answer: đúng/sai theo từng mục của một phiên (xoá theo phiên).

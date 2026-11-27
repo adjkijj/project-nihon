@@ -19,6 +19,7 @@ import com.nihon.repository.ExamPaperRepository;
 import com.nihon.service.exam.grading.ExamGradingService;
 import com.nihon.validation.TextNormalizer;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,8 +27,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -42,6 +45,11 @@ import java.util.UUID;
 @Service
 @Transactional(readOnly = true)
 public class ExamTakingService {
+
+    public static final int MAX_SESSION_ATTEMPTS = 5;
+
+    @Value("${app.exam.session.max-attempts:5}")
+    private int maxSessionAttempts = MAX_SESSION_ATTEMPTS;
 
     private final ExamPaperRepository paperRepository;
     private final ExamGradingService gradingService;
@@ -356,7 +364,7 @@ public class ExamTakingService {
         if (attr instanceof Map<?, ?> map) {
             return (Map<String, ExamSessionAttempt>) map;
         }
-        Map<String, ExamSessionAttempt> newMap = new HashMap<>();
+        Map<String, ExamSessionAttempt> newMap = new LinkedHashMap<>();
         session.setAttribute(ExamSessionAttempt.SESSION_ATTEMPTS_MAP, newMap);
         return newMap;
     }
@@ -364,6 +372,32 @@ public class ExamTakingService {
     private void storeAttemptInSession(HttpSession session, ExamSessionAttempt attempt) {
         Map<String, ExamSessionAttempt> attemptsMap = getSessionAttemptsMap(session);
         attemptsMap.put(attempt.getAttemptId(), attempt);
+
+        int maxAttempts = maxSessionAttempts > 0 ? maxSessionAttempts : MAX_SESSION_ATTEMPTS;
+        while (attemptsMap.size() > maxAttempts) {
+            // Xác định bài thi cũ nhất theo startedAt (sớm nhất) để xóa
+            String oldestId = attemptsMap.entrySet().stream()
+                    .min((e1, e2) -> {
+                        Instant t1 = e1.getValue() != null ? e1.getValue().getStartedAt() : null;
+                        Instant t2 = e2.getValue() != null ? e2.getValue().getStartedAt() : null;
+                        if (t1 == null && t2 == null) return 0;
+                        if (t1 == null) return -1;
+                        if (t2 == null) return 1;
+                        return t1.compareTo(t2);
+                    })
+                    .map(Map.Entry::getKey)
+                    .orElseGet(() -> attemptsMap.keySet().iterator().next());
+
+            attemptsMap.remove(oldestId);
+        }
         session.setAttribute(ExamSessionAttempt.SESSION_ATTEMPTS_MAP, attemptsMap);
+    }
+
+    public int getMaxSessionAttempts() {
+        return maxSessionAttempts;
+    }
+
+    public void setMaxSessionAttempts(int maxSessionAttempts) {
+        this.maxSessionAttempts = maxSessionAttempts;
     }
 }
