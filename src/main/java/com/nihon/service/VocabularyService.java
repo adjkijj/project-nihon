@@ -1,5 +1,8 @@
 package com.nihon.service;
 
+import com.nihon.dto.ConstituentKanjiDto;
+import com.nihon.dto.VocabQuickFilter;
+import com.nihon.dto.VocabViewMode;
 import com.nihon.dto.VocabularyDeduplicationKey;
 import com.nihon.dto.VocabularyDetailDto;
 import com.nihon.dto.VocabularyForm;
@@ -16,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,7 +69,93 @@ public class VocabularyService {
     }
 
     @Transactional(readOnly = true)
+    public Page<VocabularyRowDto> search(Long topicId,
+                                         String keyword,
+                                         VocabQuickFilter filter,
+                                         VocabViewMode viewMode,
+                                         Pageable pageable) {
+        List<VocabularyRowDto> rows = findAllMatching(topicId, keyword, filter != null ? filter : VocabQuickFilter.ALL);
+
+        int total = rows.size();
+        int page = Math.max(0, pageable.getPageNumber());
+        int size = Math.max(1, pageable.getPageSize());
+        long fromIndexLong = (long) page * (long) size;
+        List<VocabularyRowDto> pageContent;
+        if (fromIndexLong >= total || fromIndexLong < 0) {
+            pageContent = Collections.emptyList();
+        } else {
+            int fromIndex = (int) fromIndexLong;
+            int toIndex = (int) Math.min(fromIndexLong + size, total);
+            pageContent = rows.subList(fromIndex, toIndex);
+        }
+
+        // Nếu là chế độ xem FULL (Bảng đầy đủ): nạp Hán Việt của các Kanji cấu thành (tối đa 4 Kanji)
+        // Thực hiện đúng 1 câu SQL duy nhất cho cả trang (findByCharacterIn) để chống N+1
+        if (viewMode == VocabViewMode.FULL && !pageContent.isEmpty()) {
+            populateConstituentKanji(pageContent);
+        }
+
+        return new PageImpl<>(pageContent, pageable, total);
+    }
+
+    @Transactional(readOnly = true)
     public Page<VocabularyRowDto> search(Long topicId, String keyword, Pageable pageable) {
+        return search(topicId, keyword, VocabQuickFilter.ALL, VocabViewMode.COMPACT, pageable);
+    }
+
+    /**
+     * Nạp thông tin Hán Việt cho các ký tự Kanji cấu thành từ vựng cho toàn bộ trang trong 1 truy vấn duy nhất.
+     */
+    private void populateConstituentKanji(List<VocabularyRowDto> pageContent) {
+        Set<String> allPageKanji = new LinkedHashSet<>();
+        for (VocabularyRowDto row : pageContent) {
+            List<String> kanjiList = KanjiExtractor.extractKanji(row.getJapaneseText());
+            int limit = Math.min(4, kanjiList.size());
+            for (int i = 0; i < limit; i++) {
+                allPageKanji.add(kanjiList.get(i));
+            }
+        }
+
+        Map<String, KanjiEntry> kanjiEntryMap = Collections.emptyMap();
+        if (!allPageKanji.isEmpty() && kanjiEntryRepository != null) {
+            List<KanjiEntry> kanjiEntries = kanjiEntryRepository.findByCharacterIn(allPageKanji);
+            kanjiEntryMap = kanjiEntries.stream()
+                    .filter(k -> k.getCharacter() != null)
+                    .collect(Collectors.toMap(KanjiEntry::getCharacter, java.util.function.Function.identity(), (a, b) -> a));
+        }
+
+        for (VocabularyRowDto row : pageContent) {
+            List<String> kanjiList = KanjiExtractor.extractKanji(row.getJapaneseText());
+            int limit = Math.min(4, kanjiList.size());
+            List<ConstituentKanjiDto> cKanjis = new ArrayList<>();
+            for (int i = 0; i < limit; i++) {
+                String ch = kanjiList.get(i);
+                KanjiEntry ke = kanjiEntryMap.get(ch);
+                if (ke != null) {
+                    cKanjis.add(ConstituentKanjiDto.builder()
+                            .character(ch)
+                            .hanViet(ke.getHanViet())
+                            .kanjiId(ke.getId())
+                            .existsInKanjiEntry(true)
+                            .build());
+                } else {
+                    cKanjis.add(ConstituentKanjiDto.builder()
+                            .character(ch)
+                            .hanViet(null)
+                            .kanjiId(null)
+                            .existsInKanjiEntry(false)
+                            .build());
+                }
+            }
+            row.setConstituentKanji(cKanjis);
+        }
+    }
+
+    /**
+     * Tìm kiếm và gom nhóm tất cả từ vựng khớp với tiêu chí lọc và bộ lọc nhanh.
+     */
+    @Transactional(readOnly = true)
+    public List<VocabularyRowDto> findAllMatching(Long topicId, String keyword, VocabQuickFilter filter) {
         // Tải toàn bộ từ vựng kèm Topic trong 1 câu SQL duy nhất (JOIN FETCH) để chống N+1
         List<Vocabulary> allVocabs = vocabularyRepository.findAllWithTopic();
         if (allVocabs.size() > LARGE_DATASET_WARN_THRESHOLD) {
@@ -82,6 +172,7 @@ public class VocabularyService {
 
         String sanitized = sanitizeKeyword(keyword);
         String cleanKeyword = (sanitized != null) ? sanitized.toLowerCase(Locale.ROOT) : null;
+        VocabQuickFilter effectiveFilter = filter != null ? filter : VocabQuickFilter.ALL;
         List<VocabularyRowDto> rows = new ArrayList<>();
 
         for (Map.Entry<VocabularyDeduplicationKey, List<Vocabulary>> entry : grouped.entrySet()) {
@@ -109,6 +200,24 @@ public class VocabularyService {
                 }
             }
 
+            Vocabulary rep = (matchingInTopic != null) ? matchingInTopic : list.get(0);
+
+            // Kiểm tra bộ lọc nhanh (VocabQuickFilter)
+            if (effectiveFilter == VocabQuickFilter.HAS_KANJI) {
+                boolean hasKj = rep.isHasKanji() || !KanjiExtractor.extractKanji(rep.getJapaneseText()).isEmpty();
+                if (!hasKj) {
+                    continue;
+                }
+            } else if (effectiveFilter == VocabQuickFilter.NO_READING) {
+                if (rep.getReading() != null && !rep.getReading().isBlank()) {
+                    continue;
+                }
+            } else if (effectiveFilter == VocabQuickFilter.NO_MEANING) {
+                if (rep.getMeaningVi() != null && !rep.getMeaningVi().isBlank()) {
+                    continue;
+                }
+            }
+
             // Tổng hợp tất cả các chủ đề mà từ vựng này xuất hiện, sắp xếp theo sortOrder của chủ đề
             List<Topic> topics = list.stream()
                     .map(Vocabulary::getTopic)
@@ -120,9 +229,6 @@ public class VocabularyService {
                     .toList();
 
             List<Long> allIds = list.stream().map(Vocabulary::getId).toList();
-
-            // Đại diện: nếu đang lọc theo topicId, chọn bản ghi thuộc topicId đó để nút Sửa/Xóa khớp với ngữ cảnh chủ đề đang chọn
-            Vocabulary rep = (matchingInTopic != null) ? matchingInTopic : list.get(0);
 
             rows.add(VocabularyRowDto.builder()
                     .id(rep.getId())
@@ -136,20 +242,12 @@ public class VocabularyService {
                     .build());
         }
 
-        int total = rows.size();
-        int page = Math.max(0, pageable.getPageNumber());
-        int size = Math.max(1, pageable.getPageSize());
-        long fromIndexLong = (long) page * (long) size;
-        List<VocabularyRowDto> pageContent;
-        if (fromIndexLong >= total || fromIndexLong < 0) {
-            pageContent = Collections.emptyList();
-        } else {
-            int fromIndex = (int) fromIndexLong;
-            int toIndex = (int) Math.min(fromIndexLong + size, total);
-            pageContent = rows.subList(fromIndex, toIndex);
-        }
+        return rows;
+    }
 
-        return new PageImpl<>(pageContent, pageable, total);
+    @Transactional(readOnly = true)
+    public List<VocabularyRowDto> findAllMatching(Long topicId, String keyword) {
+        return findAllMatching(topicId, keyword, VocabQuickFilter.ALL);
     }
 
     public String sanitizeKeyword(String keyword) {
@@ -452,22 +550,21 @@ public class VocabularyService {
         if (japaneseText == null || japaneseText.isEmpty()) {
             return Collections.emptyList();
         }
-        Set<String> kanjiChars = new LinkedHashSet<>();
-        for (int cp : japaneseText.codePoints().toArray()) {
-            if (Character.UnicodeScript.of(cp) == Character.UnicodeScript.HAN) {
-                kanjiChars.add(new String(Character.toChars(cp)));
-            }
-        }
+        List<String> kanjiChars = KanjiExtractor.extractKanji(japaneseText);
         if (kanjiChars.isEmpty()) {
             return Collections.emptyList();
         }
+
+        Map<String, KanjiEntry> entryMap = Collections.emptyMap();
+        if (kanjiEntryRepository != null) {
+            entryMap = kanjiEntryRepository.findByCharacterIn(kanjiChars).stream()
+                    .collect(Collectors.toMap(KanjiEntry::getCharacter, e -> e, (e1, e2) -> e1));
+        }
+
         List<VocabularyDetailDto.KanjiInWordDto> result = new ArrayList<>();
         for (String ch : kanjiChars) {
-            Optional<KanjiEntry> entryOpt = (kanjiEntryRepository != null)
-                    ? kanjiEntryRepository.findByCharacter(ch)
-                    : Optional.empty();
-            if (entryOpt.isPresent()) {
-                KanjiEntry entry = entryOpt.get();
+            KanjiEntry entry = entryMap.get(ch);
+            if (entry != null) {
                 result.add(VocabularyDetailDto.KanjiInWordDto.builder()
                         .character(ch)
                         .kanjiId(entry.getId())
@@ -484,6 +581,96 @@ public class VocabularyService {
             }
         }
         return result;
+    }
+
+    /**
+     * Tìm tất cả từ vựng chứa một ký tự Kanji (trên toàn bộ từ vựng hệ thống),
+     * gom nhóm theo VocabularyDeduplicationKey (một từ xuất hiện ở nhiều chủ đề chỉ thành một dòng, kèm các badge chủ đề)
+     * và phân trang an toàn (mặc định 20 dòng mỗi trang, tối đa 50 mỗi trang).
+     *
+     * @param kanjiCharacter Ký tự Kanji cần tìm
+     * @param page           Số trang (0-based, biên 0..100000)
+     * @param size           Số phần tử mỗi trang (mặc định 20, tối đa 50)
+     * @return Trang kết quả chứa các VocabularyRowDto đã gom nhóm
+     */
+    @Transactional(readOnly = true)
+    public Page<VocabularyRowDto> findWordsContainingKanji(String kanjiCharacter, int page, int size) {
+        if (kanjiCharacter == null || kanjiCharacter.isBlank()) {
+            return new PageImpl<>(Collections.emptyList(), PageRequest.of(0, Math.max(1, size)), 0);
+        }
+
+        int safeSize = (size < 1 || size > 50) ? 20 : size;
+        int safePage = Math.clamp(page, 0, 100000);
+
+        String escaped = KanjiExtractor.escapeLikePattern(kanjiCharacter);
+        List<Vocabulary> matchedVocabs = vocabularyRepository.findAllByJapaneseTextContainingKanji(escaped);
+
+        // Gom nhóm bằng VocabularyDeduplicationKey giống findAllMatching
+        Map<VocabularyDeduplicationKey, List<Vocabulary>> grouped = new LinkedHashMap<>();
+        for (Vocabulary v : matchedVocabs) {
+            VocabularyDeduplicationKey key = VocabularyDeduplicationKey.of(v);
+            grouped.computeIfAbsent(key, k -> new ArrayList<>()).add(v);
+        }
+
+        List<VocabularyRowDto> rows = new ArrayList<>();
+        for (Map.Entry<VocabularyDeduplicationKey, List<Vocabulary>> entry : grouped.entrySet()) {
+            List<Vocabulary> list = entry.getValue();
+            List<Topic> topics = list.stream()
+                    .map(Vocabulary::getTopic)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toMap(Topic::getId, t -> t, (existing, replacement) -> existing, LinkedHashMap::new))
+                    .values()
+                    .stream()
+                    .sorted(Comparator.comparing(Topic::getSortOrder, Comparator.nullsLast(Comparator.naturalOrder())))
+                    .toList();
+
+            List<Long> allIds = list.stream().map(Vocabulary::getId).toList();
+            Vocabulary rep = list.get(0);
+
+            rows.add(VocabularyRowDto.builder()
+                    .id(rep.getId())
+                    .japaneseText(rep.getJapaneseText())
+                    .reading(rep.getReading())
+                    .romaji(rep.getRomaji())
+                    .meaningVi(rep.getMeaningVi())
+                    .hasKanji(rep.isHasKanji())
+                    .topics(topics)
+                    .allIds(allIds)
+                    .build());
+        }
+
+        int total = rows.size();
+        long fromIndexLong = (long) safePage * (long) safeSize;
+        List<VocabularyRowDto> pageContent;
+        if (fromIndexLong >= total || fromIndexLong < 0) {
+            pageContent = Collections.emptyList();
+        } else {
+            int fromIndex = (int) fromIndexLong;
+            int toIndex = (int) Math.min(fromIndexLong + safeSize, total);
+            pageContent = rows.subList(fromIndex, toIndex);
+        }
+
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+        return new PageImpl<>(pageContent, pageable, total);
+    }
+
+    /**
+     * Truy vấn phân trang trực tiếp từ DB cho các từ vựng có chứa ký tự Kanji (tối đa 50 mỗi trang).
+     *
+     * @param kanjiCharacter Ký tự Kanji cần tìm
+     * @param pageable       Thông tin phân trang
+     * @return Trang kết quả chứa các thực thể Vocabulary
+     */
+    @Transactional(readOnly = true)
+    public Page<Vocabulary> findRawByJapaneseTextContainingKanji(String kanjiCharacter, Pageable pageable) {
+        if (kanjiCharacter == null || kanjiCharacter.isBlank()) {
+            return Page.empty(pageable);
+        }
+        int safeSize = Math.min(Math.max(1, pageable.getPageSize()), 50);
+        int safePage = Math.clamp(pageable.getPageNumber(), 0, 100000);
+        Pageable boundedPageable = PageRequest.of(safePage, safeSize, pageable.getSort());
+        String escaped = KanjiExtractor.escapeLikePattern(kanjiCharacter);
+        return vocabularyRepository.findByJapaneseTextContainingKanji(escaped, boundedPageable);
     }
 
     /**

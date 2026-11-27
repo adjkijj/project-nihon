@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+
+    <!-- Fragment 1: Hiển thị một từ vựng với thẻ ruby nếu có cách đọc, không tạo ruby rỗng -->
+    <th:block th:fragment="rubyWord(japaneseText, reading)">
+        <ruby th:if="${reading != null and !reading.isBlank()}"><th:block th:text="${T(com.nihon.service.FuriganaHelper).extractBaseText(japaneseText)}">私</th:block><rt th:text="${reading}">わたし</rt></ruby><th:block th:unless="${reading != null and !reading.isBlank()}" th:text="${japaneseText}">1歳</th:block>
+    </th:block>
+
+    <!-- Fragment 2: Nút bấm Bật/Tắt Furigana trên thanh điều hướng -->
+    <button th:fragment="toggleBtn"
+            type="button"
+            id="furigana-toggle-btn"
+            class="furigana-toggle-btn active"
+            title="Bật/tắt phiên âm Furigana"
+            aria-label="Bật tắt Furigana"
+            aria-pressed="true">
+        <span class="furigana-toggle-label">Furigana</span>
+        <span class="furigana-toggle-state">BẬT</span>
+    </button>
+
+    <!-- Fragment 3: Nhúng stylesheet Furigana -->
+    <th:block th:fragment="headAssets">
+        <link rel="stylesheet" th:href="@{/css/furigana.css}">
+    </th:block>
+
+    <!-- Fragment 4: Nhúng script điều khiển Furigana ở cuối body -->
+    <th:block th:fragment="scripts">
+        <script th:src="@{/js/furigana-toggle.js}" defer></script>
+    </th:block>
+
+</body>
+</html>

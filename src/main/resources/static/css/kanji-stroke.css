@@ -1,0 +1,338 @@
+/**
+ * CSS cho Trình phát hoạt ảnh thứ tự nét viết Kanji (KanjiVG Stroke Order Player - F19, F27, F28)
+ */
+
+/* Khung hiển thị thứ tự nét viết trên trang chi tiết Kanji (/kanji/{id}) */
+.stroke-order-box {
+    width: 100%;
+    margin-top: 1.25rem;
+    margin-bottom: 1.25rem;
+    padding: 1rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.stroke-box-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+}
+
+.stroke-canvas-area {
+    width: 160px;
+    height: 160px;
+    background-color: #0b1120;
+    border: 2px dashed rgba(56, 189, 248, 0.3);
+    border-radius: var(--radius-md);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.85rem;
+    overflow: hidden;
+}
+
+.stroke-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Các đường nét mờ chỉ dẫn */
+.stroke-grid-line {
+    stroke: rgba(148, 163, 184, 0.15);
+    stroke-width: 1;
+    stroke-dasharray: 4, 4;
+}
+
+/* Nét nền chữ mờ */
+.stroke-ghost-path {
+    fill: none;
+    stroke: rgba(148, 163, 184, 0.2);
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Nét vẽ động chính */
+.stroke-path {
+    fill: none;
+    stroke: #38bdf8;
+    stroke-width: 4.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: stroke-dashoffset 0.5s ease-in-out;
+}
+
+.stroke-path.stroke-active {
+    stroke: #f59e0b;
+}
+
+.stroke-path.stroke-drawn {
+    stroke: #f8fafc;
+}
+
+/* Số thứ tự nét */
+.stroke-number {
+    font-size: 9px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-weight: 700;
+    fill: #f59e0b;
+    dominant-baseline: central;
+    text-anchor: middle;
+    pointer-events: none;
+    user-select: none;
+}
+
+.stroke-controls {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+}
+
+.stroke-speed-controls {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.5rem;
+    width: 100%;
+}
+
+.stroke-speed-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.btn-stroke-speed.active {
+    background-color: var(--accent);
+    color: #0f172a;
+    border-color: var(--accent);
+    font-weight: 700;
+}
+
+.btn-stroke {
+    font-size: 0.78rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: var(--radius-sm);
+    background-color: var(--border-color);
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.btn-stroke:hover:not(:disabled) {
+    background-color: var(--accent);
+    color: #0f172a;
+    border-color: var(--accent);
+}
+
+.btn-stroke:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.btn-stroke:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.stroke-error-msg {
+    color: #f87171;
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+    text-align: center;
+}
+
+.stroke-attribution {
+    margin-top: 0.35rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.stroke-attribution a {
+    color: var(--accent);
+    text-decoration: underline;
+}
+
+.stroke-attribution a:hover {
+    color: var(--accent-hover);
+}
+
+/* ==========================================================================
+   Hộp thoại nổi xem nét viết chữ Hán (Floating Stroke Player Dialog - F28)
+   ========================================================================== */
+
+.floating-stroke-dialog {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    width: 250px;
+    max-width: calc(100vw - 32px);
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.6);
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.floating-stroke-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 0.85rem;
+    background-color: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+}
+
+.floating-stroke-header:active {
+    cursor: grabbing;
+}
+
+.floating-stroke-title {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.floating-char {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--accent);
+    font-family: "Noto Sans JP", sans-serif;
+}
+
+.floating-hanviet {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.floating-stroke-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.35rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.floating-stroke-close:hover {
+    color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.15);
+}
+
+.floating-stroke-close:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.floating-stroke-body {
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.floating-stroke-canvas {
+    width: 170px;
+    height: 170px;
+    margin-bottom: 0.75rem;
+}
+
+/* ==========================================================================
+   Nút "Xem nét" kích hoạt trình phát nổi (F27, F28)
+   ========================================================================== */
+
+.vocab-kanji-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.btn-stroke-view {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-tertiary);
+    color: var(--accent);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.btn-stroke-view:hover {
+    background-color: var(--accent);
+    color: #0f172a;
+    border-color: var(--accent);
+}
+
+.btn-stroke-view:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.btn-stroke-view-sm {
+    font-size: 0.68rem;
+    padding: 0.1rem 0.35rem;
+    line-height: 1.2;
+    border-radius: 3px;
+    margin-left: 0.2rem;
+    vertical-align: middle;
+}
+
+/* Giảm chuyển động theo thiết lập người dùng */
+@media (prefers-reduced-motion: reduce) {
+    .stroke-path {
+        transition: none !important;
+        stroke-dashoffset: 0 !important;
+    }
+
+    .btn-stroke,
+    .btn-stroke-view,
+    .floating-stroke-close {
+        transition: none !important;
+    }
+}

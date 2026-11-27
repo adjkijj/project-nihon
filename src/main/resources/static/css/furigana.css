@@ -1,0 +1,68 @@
+/* ==========================================================================
+   Furigana Display & Navigation Toggle
+   Tuân thủ nghiêm ngặt chuẩn CSP: không style nhúng, dùng class để ẩn hiện
+   ========================================================================== */
+
+/* 1. Mặc định: Hiển thị thẻ ruby và rt ở phía trên từ */
+ruby {
+    ruby-position: over;
+    font-size: inherit;
+    line-height: normal;
+}
+
+rt {
+    font-size: 0.65em;
+    color: var(--text-muted, #94a3b8);
+    user-select: none;
+    font-weight: normal;
+    letter-spacing: 0;
+}
+
+/* 2. Khi người học tắt Furigana: ẩn toàn bộ phần rt */
+body.hide-furigana rt {
+    display: none !important;
+}
+
+/* 3. Nút bật/tắt Furigana trên thanh điều hướng */
+.furigana-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+    font-family: inherit;
+    font-weight: 500;
+    color: var(--text-secondary, #94a3b8);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color, #334155);
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.furigana-toggle-btn:hover {
+    color: var(--text-primary, #f8fafc);
+    background-color: var(--border-color, #334155);
+}
+
+.furigana-toggle-btn.active {
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.4);
+    background: rgba(56, 189, 248, 0.12);
+}
+
+.furigana-toggle-state {
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.3);
+    color: #94a3b8;
+}
+
+.furigana-toggle-btn.active .furigana-toggle-state {
+    background: #0284c7;
+    color: #ffffff;
+}
+

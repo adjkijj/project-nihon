@@ -51,6 +51,15 @@ class TopicControllerTest {
     @MockitoBean
     private TopicService topicService;
 
+    @MockitoBean
+    private com.nihon.service.VerbService verbService;
+
+    @MockitoBean
+    private com.nihon.service.TopicTestService topicTestService;
+
+    @MockitoBean
+    private com.nihon.repository.GrammarTopicRepository grammarTopicRepository;
+
     private Topic rootTopic;
 
     @BeforeEach

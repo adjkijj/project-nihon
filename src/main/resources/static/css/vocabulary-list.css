@@ -213,6 +213,79 @@ main {
     box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
+.export-panel {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--border-color);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.export-form {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.export-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.export-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.export-select {
+    width: auto;
+    min-width: 280px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.85rem;
+}
+
+.export-direct-links {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.825rem;
+}
+
+.export-hint {
+    color: var(--text-muted);
+}
+
+.export-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.15s ease;
+}
+
+.export-link:hover {
+    color: var(--accent-hover);
+    text-decoration: underline;
+}
+
+.export-divider {
+    color: var(--border-color);
+}
+
+.export-note {
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
 .table-container {
     background-color: var(--bg-surface);
     border: 1px solid var(--border-color);
@@ -491,4 +564,207 @@ tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
     .filter-form { grid-template-columns: 1fr; }
     header { flex-direction: column; gap: 1rem; }
 }
+
+/* ==========================================================================
+   F18 / F21 / F24: Quick Filter, View Modes & Constituent Kanji Styles
+   ========================================================================== */
+
+.stats-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.stats-count strong {
+    color: var(--text-primary);
+}
+
+.view-mode-toggle-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: var(--bg-surface);
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+}
+
+.view-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.view-toggle-btn {
+    text-decoration: none;
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.825rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.view-toggle-btn:hover {
+    color: var(--text-primary);
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.view-toggle-btn.active {
+    color: #0f172a;
+    background-color: var(--accent);
+    font-weight: 600;
+}
+
+.quick-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--border-color);
+    flex-wrap: wrap;
+}
+
+.quick-filter-title {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.quick-filter-tabs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.quick-filter-tab {
+    text-decoration: none;
+    font-size: 0.8rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 9999px;
+    background-color: var(--border-color);
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+}
+
+.quick-filter-tab:hover {
+    color: var(--text-primary);
+    background-color: #475569;
+}
+
+.quick-filter-tab.active {
+    background-color: var(--accent);
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.col-hanviet {
+    min-width: 140px;
+}
+
+.constituent-kanji-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+}
+
+.constituent-kanji-badge {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.25rem;
+    background-color: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 4px;
+    padding: 0.15rem 0.4rem;
+    font-size: 0.85rem;
+    line-height: 1.2;
+}
+
+.constituent-char {
+    font-weight: 700;
+    color: var(--accent);
+    font-family: "Noto Sans JP", sans-serif;
+}
+
+.constituent-char.kanji-link {
+    text-decoration: none;
+}
+
+.constituent-char.kanji-link:hover {
+    text-decoration: underline;
+    color: #38bdf8;
+}
+
+.constituent-hanviet {
+    font-size: 0.75rem;
+    color: #e2e8f0;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.u-width-18pct {
+    width: 18% !important;
+}
+
+.u-width-16pct {
+    width: 16% !important;
+}
+
+/* ==========================================================================
+   Ẩn / Hiện nghĩa tiếng Việt (.hide-meaning .meaning-cell)
+   ========================================================================== */
+button.view-toggle-btn {
+    cursor: pointer;
+    font-family: inherit;
+    line-height: inherit;
+    background: transparent;
+}
+
+button.view-toggle-btn:hover {
+    color: var(--text-primary);
+    background-color: var(--border-color);
+}
+
+button.view-toggle-btn.active {
+    background-color: var(--border-color);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.meaning-cell {
+    transition: filter 0.2s ease, opacity 0.2s ease, background-color 0.2s ease;
+    outline: none;
+}
+
+.hide-meaning .meaning-cell {
+    filter: blur(5px);
+    opacity: 0.35;
+    user-select: none;
+    cursor: pointer;
+}
+
+.hide-meaning .meaning-cell:hover,
+.hide-meaning .meaning-cell:focus,
+.hide-meaning .meaning-cell:focus-visible {
+    filter: none;
+    opacity: 1;
+    user-select: auto;
+    background-color: rgba(56, 189, 248, 0.08);
+}
+
+.hide-meaning .meaning-cell:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+    border-radius: var(--radius-sm);
+}
+
+
 

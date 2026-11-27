@@ -26,4 +26,10 @@ public class PracticeViJaAnswerForm {
 
     @Positive(message = "Mã chủ đề không hợp lệ.")
     private Long topicId;
+
+    private Boolean retryWrongOnly = false;
+
+    public boolean isRetryWrongOnly() {
+        return Boolean.TRUE.equals(retryWrongOnly);
+    }
 }

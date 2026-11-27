@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Xem trước: ' + ${topic.title} + ' - Project Nihon'">Xem trước Ngữ pháp - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <link rel="stylesheet" th:href="@{/css/furigana.css}">
+    <link rel="stylesheet" th:href="@{/css/grammar.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/furigana-toggle.js}" defer></script>
+</head>
+
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('grammar')}"></header>
+
+    <main class="container my-4 max-w-800">
+        <!-- Banner thông báo chế độ xem trước -->
+        <div class="alert alert-info d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <strong>👁️ Chế độ xem trước (Learner Preview):</strong>
+                <span class="font-size-sm">Đây là giao diện cấu trúc ngữ pháp sẽ hiển thị tới người học.</span>
+            </div>
+            <a th:href="@{/grammar/admin/{id}(id=${topic.id})}" class="btn btn-sm btn-secondary">← Quay về trang quản trị</a>
+        </div>
+
+        <!-- Thẻ chính ngữ pháp -->
+        <article class="card mb-4" aria-labelledby="previewTopicTitle">
+            <div class="mb-2">
+                <span class="badge badge-grammar" th:if="${topic.category.name() == 'GRAMMAR'}">Ngữ pháp</span>
+                <span class="badge badge-supplement" th:if="${topic.category.name() == 'SUPPLEMENT'}">Kiến thức bổ sung</span>
+                <span class="font-mono text-secondary ml-2" th:text="${topic.code}">N5-GR-01</span>
+            </div>
+
+            <h1 id="previewTopicTitle" class="page-title h2 m-0" th:text="${topic.title}">Cấu trúc 〜から (Vì, bởi vì)</h1>
+
+            <!-- Công thức ngữ pháp -->
+            <div th:if="${topic.formula != null and !topic.formula.isEmpty()}" class="grammar-formula-box">
+                <div class="grammar-formula-label">CÔNG THỨC</div>
+                <div class="grammar-formula-content" th:text="${topic.formula}">[Thể thường / Thể lịch sự] + から</div>
+            </div>
+
+            <!-- Giải thích (th:text an toàn, hỗ trợ xuống dòng qua CSS pre-wrap) -->
+            <div class="mt-4">
+                <h2 class="h5 font-weight-bold text-secondary mb-2">📌 Ý nghĩa và Cách dùng:</h2>
+                <div class="grammar-explanation-body" th:text="${topic.explanation}">
+                    Giải thích...
+                </div>
+            </div>
+
+            <!-- Ghi chú nếu có -->
+            <div th:if="${topic.notes != null and !topic.notes.isEmpty()}" class="mt-3 p-3 bg-light rounded border font-size-sm text-secondary">
+                <strong>💡 Lưu ý bổ sung:</strong> <span th:text="${topic.notes}">Ghi chú thêm...</span>
+            </div>
+        </article>
+
+        <!-- Danh sách Câu ví dụ minh họa -->
+        <section class="card mb-4" aria-labelledby="previewExamplesTitle" th:if="${topic.examples != null and !topic.examples.isEmpty()}">
+            <h2 id="previewExamplesTitle" class="h4 font-weight-bold mb-3">💬 Ví dụ minh họa</h2>
+
+            <div th:each="ex, iter : ${topic.examples}" class="grammar-example-item">
+                <div class="d-flex align-items-start gap-2">
+                    <span class="font-weight-bold text-secondary font-size-sm" th:text="${iter.count} + '.'">1.</span>
+                    <div>
+                        <div class="grammar-jp-text" th:text="${ex.japanese}">雨が降っているから、傘を持っていきます。</div>
+                        <div th:if="${ex.reading != null and !ex.reading.isEmpty()}" class="grammar-reading-text" th:text="${ex.reading}">あめがふっているから、かさをもっていきます。</div>
+                        <div class="grammar-meaning-text" th:text="${ex.meaningVi}">Vì trời đang mưa nên tôi mang theo ô.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Danh sách Câu hỏi luyện tập trắc nghiệm -->
+        <section class="card" aria-labelledby="previewQuizTitle" th:if="${topic.questions != null and !topic.questions.isEmpty()}">
+            <h2 id="previewQuizTitle" class="h4 font-weight-bold mb-3">🎯 Luyện tập nhanh</h2>
+
+            <div th:each="q, iter : ${topic.questions}" class="grammar-quiz-card">
+                <div class="grammar-quiz-header">
+                    <span class="font-weight-bold text-primary font-size-sm" th:text="'Câu hỏi ' + ${iter.count}">Câu hỏi 1</span>
+                </div>
+
+                <div class="grammar-quiz-prompt" th:text="${q.prompt}">あしたは　テストが　ある（　）、きょうは　べんきょうします。</div>
+
+                <div class="grammar-choices-grid">
+                    <div th:each="c, cIter : ${q.choices}" 
+                         class="grammar-choice-btn"
+                         th:classappend="${c.correct ? 'correct-choice' : ''}">
+                        <span class="grammar-choice-index" th:text="${cIter.count}">1</span>
+                        <span th:text="${c.text}">から</span>
+                        <span th:if="${c.correct}" class="font-size-xs ml-auto">✓ Đáp án đúng</span>
+                    </div>
+                </div>
+
+                <div th:if="${q.explanation != null and !q.explanation.isEmpty()}" class="grammar-quiz-expl">
+                    <strong>Giải thích đáp án:</strong> <span th:text="${q.explanation}">Điền から để chỉ lý do.</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="text-center mt-4">
+            <a th:href="@{/grammar/admin/{id}(id=${topic.id})}" class="btn btn-secondary">← Quay về trang quản trị chi tiết</a>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Hệ thống ghi nhớ từ vựng và ngữ pháp tiếng Nhật.</p>
+    </footer>
+</body>
+</html>
+

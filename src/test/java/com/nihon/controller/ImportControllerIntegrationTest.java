@@ -17,11 +17,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.io.File;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.List;
 
@@ -63,12 +65,11 @@ class ImportControllerIntegrationTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        File excelFile = new File("src/main/resources/static/template/Update.xlsx");
-        if (!excelFile.exists()) {
-            excelFile = new File("Update.xlsx");
+        ClassPathResource resource = new ClassPathResource("static/template/Update.xlsx");
+        assertThat(resource.exists()).isTrue();
+        try (InputStream in = resource.getInputStream()) {
+            updateXlsxBytes = in.readAllBytes();
         }
-        assertThat(excelFile).exists();
-        updateXlsxBytes = Files.readAllBytes(excelFile.toPath());
     }
 
     @Test

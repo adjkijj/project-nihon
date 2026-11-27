@@ -20,6 +20,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface VietnameseText {
 
+    boolean allowNewlines() default false;
+
+    boolean allowJapanese() default false;
+
     String message() default ValidationMessages.VIETNAMESE_TEXT;
 
     Class<?>[] groups() default {};

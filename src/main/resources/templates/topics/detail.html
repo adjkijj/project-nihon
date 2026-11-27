@@ -6,23 +6,14 @@
     <title th:text="${'Chi tiết chủ đề: ' + topic.name + ' - Project Nihon'}">Chi tiết chủ đề - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/topics-list.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
 </head>
 <body>
-    <header>
-        <a href="/" class="brand">
-            <span class="brand-badge">日</span>
-            <span>Project Nihon</span>
-        </a>
-        <nav class="u-7dbd1ca1">
-            <a href="/">Trang chủ</a>
-            <a href="/vocabulary">Từ vựng</a>
-            <a href="/topics" class="active">Chủ đề</a>
-            <a href="/kanji">Kanji</a>
-            <a href="/practice">Luyện tập</a>
-            <a href="/stats">Thống kê</a>
-        </nav>
-    </header>
+    <header th:replace="~{fragments/navbar :: headerNav('topics')}"></header>
 
     <main>
         <div class="page-header">
@@ -67,14 +58,30 @@
                     <span class="detail-label">Số Kanji</span>
                     <strong class="detail-value" th:text="${kanjiCount}">0</strong>
                 </div>
+                <div class="detail-item">
+                    <span class="detail-label">Số động từ</span>
+                    <strong class="detail-value" th:text="${verbCount}">0</strong>
+                </div>
             </div>
 
             <div class="detail-links">
-                <a th:href="@{/vocabulary(topicId=${topic.id})}" class="btn btn-primary">
+                <a th:href="@{'/topics/' + ${topic.id} + '/hub'}" class="btn btn-primary font-weight-bold">
+                    🌟 Cẩm nang Tổng hợp All-in-One →
+                </a>
+                <a th:href="@{/vocabulary(topicId=${topic.id})}" class="btn btn-secondary">
                     Xem danh sách từ vựng của chủ đề →
                 </a>
                 <a th:href="@{/kanji(topicId=${topic.id})}" class="btn btn-secondary">
                     Xem danh sách Kanji của chủ đề →
+                </a>
+                <a th:href="@{/verbs(topicId=${topic.id})}" class="btn btn-secondary">
+                    Xem danh sách động từ của chủ đề →
+                </a>
+                <a th:if="${hasGrammarTopics}" th:href="@{/grammar(topicId=${topic.id})}" class="btn btn-secondary">
+                    📖 Bài tập ngữ pháp của bài này
+                </a>
+                <a th:href="@{'/topics/' + ${topic.id} + '/test'}" class="btn btn-warning">
+                    📝 Kiểm tra cuối bài
                 </a>
             </div>
         </section>
@@ -117,6 +124,60 @@
             </table>
         </section>
 
+        <!-- Bảng 5 thể các động từ thuộc chủ đề (F36) -->
+        <section th:if="${verbs != null and !verbs.isEmpty()}" class="table-container detail-section">
+            <div class="section-heading">
+                <h2>Bảng 5 thể các động từ thuộc chủ đề (F36)</h2>
+                <span class="u-text-muted-0-85rem" th:text="${verbs.size() + ' động từ'}">0 động từ</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Động từ (Hán tự)</th>
+                        <th>Nghĩa tiếng Việt</th>
+                        <th>Nhóm</th>
+                        <th>Từ điển (Ru)</th>
+                        <th>Thể Masu</th>
+                        <th>Thể Te</th>
+                        <th>Thể Ta</th>
+                        <th>Thể Nai</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="v : ${verbs}">
+                        <td>
+                            <strong th:text="${v.kanjiText != null ? v.kanjiText : v.dictionaryForm}">飲む</strong>
+                            <th:block th:replace="~{fragments/speech :: speakerBtn(${v.masuForm})}"></th:block>
+                        </td>
+                        <td th:text="${v.meaningVi}">Uống</td>
+                        <td>
+                            <span class="badge" th:text="${'Nhóm ' + v.verbGroup}">Nhóm 1</span>
+                        </td>
+                        <td>
+                            <span th:text="${v.dictionaryForm}">のむ</span>
+                            <th:block th:replace="~{fragments/speech :: speakerBtn(${v.dictionaryForm})}"></th:block>
+                        </td>
+                        <td>
+                            <span th:text="${v.masuForm}">のみます</span>
+                            <th:block th:replace="~{fragments/speech :: speakerBtn(${v.masuForm})}"></th:block>
+                        </td>
+                        <td>
+                            <span th:text="${v.teForm}">のんで</span>
+                            <th:block th:replace="~{fragments/speech :: speakerBtn(${v.teForm})}"></th:block>
+                        </td>
+                        <td>
+                            <span th:text="${v.taForm}">のんだ</span>
+                            <th:block th:replace="~{fragments/speech :: speakerBtn(${v.taForm})}"></th:block>
+                        </td>
+                        <td>
+                            <span th:text="${v.naiForm}">のまない</span>
+                            <th:block th:replace="~{fragments/speech :: speakerBtn(${v.naiForm})}"></th:block>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
         <!-- Chuyển nội dung rồi xóa -->
         <section th:if="${!topic.canDelete}" class="detail-card detail-section">
             <div class="cannot-delete-box">
@@ -139,6 +200,8 @@
             </form>
         </section>
     </main>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+    <th:block th:replace="~{fragments/speech :: scripts}"></th:block>
 </body>
 </html>
 

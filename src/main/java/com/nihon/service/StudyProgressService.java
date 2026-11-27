@@ -1,5 +1,6 @@
 package com.nihon.service;
 
+import com.nihon.dto.PracticeChoiceResultDto;
 import com.nihon.dto.PracticeRecordDto;
 import com.nihon.dto.PracticeResultDto;
 import com.nihon.dto.PracticeViJaResultDto;
@@ -10,7 +11,11 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -112,6 +117,156 @@ public class StudyProgressService {
         addRecordToSession(session, record);
     }
 
+    /**
+     * Ghi nhận kết quả câu hỏi trắc nghiệm 4 lựa chọn vào tiến độ của session.
+     */
+    public synchronized void recordChoiceAttempt(HttpSession session, PracticeChoiceResultDto result, Long topicId) {
+        if (session == null || result == null) {
+            return;
+        }
+
+        String mode = "MC_" + (result.getDirection() != null ? result.getDirection().toUpperCase(java.util.Locale.ROOT) : "JA_VI");
+
+        PracticeRecordDto record = PracticeRecordDto.builder()
+                .id(UUID.randomUUID().toString())
+                .vocabId(result.getVocabId())
+                .topicId(topicId)
+                .topicName(result.getTopicName() != null ? result.getTopicName() : "Tất cả chủ đề")
+                .mode(mode)
+                .questionPrompt(result.getQuestionPrompt())
+                .userAnswer(result.getSelectedAnswerText() != null ? result.getSelectedAnswerText() : "")
+                .expectedAnswer(result.getCorrectAnswerText() != null ? result.getCorrectAnswerText() : "")
+                .correct(result.isCorrect())
+                .feedbackMessage(result.getFeedbackMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        addRecordToSession(session, record);
+    }
+
+    /**
+     * Ghi nhận kết quả câu hỏi luyện tập Kanji (F22, F23) vào tiến độ của session.
+     */
+    public synchronized void recordKanjiAttempt(HttpSession session,
+                                                Long kanjiId,
+                                                String character,
+                                                String mode,
+                                                Long topicId,
+                                                String topicName,
+                                                String userAnswer,
+                                                String expectedAnswer,
+                                                boolean correct,
+                                                String feedbackMessage) {
+        if (session == null) {
+            return;
+        }
+
+        PracticeRecordDto record = PracticeRecordDto.builder()
+                .id(UUID.randomUUID().toString())
+                .kanjiId(kanjiId)
+                .topicId(topicId)
+                .topicName(topicName != null ? topicName : "Tất cả bài học Kanji")
+                .mode(mode != null ? mode.toUpperCase(Locale.ROOT) : "KANJI_READING")
+                .questionPrompt(character)
+                .userAnswer(userAnswer != null ? userAnswer : "")
+                .expectedAnswer(expectedAnswer != null ? expectedAnswer : "")
+                .correct(correct)
+                .feedbackMessage(feedbackMessage)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        addRecordToSession(session, record);
+    }
+
+    /**
+     * Ghi nhận kết quả câu hỏi trong bài luyện tập tính giờ (F42, F50, F17) vào tiến độ của session.
+     */
+    public synchronized void recordTimedAttempt(HttpSession session,
+                                                Long vocabId,
+                                                Long kanjiId,
+                                                Long topicId,
+                                                String topicName,
+                                                String timedMode,
+                                                String questionPrompt,
+                                                String userAnswer,
+                                                String expectedAnswer,
+                                                boolean correct,
+                                                String feedbackMessage) {
+        recordTimedAttempt(session, vocabId, kanjiId, null, topicId, topicName, timedMode,
+                questionPrompt, userAnswer, expectedAnswer, correct, feedbackMessage);
+    }
+
+    public synchronized void recordTimedAttempt(HttpSession session,
+                                                Long vocabId,
+                                                Long kanjiId,
+                                                Long verbId,
+                                                Long topicId,
+                                                String topicName,
+                                                String timedMode,
+                                                String questionPrompt,
+                                                String userAnswer,
+                                                String expectedAnswer,
+                                                boolean correct,
+                                                String feedbackMessage) {
+        if (session == null) {
+            return;
+        }
+
+        PracticeRecordDto record = PracticeRecordDto.builder()
+                .id(UUID.randomUUID().toString())
+                .vocabId(vocabId)
+                .kanjiId(kanjiId)
+                .verbId(verbId)
+                .topicId(topicId)
+                .topicName(topicName != null ? topicName : "Luyện tập tính giờ")
+                .mode(timedMode != null ? timedMode.toUpperCase(Locale.ROOT) : "TIMED_JA_VI")
+                .questionPrompt(questionPrompt)
+                .userAnswer(userAnswer != null ? userAnswer : "")
+                .expectedAnswer(expectedAnswer != null ? expectedAnswer : "")
+                .correct(correct)
+                .feedbackMessage(feedbackMessage)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        addRecordToSession(session, record);
+    }
+
+    /**
+     * Ghi nhận kết quả câu hỏi luyện chia thể động từ (F13 - F18) vào tiến độ của session.
+     */
+    public synchronized void recordVerbAttempt(HttpSession session,
+                                               Long verbId,
+                                               String targetForm,
+                                               Long topicId,
+                                               String topicName,
+                                               String questionPrompt,
+                                               String userAnswer,
+                                               String expectedAnswer,
+                                               boolean correct,
+                                               String feedbackMessage) {
+        if (session == null) {
+            return;
+        }
+
+        String mode = "VERB_" + (targetForm != null ? targetForm.toUpperCase(Locale.ROOT) : "TE");
+
+        PracticeRecordDto record = PracticeRecordDto.builder()
+                .id(UUID.randomUUID().toString())
+                .verbId(verbId)
+                .topicId(topicId)
+                .topicName(topicName != null ? topicName : "Tất cả chủ đề động từ")
+                .mode(mode)
+                .questionPrompt(questionPrompt)
+                .userAnswer(userAnswer != null ? userAnswer : "")
+                .expectedAnswer(expectedAnswer != null ? expectedAnswer : "")
+                .correct(correct)
+                .feedbackMessage(feedbackMessage)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        addRecordToSession(session, record);
+    }
+
     private void addRecordToSession(HttpSession session, PracticeRecordDto record) {
         List<PracticeRecordDto> list = getOrCreateHistoryList(session);
         synchronized (list) {
@@ -135,7 +290,9 @@ public class StudyProgressService {
     }
 
     /**
-     * Chuẩn hóa tham số chế độ kiểm tra: chỉ nhận ALL, JA_VI, VI_JA (không phân biệt hoa thường).
+     * Chuẩn hóa tham số chế độ kiểm tra: chỉ nhận ALL, JA_VI, VI_JA, MC_JA_VI, MC_VI_JA,
+     * KANJI_READING, KANJI_WRITE, KANJI_CHOICE, TIMED_JA_VI, TIMED_VI_JA,
+     * TIMED_KANJI_READING, TIMED_CHOICE (không phân biệt hoa thường).
      * Mọi giá trị khác coi như ALL.
      */
     public String normalizeMode(String modeFilter) {
@@ -143,7 +300,17 @@ public class StudyProgressService {
             return "ALL";
         }
         String trimmedUpper = modeFilter.strip().toUpperCase(java.util.Locale.ROOT);
-        if ("JA_VI".equals(trimmedUpper) || "VI_JA".equals(trimmedUpper) || "ALL".equals(trimmedUpper)) {
+        if ("JA_VI".equals(trimmedUpper) || "VI_JA".equals(trimmedUpper)
+                || "MC_JA_VI".equals(trimmedUpper) || "MC_VI_JA".equals(trimmedUpper)
+                || "KANJI_READING".equals(trimmedUpper) || "KANJI_WRITE".equals(trimmedUpper)
+                || "KANJI_CHOICE".equals(trimmedUpper)
+                || "TIMED_JA_VI".equals(trimmedUpper) || "TIMED_VI_JA".equals(trimmedUpper)
+                || "TIMED_KANJI_READING".equals(trimmedUpper) || "TIMED_CHOICE".equals(trimmedUpper)
+                || "TIMED_VERB_TE".equals(trimmedUpper)
+                || "VERB_TE".equals(trimmedUpper) || "VERB_RU".equals(trimmedUpper)
+                || "VERB_TA".equals(trimmedUpper) || "VERB_NAI".equals(trimmedUpper)
+                || "VERB_MASU".equals(trimmedUpper)
+                || "ALL".equals(trimmedUpper)) {
             return trimmedUpper;
         }
         return "ALL";
@@ -189,6 +356,194 @@ public class StudyProgressService {
                 .currentModeFilter(normalizedMode)
                 .currentTopicFilter(topicIdFilter)
                 .build();
+    }
+
+    /**
+     * Chuẩn hóa tham số chế độ cho chức năng lấy từ sai: whitelist JA_VI, VI_JA,
+     * KANJI_READING, KANJI_WRITE, KANJI_CHOICE, TIMED_JA_VI, TIMED_VI_JA,
+     * TIMED_KANJI_READING, TIMED_CHOICE, ALL.
+     * Mọi giá trị khác (hoặc rỗng/null) coi như ALL.
+     */
+    public String normalizeWrongMode(String mode) {
+        if (mode == null || mode.isBlank()) {
+            return "ALL";
+        }
+        String upper = mode.strip().toUpperCase(Locale.ROOT);
+        if ("JA_VI".equals(upper) || "VI_JA".equals(upper)
+                || "KANJI_READING".equals(upper) || "KANJI_WRITE".equals(upper)
+                || "KANJI_CHOICE".equals(upper)
+                || "TIMED_JA_VI".equals(upper) || "TIMED_VI_JA".equals(upper)
+                || "TIMED_KANJI_READING".equals(upper) || "TIMED_CHOICE".equals(upper)
+                || "TIMED_VERB_TE".equals(upper)
+                || "VERB_TE".equals(upper) || "VERB_RU".equals(upper)
+                || "VERB_TA".equals(upper) || "VERB_NAI".equals(upper)
+                || "VERB_MASU".equals(upper)) {
+            return upper;
+        }
+        return "ALL";
+    }
+
+    /**
+     * Lấy tập vocabId của các từ đang ở trạng thái "sai" trong phiên làm việc hiện tại:
+     * từ có bản ghi gần nhất là sai. Nếu từ đó được trả lời đúng ở lần sau thì không còn trong tập.
+     *
+     * @param session Phiên làm việc HttpSession
+     * @param mode    Chế độ kiểm tra (JA_VI, VI_JA, hoặc ALL theo whitelist)
+     * @param topicId Mã chủ đề tùy chọn (null nếu lấy tất cả chủ đề)
+     * @return Tập các vocabId đang ở trạng thái sai
+     */
+    public Set<Long> getWrongVocabIds(HttpSession session, String mode, Long topicId) {
+        List<PracticeRecordDto> history = getHistory(session);
+        if (history.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        String safeMode = normalizeWrongMode(mode);
+        Set<Long> seenVocabs = new HashSet<>();
+        Set<Long> wrongVocabIds = new LinkedHashSet<>();
+
+        synchronized (history) {
+            for (PracticeRecordDto record : history) {
+                if (record == null || record.getVocabId() == null) {
+                    continue;
+                }
+
+                // Lọc theo chế độ whitelist (JA_VI, VI_JA, ALL)
+                if (!"ALL".equals(safeMode)) {
+                    if (record.getMode() == null || !safeMode.equalsIgnoreCase(record.getMode())) {
+                        continue;
+                    }
+                }
+
+                // Lọc theo topicId nếu có truyền
+                if (topicId != null && (record.getTopicId() == null || !topicId.equals(record.getTopicId()))) {
+                    continue;
+                }
+
+                Long vocabId = record.getVocabId();
+                // Vì history lưu mới nhất ở index 0, bản ghi đầu tiên thấy của vocabId là lần làm gần nhất
+                if (seenVocabs.add(vocabId)) {
+                    if (!record.isCorrect()) {
+                        wrongVocabIds.add(vocabId);
+                    }
+                }
+            }
+        }
+
+        return wrongVocabIds;
+    }
+
+    public Set<Long> getWrongVocabIds(HttpSession session, String mode) {
+        return getWrongVocabIds(session, mode, null);
+    }
+
+    public Set<Long> getWrongVocabIds(HttpSession session) {
+        return getWrongVocabIds(session, "ALL", null);
+    }
+
+    /**
+     * Lấy tập kanjiId của các Kanji đang ở trạng thái "sai" trong phiên làm việc hiện tại:
+     * Kanji có bản ghi gần nhất là sai. Nếu Kanji đó được trả lời đúng ở lần sau thì không còn trong tập.
+     *
+     * @param session Phiên làm việc HttpSession
+     * @param mode    Chế độ kiểm tra Kanji (KANJI_READING, KANJI_WRITE, KANJI_CHOICE, hoặc ALL)
+     * @param topicId Mã bài học Kanji tùy chọn (null nếu lấy tất cả)
+     * @return Tập các kanjiId đang ở trạng thái sai
+     */
+    public Set<Long> getWrongKanjiIds(HttpSession session, String mode, Long topicId) {
+        List<PracticeRecordDto> history = getHistory(session);
+        if (history.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        String safeMode = normalizeWrongMode(mode);
+        Set<Long> seenKanjis = new HashSet<>();
+        Set<Long> wrongKanjiIds = new LinkedHashSet<>();
+
+        synchronized (history) {
+            for (PracticeRecordDto record : history) {
+                if (record == null || record.getKanjiId() == null) {
+                    continue;
+                }
+
+                if (!"ALL".equals(safeMode)) {
+                    if (record.getMode() == null || !safeMode.equalsIgnoreCase(record.getMode())) {
+                        continue;
+                    }
+                }
+
+                if (topicId != null && (record.getTopicId() == null || !topicId.equals(record.getTopicId()))) {
+                    continue;
+                }
+
+                Long kanjiId = record.getKanjiId();
+                if (seenKanjis.add(kanjiId)) {
+                    if (!record.isCorrect()) {
+                        wrongKanjiIds.add(kanjiId);
+                    }
+                }
+            }
+        }
+
+        return wrongKanjiIds;
+    }
+
+    public Set<Long> getWrongKanjiIds(HttpSession session, String mode) {
+        return getWrongKanjiIds(session, mode, null);
+    }
+
+    public Set<Long> getWrongKanjiIds(HttpSession session) {
+        return getWrongKanjiIds(session, "ALL", null);
+    }
+
+    /**
+     * Lấy tập verbId của các động từ đang ở trạng thái "sai" trong phiên làm việc hiện tại:
+     * Động từ có bản ghi gần nhất là sai. Nếu động từ đó được trả lời đúng ở lần sau thì không còn trong tập.
+     */
+    public Set<Long> getWrongVerbIds(HttpSession session, String mode, Long topicId) {
+        List<PracticeRecordDto> history = getHistory(session);
+        if (history.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        String safeMode = normalizeWrongMode(mode);
+        Set<Long> seenVerbs = new HashSet<>();
+        Set<Long> wrongVerbIds = new LinkedHashSet<>();
+
+        synchronized (history) {
+            for (PracticeRecordDto record : history) {
+                if (record == null || record.getVerbId() == null) {
+                    continue;
+                }
+
+                if (!"ALL".equals(safeMode)) {
+                    if (record.getMode() == null || !safeMode.equalsIgnoreCase(record.getMode())) {
+                        continue;
+                    }
+                }
+
+                if (topicId != null && (record.getTopicId() == null || !topicId.equals(record.getTopicId()))) {
+                    continue;
+                }
+
+                Long verbId = record.getVerbId();
+                if (seenVerbs.add(verbId)) {
+                    if (!record.isCorrect()) {
+                        wrongVerbIds.add(verbId);
+                    }
+                }
+            }
+        }
+
+        return wrongVerbIds;
+    }
+
+    public Set<Long> getWrongVerbIds(HttpSession session, String mode) {
+        return getWrongVerbIds(session, mode, null);
+    }
+
+    public Set<Long> getWrongVerbIds(HttpSession session) {
+        return getWrongVerbIds(session, "ALL", null);
     }
 
     /**

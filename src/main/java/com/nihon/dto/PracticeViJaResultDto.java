@@ -32,4 +32,11 @@ public class PracticeViJaResultDto {
     private Long topicId;
 
     private String feedbackMessage;
+
+    /**
+     * Chuỗi văn bản phục vụ phát âm tiếng Nhật qua Web Speech API.
+     */
+    public String getSpeechText() {
+        return com.nihon.service.SpeechHelper.resolveSpeechText(this.expectedJapanese, this.expectedReading);
+    }
 }

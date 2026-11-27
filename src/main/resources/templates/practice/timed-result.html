@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết quả bài thi tính giờ - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/timed-practice.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('practice')}"></header>
+
+    <main class="timed-container">
+        <!-- Breadcrumbs -->
+        <nav class="timed-breadcrumbs" aria-label="Breadcrumb">
+            <a th:href="@{/}">Trang chủ</a>
+            <span class="separator">/</span>
+            <a th:href="@{/practice}">Luyện tập</a>
+            <span class="separator">/</span>
+            <a th:href="@{/practice/timed}">Tính giờ</a>
+            <span class="separator">/</span>
+            <span>Kết quả</span>
+        </nav>
+
+        <!-- Trophy & Summary Banner -->
+        <div class="timed-result-banner">
+            <div class="timed-result-trophy">
+                <span th:if="${result.correctCount == result.totalQuestions}">🏆</span>
+                <span th:if="${result.correctCount < result.totalQuestions and result.accuracyPercentage >= 70}">🎯</span>
+                <span th:if="${result.accuracyPercentage < 70}">⏱️</span>
+            </div>
+
+            <h1 class="timed-result-title">
+                <span th:if="${result.correctCount == result.totalQuestions}">Điểm Tuyệt Đối! Hoàn Hảo!</span>
+                <span th:if="${result.correctCount < result.totalQuestions and result.accuracyPercentage >= 70}">Làm Bài Rất Tốt!</span>
+                <span th:if="${result.accuracyPercentage < 70}">Hoàn Thành Bài Thi!</span>
+            </h1>
+
+            <p class="timed-result-subtitle">
+                Hình thức: <strong th:text="${result.typeName}">Tính giờ</strong>
+                <span th:if="${result.topicName != null}"> &bull; Chủ đề: <strong th:text="${result.topicName}">Chủ đề 1</strong></span>
+                <span th:if="${result.isSpeedPreset}"> &bull; <strong class="u-color-var-gold">⚡ Đấu trường tốc độ</strong></span>
+            </p>
+
+            <!-- Hết giờ thông báo -->
+            <div th:if="${result.status != null and result.status.name() == 'EXPIRED'}" class="timed-instant-callout is-wrong">
+                <span class="timed-instant-icon">⏰</span>
+                <div class="timed-instant-body">
+                    <h4>Bài thi đã tự động nộp khi hết thời gian giới hạn!</h4>
+                    <p>Toàn bộ các câu hỏi chưa kịp trả lời được tính là sai theo đúng quy chế phòng thi.</p>
+                </div>
+            </div>
+
+            <!-- KPI Metric Cards -->
+            <div class="timed-kpi-grid">
+                <div class="timed-kpi-card">
+                    <div class="timed-kpi-label">Số câu đúng</div>
+                    <div class="timed-kpi-val is-green" th:text="${result.correctCount + ' / ' + result.totalQuestions}">18 / 20</div>
+                </div>
+
+                <div class="timed-kpi-card">
+                    <div class="timed-kpi-label">Tỷ lệ chính xác</div>
+                    <div class="timed-kpi-val is-amber" th:text="${result.accuracyPercentage + '%'}">90%</div>
+                </div>
+
+                <div class="timed-kpi-card">
+                    <div class="timed-kpi-label">Thời gian làm bài</div>
+                    <div class="timed-kpi-val" th:text="${result.timeSpentFormatted}">02:45</div>
+                </div>
+
+                <div class="timed-kpi-card">
+                    <div class="timed-kpi-label">Chuỗi đúng cao nhất</div>
+                    <div class="timed-kpi-val is-flame">
+                        🔥 <span th:text="${result.maxStreak}">5</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table of Detailed Question Review -->
+        <div class="timed-table-card">
+            <div class="timed-table-header">
+                <h3><span>📜</span> Bảng Chi Tiết Bài Làm</h3>
+                <span class="toolbar-label" th:text="${'Tổng cộng ' + result.totalQuestions + ' câu hỏi'}">20 câu</span>
+            </div>
+
+            <div class="timed-table-responsive">
+                <table class="timed-table">
+                    <thead>
+                        <tr>
+                            <th class="u-width-8pct">#</th>
+                            <th class="u-width-30pct">Câu hỏi / Đề bài</th>
+                            <th class="u-width-28pct">Câu trả lời của bạn</th>
+                            <th class="u-width-24pct">Đáp án chuẩn</th>
+                            <th class="u-width-10pct-text-align-center">Kết quả</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="r : ${result.records}">
+                            <td class="u-color-var-text-muted" th:text="${r.questionIndex}">1</td>
+                            <td>
+                                <strong class="u-font-size-1-05rem" th:text="${r.prompt}">わたし</strong>
+                            </td>
+                            <td>
+                                <span th:if="${r.userAnswer != null and !r.userAnswer.isBlank() and !r.userAnswer.equals('(Chưa trả lời)')}"
+                                      th:text="${r.userAnswer}"
+                                      th:classappend="${r.correct ? 'u-color-86efac-font-weight-600' : 'u-color-fca5a5-font-weight-600'}">
+                                    Tôi
+                                </span>
+                                <span th:unless="${r.userAnswer != null and !r.userAnswer.isBlank() and !r.userAnswer.equals('(Chưa trả lời)')}"
+                                      class="badge-timed-unanswered">
+                                    Chưa trả lời
+                                </span>
+                            </td>
+                            <td>
+                                <strong class="u-color-86efac-font-weight-600" th:text="${r.expectedAnswer}">
+                                    Tôi
+                                </strong>
+                            </td>
+                            <td class="u-text-align-center">
+                                <span th:if="${r.correct}" class="badge-timed-correct">✓ Đúng</span>
+                                <span th:if="${!r.correct and r.userAnswer != null and !r.userAnswer.isBlank() and !r.userAnswer.equals('(Chưa trả lời)')}"
+                                      class="badge-timed-wrong">
+                                    ✗ Sai
+                                </span>
+                                <span th:if="${!r.correct and (r.userAnswer == null or r.userAnswer.isBlank() or r.userAnswer.equals('(Chưa trả lời)'))}"
+                                      class="badge-timed-unanswered">
+                                    ⏳ Bỏ qua
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Action Navigation Buttons -->
+        <div class="timed-result-actions">
+            <a th:href="@{/practice/timed}" class="btn-tp-primary">
+                Làm bài mới ⏱️
+            </a>
+            <a th:href="@{/stats(mode='ALL')}" class="btn-tp-secondary">
+                Xem bảng thống kê 📊
+            </a>
+            <a th:href="@{/}" class="btn-tp-secondary">
+                Về trang chủ 🏠
+            </a>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Chế độ luyện tập tính giờ (F42, F50, F17).</p>
+        <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
+    </footer>
+
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+</body>
+</html>

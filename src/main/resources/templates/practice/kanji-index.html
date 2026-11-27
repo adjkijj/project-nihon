@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luyện tập Kanji - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/practice-index.css}">
+    <link rel="stylesheet" th:href="@{/css/kanji-practice.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('practice')}"></header>
+
+    <main>
+        <!-- Chuyển đổi các chế độ luyện tập -->
+        <div class="mode-switcher">
+            <a href="/practice" class="mode-tab">🇯🇵 → 🇻🇳 Nhật → Việt</a>
+            <a href="/practice/vi-ja" class="mode-tab">🇻🇳 → 🇯🇵 Việt → Nhật</a>
+            <a href="/practice/choice" class="mode-tab">🎯 Trắc nghiệm từ vựng</a>
+            <a href="/practice/kanji" class="mode-tab active">漢 Luyện tập Kanji</a>
+            <a href="/practice/studio" class="mode-tab">🎙️ Typing Studio</a>
+        </div>
+
+        <div th:if="${errorMessage}" class="alert-error">
+            <span>⚠️</span>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi.</span>
+        </div>
+
+        <div th:if="${successMessage}" class="alert-success">
+            <span>✓</span>
+            <span th:text="${successMessage}">Thao tác thành công.</span>
+        </div>
+
+        <div class="card kanji-practice-card" th:fragment="kanjiCard">
+            <div class="card-header">
+                <h1><span>漢</span> Chế Độ Luyện Tập Chữ Hán (Kanji)</h1>
+                <p>Nâng cao khả năng ghi nhớ âm đọc On/Kun, phản xạ viết chữ Kanji và nhận diện mặt chữ qua trắc nghiệm.</p>
+            </div>
+
+            <form th:action="@{/practice/kanji/question}" method="get" id="kanjiPracticeForm">
+                <!-- Chọn bài học Kanji -->
+                <div class="form-group">
+                    <label for="topicId">Chọn bài học Kanji</label>
+                    <select id="topicId" name="topicId" class="form-control">
+                        <option value="">-- Tất cả bài học (Ngẫu nhiên toàn bộ Kanji) --</option>
+                        <th:block th:each="group : ${topicGroups}">
+                            <optgroup th:label="${group.parentName}">
+                                <option th:each="child : ${group.children}"
+                                        th:value="${child.id}"
+                                        th:text="${child.name}"
+                                        th:selected="${selectedTopicId != null and selectedTopicId == child.id}">
+                                    Bài 1
+                                </option>
+                            </optgroup>
+                        </th:block>
+                        <th:block th:if="${topicGroups == null or topicGroups.empty}">
+                            <option th:each="t : ${topics}"
+                                    th:value="${t.id}"
+                                    th:text="${t.name}"
+                                    th:selected="${selectedTopicId != null and selectedTopicId == t.id}">
+                                Bài học
+                            </option>
+                        </th:block>
+                    </select>
+                </div>
+
+                <!-- 3 Thẻ dạng bài luyện tập -->
+                <div class="form-group">
+                    <label class="kanji-modes-title">Chọn dạng bài luyện tập</label>
+                    <div class="kanji-mode-cards">
+                        <!-- Dạng 1: Đoán âm đọc -->
+                        <label class="kanji-mode-card" th:classappend="${selectedMode == null or selectedMode == 'KANJI_TO_READING' ? 'selected' : ''}">
+                            <input type="radio" name="mode" value="KANJI_TO_READING"
+                                   th:checked="${selectedMode == null or selectedMode == 'KANJI_TO_READING'}">
+                            <div class="mode-card-content">
+                                <span class="mode-icon">📖</span>
+                                <div class="mode-info">
+                                    <h3 class="mode-title">1. Đoán âm đọc (On / Kun)</h3>
+                                    <p class="mode-desc">Hiện chữ Hán cỡ lớn. Gõ âm On hoặc Kun bất kỳ bằng chữ Kana (chấp nhận cả Katakana và Hiragana).</p>
+                                </div>
+                            </div>
+                        </label>
+
+                        <!-- Dạng 2: Viết chữ Kanji -->
+                        <label class="kanji-mode-card" th:classappend="${selectedMode == 'MEANING_TO_KANJI' ? 'selected' : ''}">
+                            <input type="radio" name="mode" value="MEANING_TO_KANJI"
+                                   th:checked="${selectedMode == 'MEANING_TO_KANJI'}">
+                            <div class="mode-card-content">
+                                <span class="mode-icon">✍️</span>
+                                <div class="mode-info">
+                                    <h3 class="mode-title">2. Viết chữ Kanji</h3>
+                                    <p class="mode-desc">Hiện âm Hán Việt và nghĩa tiếng Việt. Người học sử dụng bộ gõ tiếng Nhật để nhập chính xác ký tự chữ Hán.</p>
+                                </div>
+                            </div>
+                        </label>
+
+                        <!-- Dạng 3: Trắc nghiệm 4 lựa chọn -->
+                        <label class="kanji-mode-card" th:classappend="${selectedMode == 'KANJI_CHOICE' ? 'selected' : ''}">
+                            <input type="radio" name="mode" value="KANJI_CHOICE"
+                                   th:checked="${selectedMode == 'KANJI_CHOICE'}">
+                            <div class="mode-card-content">
+                                <span class="mode-icon">🎯</span>
+                                <div class="mode-info">
+                                    <h3 class="mode-title">3. Trắc nghiệm 4 lựa chọn</h3>
+                                    <p class="mode-desc">Hiện chữ Hán cỡ lớn. Chọn đáp án Hán Việt / ý nghĩa đúng nhất trong 4 phương án ngẫu nhiên.</p>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Nút thao tác -->
+                <div class="practice-action-buttons">
+                    <button type="submit" class="btn btn-primary btn-start-practice">Bắt đầu luyện tập ngay →</button>
+                    <a th:if="${wrongCount > 0}"
+                       th:href="@{/practice/kanji/question(topicId=${selectedTopicId}, mode=${selectedMode}, retryWrongOnly=true)}"
+                       class="btn btn-retry">
+                        <span>🔄</span> Ôn lại Kanji làm sai (<span th:text="${wrongCount}">0</span>)
+                    </a>
+                    <button th:unless="${wrongCount > 0}"
+                            type="button"
+                            class="btn btn-retry disabled"
+                            disabled>
+                        <span>🔄</span> Ôn lại Kanji làm sai (0)
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Chế độ luyện tập ký tự Kanji chuyên sâu.</p>
+        <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
+    </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+</body>
+</html>
+

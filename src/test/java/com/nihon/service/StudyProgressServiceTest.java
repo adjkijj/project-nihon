@@ -1,5 +1,6 @@
 package com.nihon.service;
 
+import com.nihon.dto.PracticeChoiceResultDto;
 import com.nihon.dto.PracticeRecordDto;
 import com.nihon.dto.PracticeResultDto;
 import com.nihon.dto.PracticeViJaResultDto;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpSession;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -298,5 +300,115 @@ class StudyProgressServiceTest {
         assertThat(history).hasSize(StudyProgressService.MAX_SESSION_RECORDS);
         assertThat(history.get(0).getQuestionPrompt()).isEqualTo("Từ #" + (StudyProgressService.MAX_SESSION_RECORDS + 25));
         assertThat(history.get(history.size() - 1).getQuestionPrompt()).isEqualTo("Từ #26");
+    }
+
+    @Test
+    @DisplayName("Ghi nhận và lọc chính xác các bài trắc nghiệm MC_JA_VI và MC_VI_JA")
+    void testChoiceAttemptRecordingAndFiltering() {
+        PracticeChoiceResultDto mcJaVi = PracticeChoiceResultDto.builder()
+                .vocabId(1L)
+                .direction("JA_VI")
+                .questionPrompt("食べる")
+                .selectedAnswerText("ăn")
+                .correctAnswerText("ăn")
+                .correct(true)
+                .feedbackMessage("Chính xác!")
+                .build();
+        studyProgressService.recordChoiceAttempt(session, mcJaVi, 10L);
+
+        PracticeChoiceResultDto mcViJa = PracticeChoiceResultDto.builder()
+                .vocabId(2L)
+                .direction("VI_JA")
+                .questionPrompt("uống")
+                .selectedAnswerText("たべる")
+                .correctAnswerText("のむ")
+                .correct(false)
+                .feedbackMessage("Chưa chính xác!")
+                .build();
+        studyProgressService.recordChoiceAttempt(session, mcViJa, 10L);
+
+        // Lọc theo MC_JA_VI
+        StudyProgressSummaryDto jaViSummary = studyProgressService.getSummary(session, "MC_JA_VI", null);
+        assertThat(jaViSummary.getTotalAnswered()).isEqualTo(1);
+        assertThat(jaViSummary.getCorrectCount()).isEqualTo(1);
+        assertThat(jaViSummary.getCurrentModeFilter()).isEqualTo("MC_JA_VI");
+
+        // Lọc theo MC_VI_JA
+        StudyProgressSummaryDto viJaSummary = studyProgressService.getSummary(session, "MC_VI_JA", null);
+        assertThat(viJaSummary.getTotalAnswered()).isEqualTo(1);
+        assertThat(viJaSummary.getCorrectCount()).isEqualTo(0);
+        assertThat(viJaSummary.getCurrentModeFilter()).isEqualTo("MC_VI_JA");
+
+        // Tổng hợp ALL
+        StudyProgressSummaryDto allSummary = studyProgressService.getSummary(session, "ALL", null);
+        assertThat(allSummary.getTotalAnswered()).isEqualTo(2);
+        assertThat(allSummary.getCorrectCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Test 1: Làm sai 3 từ, đúng 1 trong số đó ở lần sau: tập còn 2")
+    void testWrongVocabTracking_3Wrong_1Corrected_Leaves2() {
+        // Làm sai từ 1, 2, 3 trong JA_VI
+        studyProgressService.recordJaViAttempt(session, PracticeResultDto.builder()
+                .vocabId(1L)
+                .overallCorrect(false)
+                .build(), 10L);
+        studyProgressService.recordJaViAttempt(session, PracticeResultDto.builder()
+                .vocabId(2L)
+                .overallCorrect(false)
+                .build(), 10L);
+        studyProgressService.recordJaViAttempt(session, PracticeResultDto.builder()
+                .vocabId(3L)
+                .overallCorrect(false)
+                .build(), 10L);
+
+        Set<Long> wrongInitial = studyProgressService.getWrongVocabIds(session, "JA_VI", null);
+        assertThat(wrongInitial).containsExactlyInAnyOrder(1L, 2L, 3L);
+
+        // Trả lời đúng từ 2 ở lần sau
+        studyProgressService.recordJaViAttempt(session, PracticeResultDto.builder()
+                .vocabId(2L)
+                .overallCorrect(true)
+                .build(), 10L);
+
+        Set<Long> wrongAfterCorrection = studyProgressService.getWrongVocabIds(session, "JA_VI", null);
+        assertThat(wrongAfterCorrection).hasSize(2)
+                .containsExactlyInAnyOrder(1L, 3L)
+                .doesNotContain(2L);
+    }
+
+    @Test
+    @DisplayName("Test 2: Tập theo mode: từ sai ở JA_VI không lẫn vào tập VI_JA")
+    void testWrongVocabTracking_ModeIsolation_JaViVsViJa() {
+        // Làm sai từ 10 ở JA_VI
+        studyProgressService.recordJaViAttempt(session, PracticeResultDto.builder()
+                .vocabId(10L)
+                .overallCorrect(false)
+                .build(), 1L);
+
+        // Làm sai từ 20 ở VI_JA
+        studyProgressService.recordViJaAttempt(session, PracticeViJaResultDto.builder()
+                .vocabId(20L)
+                .correct(false)
+                .build(), 1L);
+
+        Set<Long> jaViWrong = studyProgressService.getWrongVocabIds(session, "JA_VI", null);
+        Set<Long> viJaWrong = studyProgressService.getWrongVocabIds(session, "VI_JA", null);
+        Set<Long> allWrong = studyProgressService.getWrongVocabIds(session, "ALL", null);
+
+        assertThat(jaViWrong).containsExactly(10L).doesNotContain(20L);
+        assertThat(viJaWrong).containsExactly(20L).doesNotContain(10L);
+        assertThat(allWrong).containsExactlyInAnyOrder(10L, 20L);
+    }
+
+    @Test
+    @DisplayName("Chuẩn hóa chế độ normalizeWrongMode tuân theo whitelist JA_VI, VI_JA, ALL")
+    void testNormalizeWrongModeWhitelist() {
+        assertThat(studyProgressService.normalizeWrongMode("ja_vi")).isEqualTo("JA_VI");
+        assertThat(studyProgressService.normalizeWrongMode("VI_JA")).isEqualTo("VI_JA");
+        assertThat(studyProgressService.normalizeWrongMode("ALL")).isEqualTo("ALL");
+        assertThat(studyProgressService.normalizeWrongMode(null)).isEqualTo("ALL");
+        assertThat(studyProgressService.normalizeWrongMode("")).isEqualTo("ALL");
+        assertThat(studyProgressService.normalizeWrongMode("abc")).isEqualTo("ALL");
     }
 }

@@ -1,0 +1,629 @@
+/*
+ * UI Enhancements - Project Nihon
+ * F02: Responsive navigation & mobile drawer
+ * F03: Micro-interactions CSS (hover, active, subtle lift, slide-in, prefers-reduced-motion)
+ * F04: Accessible confirmation modal & keyboard focus management
+ * WCAG AA Contrast Compliant (>= 4.5:1)
+ */
+
+/* ==========================================================================
+   1. Application Header & Navigation Layout (F02)
+   ========================================================================== */
+
+.app-header {
+    background-color: var(--bg-surface, #1e293b);
+    border-bottom: 1px solid var(--border-color, #334155);
+    padding: 0.85rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.app-header .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: var(--text-primary, #f8fafc);
+    font-weight: 700;
+    font-size: 1.15rem;
+}
+
+.app-header .brand-badge {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #ffffff;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.app-header .brand-title {
+    color: var(--text-primary, #f8fafc);
+    font-weight: 700;
+}
+
+/* Desktop Navigation (>= 768px) */
+.app-header .main-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.app-header .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.app-header .nav-links a,
+.app-header .nav-dropdown-toggle {
+    color: #e2e8f0;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 0.45rem 0.75rem;
+    border-radius: 6px;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: inherit;
+}
+
+.app-header .nav-links a:hover,
+.app-header .nav-links a.active,
+.app-header .nav-dropdown-toggle:hover,
+.app-header .nav-dropdown-toggle.active {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.app-header .nav-links a:focus-visible,
+.app-header .nav-dropdown-toggle:focus-visible,
+.app-header .nav-toggle:focus-visible,
+.dialog-actions button:focus-visible,
+.dialog-close-btn:focus-visible,
+.nav-drawer-close:focus-visible {
+    outline: 2px solid var(--accent, #38bdf8);
+    outline-offset: 2px;
+}
+
+/* Practice Dropdown Menu */
+.nav-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.nav-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 230px;
+    background-color: var(--bg-surface, #1e293b);
+    border: 1px solid var(--border-color, #334155);
+    border-radius: 8px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+    padding: 0.5rem;
+    margin-top: 0.35rem;
+    z-index: 200;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.nav-dropdown.open .nav-dropdown-menu {
+    display: flex;
+}
+
+.nav-dropdown-menu a {
+    color: #e2e8f0;
+    text-decoration: none;
+    font-size: 0.875rem;
+    padding: 0.55rem 0.85rem;
+    border-radius: 6px;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    display: block;
+    white-space: nowrap;
+}
+
+.nav-dropdown-menu a:hover,
+.nav-dropdown-menu a:focus-visible,
+.nav-dropdown-menu a.active {
+    background-color: rgba(56, 189, 248, 0.18);
+    color: #ffffff;
+}
+
+.dropdown-caret {
+    font-size: 0.75rem;
+    transition: transform 0.2s ease;
+    display: inline-block;
+}
+
+.nav-dropdown.open .dropdown-caret {
+    transform: rotate(180deg);
+}
+
+/* Hamburger button (Desktop hidden) */
+.nav-toggle {
+    display: none;
+    background: transparent;
+    border: 1px solid var(--border-color, #334155);
+    border-radius: 6px;
+    padding: 0.5rem;
+    cursor: pointer;
+    color: var(--text-primary, #f8fafc);
+    flex-direction: column;
+    justify-content: space-around;
+    width: 2.6rem;
+    height: 2.6rem;
+    box-sizing: border-box;
+}
+
+.hamburger-bar {
+    width: 1.35rem;
+    height: 2px;
+    background-color: currentColor;
+    border-radius: 2px;
+    transition: all 0.2s ease;
+    display: block;
+    margin: 2px auto;
+}
+
+.nav-drawer-header {
+    display: none;
+}
+
+.nav-backdrop {
+    display: none;
+}
+
+/* TTS Speed Control on Navbar */
+.app-header .nav-extra {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.tts-speed-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.tts-speed-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #94a3b8);
+    font-weight: 500;
+}
+
+.tts-speed-select {
+    padding: 0.35rem 0.55rem;
+    font-size: 0.825rem;
+    font-family: inherit;
+    font-weight: 600;
+    color: var(--text-primary, #f8fafc);
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color, #334155);
+    border-radius: 6px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.tts-speed-select:hover,
+.tts-speed-select:focus {
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.4);
+    background-color: var(--bg-surface, #1e293b);
+}
+
+.tts-speed-select option {
+    background-color: #1e293b;
+    color: #f8fafc;
+}
+
+/* ==========================================================================
+   2. Responsive Mobile Drawer (F02: max-width 767.98px)
+   ========================================================================== */
+
+@media (max-width: 767.98px) {
+    .app-header {
+        padding: 0.75rem 1rem;
+    }
+
+    .nav-toggle {
+        display: flex;
+    }
+
+    /* Mobile Backdrop */
+    .nav-backdrop {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.65);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease;
+        z-index: 998;
+    }
+
+    .nav-backdrop.show {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* Off-canvas Navigation Drawer */
+    .app-header .main-nav {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: min(320px, 85vw);
+        height: 100vh;
+        height: 100dvh;
+        background-color: var(--bg-surface, #1e293b);
+        border-left: 1px solid var(--border-color, #334155);
+        box-shadow: -4px 0 24px rgba(0, 0, 0, 0.5);
+        transform: translateX(100%);
+        transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 999;
+        display: flex;
+        flex-direction: column;
+        padding: 1.25rem;
+        overflow-y: auto;
+        gap: 1rem;
+    }
+
+    .app-header .main-nav.open {
+        transform: translateX(0);
+    }
+
+    .nav-drawer-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border-color, #334155);
+    }
+
+    .drawer-title {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: var(--text-primary, #f8fafc);
+    }
+
+    .nav-drawer-close {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary, #94a3b8);
+        font-size: 1.75rem;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-family: inherit;
+    }
+
+    .nav-drawer-close:hover {
+        color: #ffffff;
+    }
+
+    .app-header .nav-links {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.4rem;
+        width: 100%;
+    }
+
+    .app-header .nav-links a,
+    .app-header .nav-dropdown-toggle {
+        width: 100%;
+        padding: 0.65rem 0.85rem;
+        font-size: 1rem;
+        justify-content: space-between;
+        box-sizing: border-box;
+    }
+
+    .nav-dropdown {
+        width: 100%;
+    }
+
+    .nav-dropdown-menu {
+        position: static;
+        display: none;
+        box-shadow: none;
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        background-color: rgba(15, 23, 42, 0.6);
+        margin-top: 0.25rem;
+        padding: 0.35rem 0.5rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .nav-dropdown.open .nav-dropdown-menu {
+        display: flex;
+    }
+
+    .nav-dropdown-menu a {
+        padding: 0.6rem 0.75rem;
+        font-size: 0.95rem;
+    }
+
+    .app-header .nav-extra {
+        margin-top: auto;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color, #334155);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        flex-wrap: wrap;
+    }
+}
+
+/* ==========================================================================
+   3. Micro-interactions CSS (F03)
+   ========================================================================== */
+
+/* Button hover color transition */
+button,
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.btn-next,
+.btn-next-question,
+a.btn,
+.nav-dropdown-toggle,
+.nav-toggle,
+.furigana-toggle-btn {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
+}
+
+/* Button active pressed (lún nhẹ) */
+button:active,
+.btn:active,
+.btn-primary:active,
+.btn-secondary:active,
+.btn-danger:active,
+.btn-next:active,
+.btn-next-question:active,
+a.btn:active,
+.nav-toggle:active,
+.furigana-toggle-btn:active {
+    transform: translateY(1.5px) scale(0.985);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+/* Card subtle lift on hover (thẻ nổi nhẹ khi rê chuột) */
+.card,
+.module-card,
+.kpi-card,
+.vocab-card,
+.reading-card,
+.practice-card,
+.table-card,
+.error-card,
+.stat-card,
+.topic-card,
+.choice-card,
+.detail-card,
+.form-card,
+.flashcard {
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card:hover,
+.module-card:hover,
+.kpi-card:hover,
+.vocab-card:hover,
+.reading-card:hover,
+.practice-card:hover,
+.stat-card:hover,
+.choice-card:hover,
+.topic-card:hover {
+    transform: translateY(-2.5px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+}
+
+/* Notifications slide-in animation (thông báo thành công và lỗi trượt vào) */
+.alert,
+.alert-success,
+.alert-error,
+.alert-danger,
+.status-banner,
+.warning-notice,
+.retry-banner,
+.success-message,
+.error-message,
+.flash-message {
+    animation: uiSlideInDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes uiSlideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Prefers Reduced Motion: disable all animations and transforms */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
+    }
+}
+
+/* ==========================================================================
+   4. Accessible Confirmation Dialog & Modal (F04)
+   ========================================================================== */
+
+.nihon-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--bg-surface, #1e293b);
+    color: var(--text-primary, #f8fafc);
+    border: 1px solid var(--border-color, #334155);
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+    padding: 0;
+    max-width: 480px;
+    width: calc(100% - 2rem);
+    z-index: 1100;
+}
+
+.nihon-dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(2px);
+}
+
+.nihon-dialog .dialog-card {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.nihon-dialog .dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.nihon-dialog .dialog-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin: 0;
+}
+
+.nihon-dialog .dialog-close-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: inherit;
+}
+
+.nihon-dialog .dialog-close-btn:hover {
+    color: #f8fafc;
+}
+
+.nihon-dialog .dialog-body {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #e2e8f0;
+}
+
+.nihon-dialog .dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.nihon-dialog .dialog-actions .btn {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    font-family: inherit;
+}
+
+.nihon-dialog .dialog-actions .btn-secondary {
+    background-color: #334155;
+    color: #f8fafc;
+    border-color: #475569;
+}
+
+.nihon-dialog .dialog-actions .btn-secondary:hover {
+    background-color: #475569;
+    color: #ffffff;
+}
+
+.nihon-dialog .dialog-actions .btn-danger {
+    background-color: #dc2626;
+    color: #ffffff;
+    border-color: #ef4444;
+}
+
+.nihon-dialog .dialog-actions .btn-danger:hover {
+    background-color: #b91c1c;
+}
+
+/* Fallback when <dialog> is displayed via CSS class without showModal */
+.nihon-dialog:not([open]) {
+    display: none;
+}
+
+/* ==========================================================================
+   Practice Auto-Next Setting (nihon_auto_next)
+   ========================================================================== */
+
+.auto-next-setting {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.85rem;
+    margin-bottom: 0.5rem;
+}
+
+.auto-next-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary, #94a3b8);
+    cursor: pointer;
+    user-select: none;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color, #334155);
+    background-color: var(--bg-card, #1e293b);
+    transition: all 0.2s ease;
+}
+
+.auto-next-label:hover {
+    color: var(--text-primary, #f8fafc);
+    border-color: var(--accent, #38bdf8);
+}
+
+.auto-next-checkbox {
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: var(--accent, #38bdf8);
+    cursor: pointer;
+}
+
+

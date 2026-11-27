@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết quả luyện tập Kanji - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/practice-index.css}">
+    <link rel="stylesheet" th:href="@{/css/practice-result.css}">
+    <link rel="stylesheet" th:href="@{/css/kanji-practice.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <link rel="stylesheet" th:href="@{/css/history.css}">
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('practice')}"></header>
+
+    <main>
+        <div class="result-card">
+            <!-- Header kết quả đúng/sai -->
+            <div class="result-header" th:classappend="${result.correct ? 'correct' : 'incorrect'}">
+                <div class="result-icon">
+                    <span th:if="${result.correct}">✓</span>
+                    <span th:unless="${result.correct}">✗</span>
+                </div>
+                <div>
+                    <h1 th:if="${result.correct}">Chính xác! Xuất sắc!</h1>
+                    <h1 th:unless="${result.correct}">Chưa chính xác</h1>
+                    <p th:text="${result.feedbackMessage}">Phản hồi đáp án.</p>
+                </div>
+            </div>
+
+            <!-- Khung thông tin chữ Kanji được luyện tập -->
+            <div class="kanji-result-detail">
+                <div class="kanji-result-char-box">
+                    <div class="result-char" th:text="${result.character}">字</div>
+                    <a th:href="@{'/kanji/' + ${result.kanjiId}}" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">
+                        Xem chi tiết Kanji ↗
+                    </a>
+                </div>
+
+                <div class="result-fields-grid">
+                    <div class="result-field-item">
+                        <span class="field-label">Câu trả lời của bạn:</span>
+                        <span class="field-val" th:text="${result.userAnswer.isEmpty() ? '(Để trống)' : result.userAnswer}"
+                              th:classappend="${result.correct ? 'val-correct' : 'val-wrong'}">
+                            user answer
+                        </span>
+                    </div>
+
+                    <div class="result-field-item">
+                        <span class="field-label">Đáp án chuẩn:</span>
+                        <span class="field-val val-expected" th:text="${result.expectedAnswer}">
+                            expected answer
+                        </span>
+                    </div>
+
+                    <div class="result-field-item" th:if="${result.hanViet != null and !result.hanViet.isBlank()}">
+                        <span class="field-label">Âm Hán Việt:</span>
+                        <strong class="field-val" th:text="${result.hanViet}">HÁN VIỆT</strong>
+                    </div>
+
+                    <div class="result-field-item" th:if="${result.meaningVi != null and !result.meaningVi.isBlank()}">
+                        <span class="field-label">Ý nghĩa:</span>
+                        <span class="field-val" th:text="${result.meaningVi}">Ý nghĩa</span>
+                    </div>
+
+                    <div class="result-field-item" th:if="${result.onyomi != null and !result.onyomi.isBlank()}">
+                        <span class="field-label">Âm On (Katakana):</span>
+                        <span class="field-val onyomi-text" th:text="${result.onyomi}">オン</span>
+                    </div>
+
+                    <div class="result-field-item" th:if="${result.kunyomi != null and !result.kunyomi.isBlank()}">
+                        <span class="field-label">Âm Kun (Hiragana):</span>
+                        <span class="field-val kunyomi-text" th:text="${result.kunyomi}">くん</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thông báo khi hoàn thành phiên ôn từ sai -->
+            <div th:if="${retryCompleted}" class="alert-success u-margin-top-1-5rem">
+                <span>🎉</span>
+                <span>Tuyệt vời! Bạn đã hoàn thành việc ôn lại tất cả các chữ Kanji làm sai trong phiên này!</span>
+            </div>
+
+            <!-- Các nút hành động tiếp theo -->
+            <div class="result-actions">
+                <a th:href="@{/practice/kanji/question(topicId=${result.topicId}, mode=${result.mode.name()}, retryWrongOnly=${retryWrongOnly})}"
+                   class="btn btn-primary btn-next-kanji"
+                   id="btn-next-question">
+                    Câu tiếp theo →
+                </a>
+
+                <a th:if="${wrongCount > 0 and !retryWrongOnly}"
+                   th:href="@{/practice/kanji/question(topicId=${result.topicId}, mode=${result.mode.name()}, retryWrongOnly=true)}"
+                   class="btn btn-retry">
+                    <span>🔄</span> Ôn lại Kanji làm sai (<span th:text="${wrongCount}">0</span>)
+                </a>
+
+                <a th:href="@{/practice/kanji(topicId=${result.topicId}, mode=${result.mode.name()})}"
+                   class="btn btn-secondary">
+                    Đổi dạng bài / Chủ đề
+                </a>
+
+                <a href="/stats" class="btn btn-secondary">
+                    Xem thống kê 📊
+                </a>
+            </div>
+
+            <!-- Thống kê tiến độ phiên hiện tại -->
+            <div class="session-stats-summary" th:if="${sessionStats != null and sessionStats.totalAnswered > 0}">
+                <h3>Tiến độ phiên luyện tập</h3>
+                <div class="stats-mini-grid">
+                    <div class="stat-mini-item">
+                        <span class="mini-label">Đã làm:</span>
+                        <strong th:text="${sessionStats.totalAnswered}">0</strong>
+                    </div>
+                    <div class="stat-mini-item">
+                        <span class="mini-label">Đúng:</span>
+                        <strong class="u-color-86efac" th:text="${sessionStats.correctCount}">0</strong>
+                    </div>
+                    <div class="stat-mini-item">
+                        <span class="mini-label">Sai:</span>
+                        <strong class="u-color-f87171" th:text="${sessionStats.incorrectCount}">0</strong>
+                    </div>
+                    <div class="stat-mini-item">
+                        <span class="mini-label">Độ chính xác:</span>
+                        <strong th:text="${sessionStats.accuracyPercentage + '%'}">0%</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+            <form th:action="@{/history/end-session}" method="post" class="end-session-form">
+            <input type="hidden" name="_csrf" th:value="${_csrf}">
+            <button type="submit" class="btn-end-session">Kết thúc buổi học</button>
+            <p class="end-session-hint">Lưu kết quả buổi học vào <a th:href="@{/history}">Lịch sử</a> của bạn.</p>
+        </form>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Chế độ luyện tập Kanji.</p>
+        <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
+    </footer>
+
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+</body>
+</html>
+

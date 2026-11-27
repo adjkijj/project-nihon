@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Danh sách đề thi - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/exams-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/exam.css}">
+    <th:block th:replace="~{fragments/navbar :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <th:block th:replace="~{fragments/navbar :: scripts}"></th:block>
+</head>
+<body>
+    <th:block th:replace="~{fragments/navbar :: headerNav('exams')}"></th:block>
+
+    <main class="container">
+        <!-- Thông báo Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success mt-3" th:text="${successMessage}">
+            Thông báo thành công
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger mt-3" th:text="${errorMessage}">
+            Thông báo lỗi
+        </div>
+
+        <!-- Tiêu đề trang & Thanh công cụ -->
+        <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3 mt-4 mb-4">
+            <div>
+                <h1 class="page-title mb-1">📝 Đề thi & Luyện tập chính thức</h1>
+                <p class="text-secondary mb-0">Các đề thi thử JLPT, kiểm tra định kỳ và bài luyện tập được giáo viên xuất bản</p>
+            </div>
+            <div class="action-buttons">
+                <a th:href="@{/exams/admin}" class="btn btn-secondary">
+                    <span>⚙️</span>
+                    <span>Quản trị đề thi</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Bộ lọc danh mục đề thi -->
+        <div class="card mb-4">
+            <form th:action="@{/exams}" method="get" class="search-form">
+                <div class="filter-group">
+                    <label for="categoryFilter" class="filter-label">Loại đề thi:</label>
+                    <select id="categoryFilter" name="category" class="form-control">
+                        <option value="" th:selected="${selectedCategory == ''}">-- Tất cả thể loại --</option>
+                        <option th:each="cat : ${categories}"
+                                th:value="${cat.name()}"
+                                th:text="${cat.displayName}"
+                                th:selected="${selectedCategory == cat.name()}">
+                            Thi thử (Mock Test)
+                        </option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Lọc đề</button>
+                <a th:href="@{/exams}" class="btn btn-secondary" th:if="${selectedCategory != null and !selectedCategory.isEmpty()}">
+                    Bỏ lọc
+                </a>
+            </form>
+        </div>
+
+        <!-- Danh sách Đề thi (Cards Grid) -->
+        <div th:if="${exams == null or exams.isEmpty()}" class="empty-state card text-center p-5">
+            <div class="empty-icon font-size-xl">📚</div>
+            <h3 class="mt-3">Hiện chưa có đề thi nào trong danh mục này</h3>
+            <p class="text-secondary">Vui lòng chọn danh mục khác hoặc quay lại sau khi giáo viên xuất bản thêm đề mới.</p>
+            <div class="mt-3">
+                <a th:href="@{/exams}" class="btn btn-primary">Xem tất cả đề thi</a>
+            </div>
+        </div>
+
+        <div th:if="${exams != null and !exams.isEmpty()}" class="grid-cards">
+            <div th:each="paper : ${exams}" class="card exam-card d-flex flex-column justify-content-between">
+                <div>
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge badge-published" th:text="${paper.category.displayName}">Thi thử JLPT</span>
+                        <code class="text-accent font-weight-bold" th:text="${paper.code}">N5-EXAM-01</code>
+                    </div>
+                    <h2 class="card-title h4 mb-2">
+                        <a th:href="@{/exams/{code}(code=${paper.code})}" class="text-primary-dark" th:text="${paper.title}">
+                            Đề thi thử JLPT N5 - Đề số 1
+                        </a>
+                    </h2>
+                    <p class="text-secondary font-size-sm mb-3"
+                       th:text="${paper.description != null && !paper.description.isBlank() ? paper.description : 'Đề thi thực hành kiểm tra toàn diện từ vựng, ngữ pháp và đọc hiểu tiếng Nhật.'}">
+                        Mô tả tóm tắt nội dung đề thi...
+                    </p>
+                </div>
+
+                <div>
+                    <div class="exam-meta-grid mb-3">
+                        <div class="exam-meta-item">
+                            <div class="exam-meta-label">Thời gian</div>
+                            <div class="exam-meta-val"><span th:text="${paper.durationMinutes}">50</span>'</div>
+                        </div>
+                        <div class="exam-meta-item">
+                            <div class="exam-meta-label">Số câu</div>
+                            <div class="exam-meta-val" th:text="${paper.totalQuestions}">30</div>
+                        </div>
+                        <div class="exam-meta-item">
+                            <div class="exam-meta-label">Tổng điểm</div>
+                            <div class="exam-meta-val"><span th:text="${paper.totalPoints}">100</span>đ</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <a th:href="@{/exams/{code}(code=${paper.code})}" class="btn btn-primary w-100 text-center">
+                            <span>Vào phòng thi</span>
+                            <span>➔</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

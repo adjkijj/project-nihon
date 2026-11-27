@@ -52,4 +52,22 @@ secrets/
 application-secret*.properties
 application-secret*.yml
 
+### Logs, Database Dumps & Temporary Files ###
+*.log
+*.bak
+*.tmp
+*.swp
+*.dump
+~$*.xlsx
+.DS_Store
+Thumbs.db
+.idea/
+
+### Internal Intermediary Analysis Documents (Excluded from Release) ###
+docs/FEATURE_GAP.md
+docs/REFERENCE_FEATURES.md
+docs/HANDOVER_CLEANUP_REPORT.md
+docs/VERIFICATION_REPORT.md
+
+
 

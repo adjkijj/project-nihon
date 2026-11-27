@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${paper.title} + ' - Quản trị Đề thi'">Chi tiết Đề thi - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/exams-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/exams-admin.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('exams')}"></header>
+
+    <main class="exam-admin-container">
+        <!-- Page Header & Action Toolbar -->
+        <div class="page-header">
+            <div class="page-title">
+                <h1>
+                    <span class="title-badge">考</span>
+                    <span th:text="${paper.title}">Tên đề thi</span>
+                </h1>
+                <p>
+                    <span>Mã đề: <strong th:text="${paper.code}">N5-01</strong></span>
+                    <span class="ml-2" th:if="${paper.topic != null}">| Chủ đề: <strong th:text="${paper.topic.name}">Bài 1</strong></span>
+                </p>
+            </div>
+            <div class="action-buttons">
+                <a th:href="@{/exams/admin/{id}/preview(id=${paper.id})}" class="btn btn-outline" title="Xem trước toàn bộ đề">👁️ Xem trước</a>
+                <a th:href="@{/exams/admin/{id}/export(id=${paper.id})}" class="btn btn-outline" title="Xuất đề thi ra Excel">📤 Xuất Excel</a>
+                <a th:href="@{/exams/admin/{id}/edit(id=${paper.id})}" class="btn btn-secondary" title="Sửa thông tin chung">✏️ Sửa đề</a>
+
+                <form th:action="@{/exams/admin/{id}/publish(id=${paper.id})}" method="post">
+                    <button type="submit"
+                            class="btn"
+                            th:classappend="${paper.published} ? 'btn-secondary' : 'btn-success'"
+                            th:text="${paper.published} ? '🔒 Hủy xuất bản' : '🚀 Xuất bản'">Xuất bản</button>
+                </form>
+
+                <form th:action="@{/exams/admin/{id}/delete(id=${paper.id})}"
+                      method="post"
+                      data-confirm="Bạn có chắc chắn muốn xóa đề thi này không? Toàn bộ các phần thi và câu hỏi bên trong sẽ bị xóa vĩnh viễn!">
+                    <button type="submit" class="btn btn-danger" title="Xóa toàn bộ đề thi">🗑️ Xóa</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success" role="status">
+            <span class="alert-icon">✓</span>
+            <span th:text="${successMessage}">Thao tác thành công!</span>
+        </div>
+
+        <div th:if="${errorMessage}" class="alert alert-error" role="alert">
+            <span class="alert-icon">⚠️</span>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi.</span>
+        </div>
+
+        <!-- Meta Summary Grid -->
+        <div class="exam-meta-grid">
+            <div class="exam-meta-item">
+                <span class="exam-meta-label">Trạng thái</span>
+                <span th:if="${paper.published}" class="badge badge-published">Đã xuất bản</span>
+                <span th:unless="${paper.published}" class="badge badge-draft">Bản nháp</span>
+            </div>
+            <div class="exam-meta-item">
+                <span class="exam-meta-label">Phân loại</span>
+                <span class="badge"
+                      th:classappend="${paper.category.name() == 'MIDTERM' ? 'badge-midterm' : (paper.category.name() == 'MOCK' ? 'badge-mock' : (paper.category.name() == 'QUICK_TEST' ? 'badge-quick-test' : 'badge-review'))}"
+                      th:text="${paper.category.displayName}">Giữa kỳ</span>
+            </div>
+            <div class="exam-meta-item">
+                <span class="exam-meta-label">Thời lượng</span>
+                <span class="exam-meta-value"><span th:text="${paper.durationMinutes}">60</span> phút</span>
+            </div>
+            <div class="exam-meta-item">
+                <span class="exam-meta-label">Số phần thi</span>
+                <span class="exam-meta-value"><span th:text="${paper.sections.size()}">0</span> / 10</span>
+            </div>
+            <div class="exam-meta-item">
+                <span class="exam-meta-label">Tổng số câu hỏi</span>
+                <span class="exam-meta-value"><span th:text="${paper.totalQuestions}">0</span> / 200</span>
+            </div>
+            <div class="exam-meta-item">
+                <span class="exam-meta-label">Tổng điểm</span>
+                <span class="exam-meta-value"><span th:text="${paper.totalPoints}">0.0</span> đ</span>
+            </div>
+        </div>
+
+        <!-- Description if present -->
+        <div class="card" th:if="${paper.description != null && !paper.description.isBlank()}">
+            <div class="card-title"><span>📝</span> Mô tả đề thi</div>
+            <p class="text-secondary mt-2" th:text="${paper.description}">Mô tả chi tiết...</p>
+        </div>
+
+        <!-- Section List -->
+        <div th:each="section : ${paper.sections}" class="exam-section-card">
+            <!-- Section Header -->
+            <div class="exam-section-header">
+                <div class="exam-section-title-wrap">
+                    <span class="exam-section-badge" th:text="'Phần ' + ${section.sortOrder}">Phần 1</span>
+                    <h3 class="exam-section-title" th:text="${section.title}">Từ vựng &amp; Kanji</h3>
+                </div>
+                <div class="cell-actions">
+                    <!-- Reorder Section Buttons -->
+                    <form th:action="@{/exams/admin/sections/{sid}/reorder(sid=${section.id})}" method="post">
+                        <input type="hidden" name="paperId" th:value="${paper.id}" />
+                        <input type="hidden" name="direction" value="up" />
+                        <button type="submit" class="btn btn-secondary btn-sm" title="Di chuyển phần lên">▲</button>
+                    </form>
+                    <form th:action="@{/exams/admin/sections/{sid}/reorder(sid=${section.id})}" method="post">
+                        <input type="hidden" name="paperId" th:value="${paper.id}" />
+                        <input type="hidden" name="direction" value="down" />
+                        <button type="submit" class="btn btn-secondary btn-sm" title="Di chuyển phần xuống">▼</button>
+                    </form>
+
+                    <!-- Add Question Button -->
+                    <a th:href="@{/exams/admin/sections/{sid}/questions/new(sid=${section.id}, paperId=${paper.id})}"
+                       class="btn btn-primary btn-sm"
+                       title="Thêm câu hỏi mới vào phần này">+ Thêm câu hỏi</a>
+
+                    <!-- Delete Section Button -->
+                    <form th:action="@{/exams/admin/sections/{sid}/delete(sid=${section.id})}"
+                          method="post"
+                          data-confirm="Bạn có chắc chắn muốn xóa phần thi này không? Toàn bộ các câu hỏi bên trong phần sẽ bị xóa!">
+                        <input type="hidden" name="paperId" th:value="${paper.id}" />
+                        <button type="submit" class="btn btn-danger btn-sm" title="Xóa phần thi">Xóa phần</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Section Instructions -->
+            <div class="exam-section-instructions" th:if="${section.instructions != null && !section.instructions.isBlank()}">
+                <span>📌 Hướng dẫn: </span>
+                <span th:text="${section.instructions}">Đọc kỹ đoạn văn và chọn đáp án đúng nhất...</span>
+            </div>
+
+            <!-- Questions in Section -->
+            <div class="question-list">
+                <div th:if="${section.questions.isEmpty()}" class="p-3 text-center text-muted">
+                    <span>Phần thi này chưa có câu hỏi nào. </span>
+                    <a th:href="@{/exams/admin/sections/{sid}/questions/new(sid=${section.id}, paperId=${paper.id})}"
+                       class="text-accent font-weight-bold">Bấm vào đây để thêm câu hỏi đầu tiên</a>.
+                </div>
+
+                <div th:each="q : ${section.questions}" class="question-item">
+                    <div class="question-item-header">
+                        <div class="question-meta">
+                            <span class="question-number" th:text="'Câu ' + ${q.sortOrder} + '.'">Câu 1.</span>
+                            <!-- Question Type Badge -->
+                            <span class="badge"
+                                  th:classappend="${q.type.name() == 'MULTIPLE_CHOICE' ? 'badge-type-mc' : (q.type.name() == 'TYPING' ? 'badge-type-typing' : (q.type.name() == 'ORDERING' ? 'badge-type-ordering' : (q.type.name() == 'TRANSLATION' ? 'badge-type-translation' : 'badge-type-essay')))}"
+                                  th:text="${q.type.displayName}">Trắc nghiệm</span>
+                            <span class="question-points" th:text="'(' + ${q.points} + ' điểm)'">(1.00 điểm)</span>
+                        </div>
+                        <div class="cell-actions">
+                            <!-- Reorder Question -->
+                            <form th:action="@{/exams/admin/questions/{qid}/reorder(qid=${q.id})}" method="post">
+                                <input type="hidden" name="paperId" th:value="${paper.id}" />
+                                <input type="hidden" name="direction" value="up" />
+                                <button type="submit" class="btn btn-secondary btn-sm" title="Di chuyển câu hỏi lên">▲</button>
+                            </form>
+                            <form th:action="@{/exams/admin/questions/{qid}/reorder(qid=${q.id})}" method="post">
+                                <input type="hidden" name="paperId" th:value="${paper.id}" />
+                                <input type="hidden" name="direction" value="down" />
+                                <button type="submit" class="btn btn-secondary btn-sm" title="Di chuyển câu hỏi xuống">▼</button>
+                            </form>
+                            <!-- Edit Question -->
+                            <a th:href="@{/exams/admin/questions/{qid}/edit(qid=${q.id}, paperId=${paper.id})}"
+                               class="btn btn-secondary btn-sm"
+                               title="Sửa câu hỏi">Sửa</a>
+                            <!-- Delete Question -->
+                            <form th:action="@{/exams/admin/questions/{qid}/delete(qid=${q.id})}"
+                                  method="post"
+                                  data-confirm="Bạn có chắc chắn muốn xóa câu hỏi này không?">
+                                <input type="hidden" name="paperId" th:value="${paper.id}" />
+                                <button type="submit" class="btn btn-danger btn-sm" title="Xóa câu hỏi">Xóa</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Question Prompts -->
+                    <div th:if="${q.promptJa != null && !q.promptJa.isBlank()}"
+                         class="question-prompt-ja"
+                         th:text="${q.promptJa}">問題の日本語文</div>
+                    <div th:if="${q.promptVi != null && !q.promptVi.isBlank()}"
+                         class="question-prompt-vi"
+                         th:text="${q.promptVi}">Đề bài tiếng Việt hoặc dịch nghĩa</div>
+
+                    <!-- MULTIPLE_CHOICE Choices -->
+                    <div th:if="${q.type.name() == 'MULTIPLE_CHOICE'}" class="question-choices">
+                        <div th:each="c, cStat : ${q.choices}"
+                             class="choice-box"
+                             th:classappend="${c.correct} ? 'correct' : ''">
+                            <span class="choice-label" th:text="${cStat.index + 1}">1</span>
+                            <span th:text="${c.text}">Nội dung phương án</span>
+                            <span th:if="${c.correct}" class="ml-auto text-success">✓ Đúng</span>
+                        </div>
+                    </div>
+
+                    <!-- ORDERING Choices & Slots -->
+                    <div th:if="${q.type.name() == 'ORDERING'}">
+                        <div class="question-choices">
+                            <div th:each="c, cStat : ${q.choices}" class="choice-box">
+                                <span class="choice-label" th:text="${cStat.index + 1}">1</span>
+                                <span th:text="${c.text}">Mảnh từ</span>
+                            </div>
+                        </div>
+                        <div class="question-answer-box mt-2">
+                            <div th:each="ak : ${q.answerKeys}">
+                                <span th:if="${ak.answerText.startsWith('ORDER:')}" class="answer-key-tag">
+                                    Thứ tự đúng: <strong th:text="${ak.answerText.substring(6)}">1,3,2,4</strong>
+                                </span>
+                                <span th:if="${ak.answerText.startsWith('STAR:')}" class="star-indicator ml-3">
+                                    Vị trí ngôi sao ★: Vị trí <strong th:text="${ak.answerText.substring(5)}" class="ml-1">3</strong>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TYPING Answer Keys -->
+                    <div th:if="${q.type.name() == 'TYPING'}" class="question-answer-box">
+                        <div>
+                            <span class="answer-key-tag">Đáp án chấp nhận:</span>
+                            <span th:each="ak, aStat : ${q.answerKeys}"
+                                  th:if="${ak.kind.name() == 'ACCEPTED'}">
+                                <code th:text="${ak.answerText}">nihon</code><span th:unless="${aStat.last}"> | </span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- TRANSLATION Answer Keys -->
+                    <div th:if="${q.type.name() == 'TRANSLATION'}" class="question-answer-box">
+                        <div th:each="ak : ${q.answerKeys}">
+                            <div th:if="${ak.kind.name() == 'ACCEPTED'}">
+                                <span class="answer-key-tag">Đáp án chấp nhận:</span>
+                                <code th:text="${ak.answerText}">bản dịch</code>
+                            </div>
+                            <div th:if="${ak.kind.name() == 'SAMPLE'}">
+                                <span class="answer-key-tag">Câu dịch mẫu:</span>
+                                <span class="text-secondary" th:text="${ak.answerText}">Câu mẫu</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ESSAY Answer Keys -->
+                    <div th:if="${q.type.name() == 'ESSAY'}" class="question-answer-box">
+                        <div th:each="ak : ${q.answerKeys}">
+                            <div th:if="${ak.kind.name() == 'SAMPLE'}">
+                                <span class="answer-key-tag">Bài viết mẫu:</span>
+                                <span class="text-secondary" th:text="${ak.answerText}">Nội dung bài viết mẫu...</span>
+                            </div>
+                            <div th:if="${ak.kind.name() == 'KEYWORD'}">
+                                <span class="answer-key-tag">Từ khóa chấm điểm:</span>
+                                <span class="badge badge-draft mr-1" th:text="${ak.answerText}">từ khóa</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Explanation if present -->
+                    <div th:if="${q.explanation != null && !q.explanation.isBlank()}" class="question-explanation">
+                        <strong>💡 Giải thích: </strong>
+                        <span th:text="${q.explanation}">Giải thích chi tiết ngữ pháp hoặc từ vựng...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add New Section Card -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <span>➕</span>
+                    <span>Thêm phần thi mới (Tối đa 10 phần)</span>
+                </h3>
+            </div>
+            <form th:action="@{/exams/admin/{id}/sections(id=${paper.id})}"
+                  th:object="${newSectionForm}"
+                  method="post"
+                  class="exam-form">
+
+                <input type="hidden" name="paperId" th:value="${paper.id}" />
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label for="newSectionTitle">Tiêu đề phần thi <span class="text-danger">*</span></label>
+                        <input type="text" id="newSectionTitle" name="title" class="form-control"
+                               placeholder="Ví dụ: Kiến thức ngôn ngữ (Từ vựng, Kanji, Ngữ pháp)" required maxlength="255" />
+                    </div>
+                    <div class="form-group">
+                        <label for="newSectionInstructions">Hướng dẫn phần thi (tùy chọn)</label>
+                        <input type="text" id="newSectionInstructions" name="instructions" class="form-control"
+                               placeholder="Ví dụ: Chọn phương án đúng nhất từ 1 đến 4..." maxlength="1000" />
+                    </div>
+                </div>
+
+                <div class="action-buttons mt-3 justify-content-end">
+                    <button type="submit" class="btn btn-primary">+ Tạo phần thi</button>
+                </div>
+            </form>
+        </div>
+    </main>
+</body>
+</html>
+

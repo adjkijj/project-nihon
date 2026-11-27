@@ -5,29 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kiểm tra phản xạ từ vựng Nhật → Việt - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/practice-index.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/practice-next.js}" defer></script>
 </head>
 <body>
-    <header>
-        <a href="/" class="brand">
-            <span class="brand-badge">日</span>
-            <span>Project Nihon</span>
-        </a>
-        <nav>
-            <a href="/">Trang chủ</a>
-            <a href="/vocabulary">Từ vựng</a>
-            <a href="/topics">Chủ đề</a>
-            <a href="/kanji">Kanji</a>
-            <a href="/practice" class="active">Luyện tập</a>
-            <a href="/stats">Thống kê</a>
-        </nav>
-    </header>
+    <header th:replace="~{fragments/navbar :: headerNav('practice')}"></header>
 
     <main>
         <!-- Mode Switcher -->
         <div class="mode-switcher">
             <a href="/practice" class="mode-tab active">🇯🇵 → 🇻🇳 Nhật → Việt</a>
             <a href="/practice/vi-ja" class="mode-tab">🇻🇳 → 🇯🇵 Việt → Nhật</a>
+            <a href="/practice/choice" class="mode-tab">🎯 Trắc nghiệm 4 lựa chọn</a>
+            <a href="/practice/studio" class="mode-tab">🎙️ Typing Studio</a>
         </div>
 
         <div th:if="${errorMessage}" class="alert-error">
@@ -35,7 +28,7 @@
             <span th:text="${errorMessage}">Đã xảy ra lỗi.</span>
         </div>
 
-        <div class="card">
+        <div class="card" th:fragment="jaViCard">
             <div class="card-header">
                 <h1><span>✍️</span> Kiểm Tra Từ Vựng (Nhật → Việt)</h1>
                 <p>Chế độ gõ phím trực tiếp kiểm tra phản xạ ghi nhớ nghĩa và cách đọc Hiragana.</p>
@@ -66,13 +59,35 @@
                     </select>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Bắt đầu kiểm tra ngay →</button>
+                <div class="auto-next-setting">
+                    <label class="auto-next-label" for="autoNextToggle">
+                        <input type="checkbox" id="autoNextToggle" class="auto-next-checkbox">
+                        <span>Tự chuyển câu</span>
+                    </label>
+                </div>
+
+                <div class="practice-action-buttons">
+                    <button type="submit" class="btn btn-primary">Bắt đầu kiểm tra ngay →</button>
+                    <a th:if="${wrongCount > 0}"
+                       th:href="@{/practice/question(topicId=${selectedTopicId}, retryWrongOnly=true)}"
+                       class="btn btn-retry">
+                        <span>🔄</span> Ôn lại từ làm sai (<span th:text="${wrongCount}">0</span>)
+                    </a>
+                    <button th:unless="${wrongCount > 0}"
+                            type="button"
+                            class="btn btn-retry disabled"
+                            disabled>
+                        <span>🔄</span> Ôn lại từ làm sai (0)
+                    </button>
+                </div>
             </form>
         </div>
     </main>
 
     <footer>
         <p>&copy; 2026 Project Nihon. Chế độ kiểm tra phản xạ Nhật → Việt.</p>
+        <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
     </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
 </body>
 </html>

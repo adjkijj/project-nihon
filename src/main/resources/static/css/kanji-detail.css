@@ -460,3 +460,72 @@ footer {
     }
 }
 
+/* Badges & Vocab Link */
+.badge-topic {
+    display: inline-block;
+    background-color: var(--border-color);
+    color: var(--text-primary);
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+.vocab-topic-link:hover {
+    background-color: var(--accent);
+    color: #0f172a;
+}
+.topic-badges-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+.vocab-detail-link {
+    color: #fff;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+.vocab-detail-link:hover {
+    color: var(--accent);
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+}
+.page-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    padding: 0 0.6rem;
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+.page-link:hover:not(.disabled) {
+    color: var(--text-primary);
+    border-color: var(--accent);
+    background-color: var(--border-color);
+}
+.page-link.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.page-indicator {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    padding: 0 0.5rem;
+}
+

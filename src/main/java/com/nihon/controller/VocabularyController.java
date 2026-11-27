@@ -1,19 +1,31 @@
 package com.nihon.controller;
 
+import com.nihon.config.ClientIpResolver;
+import com.nihon.dto.ExportTextFormat;
+import com.nihon.dto.VocabQuickFilter;
+import com.nihon.dto.VocabViewMode;
 import com.nihon.dto.VocabularyForm;
 import com.nihon.dto.VocabularyRowDto;
 import com.nihon.entity.Topic;
 import com.nihon.entity.Vocabulary;
 import com.nihon.service.TopicService;
+import com.nihon.service.VocabularyExportRateLimiter;
+import com.nihon.service.VocabularyExportService;
 import com.nihon.service.VocabularyService;
+import com.nihon.service.excel.RateLimitExceededException;
 import com.nihon.validation.KanjiLimits;
 import com.nihon.validation.TextNormalizer;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -27,6 +39,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -43,10 +58,25 @@ public class VocabularyController {
 
     private final VocabularyService vocabularyService;
     private final TopicService topicService;
+    private final VocabularyExportService exportService;
+    private final VocabularyExportRateLimiter exportRateLimiter;
+    private final ClientIpResolver clientIpResolver;
 
     public VocabularyController(VocabularyService vocabularyService, TopicService topicService) {
+        this(vocabularyService, topicService, null, null, null);
+    }
+
+    @Autowired
+    public VocabularyController(VocabularyService vocabularyService,
+                                TopicService topicService,
+                                @Autowired(required = false) VocabularyExportService exportService,
+                                @Autowired(required = false) VocabularyExportRateLimiter exportRateLimiter,
+                                @Autowired(required = false) ClientIpResolver clientIpResolver) {
         this.vocabularyService = vocabularyService;
         this.topicService = topicService;
+        this.exportService = (exportService != null) ? exportService : new VocabularyExportService();
+        this.exportRateLimiter = (exportRateLimiter != null) ? exportRateLimiter : new VocabularyExportRateLimiter();
+        this.clientIpResolver = (clientIpResolver != null) ? clientIpResolver : new ClientIpResolver("127.0.0.1,::1,0:0:0:0:0:0:0:1");
     }
 
     @InitBinder("form")
@@ -57,6 +87,8 @@ public class VocabularyController {
     @GetMapping
     public String list(@RequestParam(value = "topicId", required = false) Long topicId,
                        @RequestParam(value = "keyword", required = false) String keyword,
+                       @RequestParam(value = "filter", defaultValue = "ALL") String filter,
+                       @RequestParam(value = "view", defaultValue = "COMPACT") String view,
                        @RequestParam(value = "page", defaultValue = "0") int page,
                        @RequestParam(value = "size", defaultValue = "20") int size,
                        Model model) {
@@ -65,6 +97,8 @@ public class VocabularyController {
         Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by("id").descending());
 
         String safeKeyword = sanitizeKeyword(keyword);
+        VocabViewMode viewMode = VocabViewMode.fromString(view);
+        VocabQuickFilter quickFilter = VocabQuickFilter.fromString(filter);
         List<Topic> topics = topicService.findAllOrdered();
 
         Long effectiveTopicId = topicId;
@@ -81,11 +115,22 @@ public class VocabularyController {
                 model.addAttribute("topics", topics);
                 model.addAttribute("selectedTopicId", topicId);
                 model.addAttribute("keyword", safeKeyword);
+                model.addAttribute("filter", quickFilter.name());
+                model.addAttribute("view", viewMode.name());
+                model.addAttribute("quickFilters", VocabQuickFilter.values());
                 return "vocabulary/list";
             }
         }
 
-        Page<VocabularyRowDto> vocabPage = vocabularyService.search(effectiveTopicId, safeKeyword, pageable);
+        Page<VocabularyRowDto> vocabPage;
+        if (quickFilter == VocabQuickFilter.ALL && viewMode == VocabViewMode.COMPACT) {
+            vocabPage = vocabularyService.search(effectiveTopicId, safeKeyword, pageable);
+        } else {
+            vocabPage = vocabularyService.search(effectiveTopicId, safeKeyword, quickFilter, viewMode, pageable);
+        }
+        if (vocabPage == null) {
+            vocabPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
+        }
 
         String selectedTopicName = null;
         if (effectiveTopicId != null) {
@@ -102,8 +147,70 @@ public class VocabularyController {
         model.addAttribute("selectedTopicId", effectiveTopicId);
         model.addAttribute("selectedTopicName", selectedTopicName);
         model.addAttribute("keyword", safeKeyword);
+        model.addAttribute("filter", quickFilter.name());
+        model.addAttribute("view", viewMode.name());
+        model.addAttribute("quickFilters", VocabQuickFilter.values());
 
         return "vocabulary/list";
+    }
+
+    /**
+     * Xuất danh sách từ vựng đang lọc thành tệp văn bản thuần (.txt) cho Quizlet hoặc Anki.
+     *
+     * @param topicId ID chủ đề cần lọc (tùy chọn)
+     * @param keyword Từ khóa tìm kiếm (tùy chọn, tối đa 50 ký tự)
+     * @param format Định dạng phân cách (TAB hoặc COLON, whitelist)
+     * @param request Yêu cầu HTTP để trích xuất IP phục vụ giới hạn tần suất
+     * @return Tệp văn bản đính kèm UTF-8 có BOM
+     */
+    @GetMapping("/export-text")
+    public ResponseEntity<byte[]> exportText(@RequestParam(value = "topicId", required = false) Long topicId,
+                                            @RequestParam(value = "keyword", required = false) String keyword,
+                                            @RequestParam(value = "format", defaultValue = "TAB") String format,
+                                            HttpServletRequest request) {
+        // 1. Kiểm tra giới hạn tần suất (tối đa 20 lần/phút theo IP)
+        String clientIp = clientIpResolver.resolveClientIp(request);
+        if (!exportRateLimiter.tryAcquire(clientIp)) {
+            throw new RateLimitExceededException("Bạn đã vượt quá giới hạn tải xuống danh sách từ vựng (tối đa 20 lần mỗi phút). Vui lòng thử lại sau.");
+        }
+
+        // 2. Chuẩn hóa format (whitelist) và keyword
+        ExportTextFormat exportFormat = ExportTextFormat.fromString(format);
+        String safeKeyword = sanitizeKeyword(keyword);
+
+        // 3. Kiểm tra topicId: nếu topicId không tồn tại hoặc không hợp lệ, trả tệp rỗng (không gây lỗi 500)
+        List<VocabularyRowDto> rows;
+        if (topicId != null) {
+            if (topicId <= 0 || topicService.findById(topicId).isEmpty()) {
+                rows = Collections.emptyList();
+            } else {
+                rows = vocabularyService.findAllMatching(topicId, safeKeyword);
+            }
+        } else {
+            rows = vocabularyService.findAllMatching(null, safeKeyword);
+        }
+
+        // 4. Giới hạn tối đa 5000 dòng: nếu vượt quá thì trả lỗi HTTP 400 Bad Request
+        if (rows.size() > VocabularyExportService.MAX_EXPORT_LIMIT) {
+            byte[] errorBytes = "Số lượng từ vựng xuất khẩu vượt quá giới hạn tối đa cho phép (5000 dòng). Vui lòng thu hẹp bộ lọc theo chủ đề hoặc từ khóa.".getBytes(StandardCharsets.UTF_8);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .header(HttpHeaders.CONTENT_TYPE, "text/plain; charset=UTF-8")
+                    .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                    .body(errorBytes);
+        }
+
+        // 5. Sinh nội dung tệp văn bản kèm BOM UTF-8
+        byte[] fileBytes = exportService.exportToText(rows, exportFormat);
+
+        // 6. Tên tệp cố định theo mẫu thời gian yyyyMMdd-HHmm, tuyệt đối không phụ thuộc input
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmm"));
+        String filename = "nihon-vocabulary-" + timestamp + ".txt";
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/plain; charset=UTF-8")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .body(fileBytes);
     }
 
     private String sanitizeKeyword(String keyword) {

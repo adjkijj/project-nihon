@@ -2,11 +2,14 @@ package com.nihon.controller;
 
 import com.nihon.dto.KanjiDetailDto;
 import com.nihon.dto.KanjiForm;
+import com.nihon.dto.VocabularyRowDto;
 import com.nihon.entity.KanjiEntry;
 import com.nihon.entity.Topic;
 import com.nihon.entity.Vocabulary;
 import com.nihon.service.KanjiService;
+import com.nihon.service.VocabularyService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -40,9 +43,16 @@ public class KanjiController {
     private static final int MAX_KEYWORD_LENGTH = 50;
 
     private final KanjiService kanjiService;
+    private final VocabularyService vocabularyService;
 
     public KanjiController(KanjiService kanjiService) {
+        this(kanjiService, null);
+    }
+
+    @Autowired
+    public KanjiController(KanjiService kanjiService, VocabularyService vocabularyService) {
         this.kanjiService = kanjiService;
+        this.vocabularyService = vocabularyService;
     }
 
     @InitBinder("form")
@@ -51,11 +61,14 @@ public class KanjiController {
     }
 
     /**
-     * Trang danh sách Kanji riêng biệt: hiển thị thẻ/lưới Kanji, tìm kiếm đa tiêu chí và lọc theo chủ đề bài học.
+     * Trang danh sách Kanji riêng biệt: hiển thị thẻ/lưới Kanji, tìm kiếm đa tiêu chí, lọc theo âm On/Kun, bài học có nhóm cha, chỉ từ cần nhớ và sắp xếp.
      */
     @GetMapping
     public String list(@RequestParam(value = "keyword", required = false) String keyword,
+                       @RequestParam(value = "reading", required = false) String reading,
                        @RequestParam(value = "topicId", required = false) Long topicId,
+                       @RequestParam(value = "hasWordsOnly", defaultValue = "false") boolean hasWordsOnly,
+                       @RequestParam(value = "sort", defaultValue = "SOURCE_LINE") String sort,
                        @RequestParam(value = "page", defaultValue = "0") int page,
                        @RequestParam(value = "size", defaultValue = "" + DEFAULT_PAGE_SIZE) int size,
                        Model model) {
@@ -69,8 +82,12 @@ public class KanjiController {
         }
 
         String safeKeyword = sanitizeKeyword(keyword);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("sourceLine").ascending());
+        String safeReading = sanitizeKeyword(reading);
+        com.nihon.dto.KanjiSortOption sortOption = com.nihon.dto.KanjiSortOption.fromString(sort);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortOption.getPropertyName()).ascending());
+
         List<Topic> topics = kanjiService.getKanjiTopics();
+        List<com.nihon.dto.TopicGroupDto> topicGroups = kanjiService.getKanjiTopicGroups();
 
         Long effectiveTopicId = topicId;
         if (topicId != null && topicId <= 0) {
@@ -84,20 +101,36 @@ public class KanjiController {
                 Page<KanjiDetailDto> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
                 model.addAttribute("kanjiPage", emptyPage);
                 model.addAttribute("topics", topics);
+                model.addAttribute("topicGroups", topicGroups);
                 model.addAttribute("selectedTopicId", topicId);
                 model.addAttribute("keyword", safeKeyword);
+                model.addAttribute("reading", safeReading);
+                model.addAttribute("hasWordsOnly", hasWordsOnly);
+                model.addAttribute("sort", sortOption.name());
                 model.addAttribute("totalCount", kanjiService.countTotal());
                 model.addAttribute("activeNav", "kanji");
                 return "kanji/list";
             }
         }
 
-        Page<KanjiDetailDto> kanjiPage = kanjiService.search(effectiveTopicId, safeKeyword, pageable);
+        Page<KanjiDetailDto> kanjiPage;
+        if ((safeReading == null || safeReading.isBlank()) && !hasWordsOnly) {
+            kanjiPage = kanjiService.search(effectiveTopicId, safeKeyword, pageable);
+        } else {
+            kanjiPage = kanjiService.search(effectiveTopicId, safeKeyword, safeReading, hasWordsOnly, pageable);
+        }
+        if (kanjiPage == null) {
+            kanjiPage = new PageImpl<>(Collections.emptyList(), pageable, 0);
+        }
 
         model.addAttribute("kanjiPage", kanjiPage);
         model.addAttribute("topics", topics);
+        model.addAttribute("topicGroups", topicGroups);
         model.addAttribute("selectedTopicId", effectiveTopicId);
         model.addAttribute("keyword", safeKeyword);
+        model.addAttribute("reading", safeReading);
+        model.addAttribute("hasWordsOnly", hasWordsOnly);
+        model.addAttribute("sort", sortOption.name());
         model.addAttribute("totalCount", kanjiService.countTotal());
         model.addAttribute("activeNav", "kanji");
 
@@ -120,6 +153,7 @@ public class KanjiController {
      */
     @GetMapping("/{id}")
     public String detail(@PathVariable("id") Long id,
+                         @RequestParam(value = "vocabPage", required = false) String vocabPage,
                          Model model,
                          RedirectAttributes redirectAttributes) {
         if (id == null || id <= 0) {
@@ -135,8 +169,31 @@ public class KanjiController {
         KanjiDetailDto kanji = kanjiOpt.get();
         List<Vocabulary> relatedVocabularies = kanjiService.getRelatedVocabulary(kanji.getCharacter(), kanji.getTopicId());
 
+        int safeVocabPage = 0;
+        if (vocabPage != null && !vocabPage.isBlank()) {
+            try {
+                safeVocabPage = Integer.parseInt(vocabPage.trim());
+            } catch (NumberFormatException e) {
+                safeVocabPage = 0;
+            }
+        }
+        if (safeVocabPage < 0) {
+            safeVocabPage = 0;
+        } else if (safeVocabPage > MAX_PAGE) {
+            safeVocabPage = MAX_PAGE;
+        }
+
+        Page<VocabularyRowDto> vocabContainingPage;
+        if (vocabularyService != null) {
+            vocabContainingPage = vocabularyService.findWordsContainingKanji(kanji.getCharacter(), safeVocabPage, 20);
+        } else {
+            vocabContainingPage = new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 20), 0);
+        }
+
         model.addAttribute("kanji", kanji);
         model.addAttribute("relatedVocabularies", relatedVocabularies);
+        model.addAttribute("vocabContainingPage", vocabContainingPage);
+        model.addAttribute("vocabPage", safeVocabPage);
         model.addAttribute("activeNav", "kanji");
 
         return "kanji/detail";

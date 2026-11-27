@@ -21,8 +21,10 @@ import com.nihon.service.StudyProgressService;
 import jakarta.servlet.http.HttpSession;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 
 @Controller
 @RequestMapping("/practice")
@@ -44,7 +46,9 @@ public class PracticeController {
      * Màn hình chọn chủ đề hoặc bắt đầu kiểm tra.
      */
     @GetMapping
-    public String index(@RequestParam(value = "topicId", required = false) Long topicId, Model model) {
+    public String index(@RequestParam(value = "topicId", required = false) Long topicId,
+                        HttpSession session,
+                        Model model) {
         List<Topic> topics = topicService.findAllOrdered();
         Long effectiveTopicId = topicId;
         if (topicId != null && topicId <= 0) {
@@ -57,13 +61,17 @@ public class PracticeController {
                 model.addAttribute("errorMessage", "Chủ đề không tồn tại");
                 model.addAttribute("topics", Collections.emptyList());
                 model.addAttribute("selectedTopicId", topicId);
+                model.addAttribute("wrongCount", 0);
                 model.addAttribute("activeNav", "practice");
                 return "practice/index";
             }
         }
 
+        int wrongCount = studyProgressService.getWrongVocabIds(session, "JA_VI", effectiveTopicId).size();
+
         model.addAttribute("topics", topics);
         model.addAttribute("selectedTopicId", effectiveTopicId);
+        model.addAttribute("wrongCount", wrongCount);
         model.addAttribute("activeNav", "practice");
         return "practice/index";
     }
@@ -74,8 +82,12 @@ public class PracticeController {
     @GetMapping("/question")
     public String showQuestion(@RequestParam(value = "topicId", required = false) Long topicId,
                                @RequestParam(value = "excludeId", required = false) Long excludeId,
+                               @RequestParam(value = "retryWrongOnly", required = false, defaultValue = "false") String retryWrongOnlyParam,
+                               HttpSession session,
                                Model model,
                                RedirectAttributes redirectAttributes) {
+        boolean retryWrongOnly = parseRetryWrongOnly(retryWrongOnlyParam);
+
         Long effectiveTopicId = topicId;
         if (topicId != null && topicId <= 0) {
             effectiveTopicId = null;
@@ -96,20 +108,41 @@ public class PracticeController {
             model.addAttribute("errorMessage", "ID không hợp lệ");
         }
 
-        Optional<PracticeQuestionDto> questionOpt = practiceService.getNextQuestion(effectiveTopicId, effectiveExcludeId);
+        Set<Long> allowedIds = null;
+        if (retryWrongOnly) {
+            Set<Long> wrongIds = studyProgressService.getWrongVocabIds(session, "JA_VI", effectiveTopicId);
+            if (wrongIds == null || wrongIds.isEmpty()) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Bạn chưa có từ nào làm sai trong phiên này.");
+                return "redirect:/practice" + (effectiveTopicId != null ? "?topicId=" + effectiveTopicId : "");
+            }
+            allowedIds = wrongIds;
+        }
+
+        Optional<PracticeQuestionDto> questionOpt;
+        if (allowedIds != null) {
+            questionOpt = practiceService.getNextQuestion(effectiveTopicId, effectiveExcludeId, allowedIds);
+        } else {
+            questionOpt = practiceService.getNextQuestion(effectiveTopicId, effectiveExcludeId);
+        }
 
         if (questionOpt.isEmpty()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy từ vựng nào thuộc chủ đề đã chọn để kiểm tra.");
-            return "redirect:/practice";
+            if (retryWrongOnly) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Bạn chưa có từ nào làm sai trong phiên này.");
+            } else {
+                redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy từ vựng nào thuộc chủ đề đã chọn để kiểm tra.");
+            }
+            return "redirect:/practice" + (effectiveTopicId != null ? "?topicId=" + effectiveTopicId : "");
         }
 
         PracticeQuestionDto question = questionOpt.get();
         PracticeAnswerForm form = new PracticeAnswerForm();
         form.setVocabId(question.getVocabId());
         form.setTopicId(effectiveTopicId);
+        form.setRetryWrongOnly(retryWrongOnly);
 
         model.addAttribute("question", question);
         model.addAttribute("form", form);
+        model.addAttribute("retryWrongOnly", retryWrongOnly);
         model.addAttribute("activeNav", "practice");
 
         return "practice/question";
@@ -122,19 +155,38 @@ public class PracticeController {
     @PostMapping("/check")
     public String checkAnswer(@Valid @ModelAttribute("form") PracticeAnswerForm form,
                               BindingResult bindingResult,
+                              @RequestParam(value = "retryWrongOnly", required = false, defaultValue = "false") String retryWrongOnlyParam,
                               HttpSession session,
                               Model model,
                               RedirectAttributes redirectAttributes) {
+        boolean retryWrongOnly = (form != null && form.isRetryWrongOnly()) || parseRetryWrongOnly(retryWrongOnlyParam);
+
         if (bindingResult.hasErrors()) {
             redirectAttributes.addFlashAttribute("errorMessage", "Dữ liệu câu trả lời không hợp lệ hoặc vượt quá độ dài quy định.");
-            Long topicId = form.getTopicId();
-            return "redirect:/practice/question" + (topicId != null && topicId > 0 ? "?topicId=" + topicId : "");
+            Long topicId = form != null ? form.getTopicId() : null;
+            StringBuilder redirectUrl = new StringBuilder("redirect:/practice/question");
+            boolean hasParam = false;
+            if (topicId != null && topicId > 0) {
+                redirectUrl.append("?topicId=").append(topicId);
+                hasParam = true;
+            }
+            if (retryWrongOnly) {
+                redirectUrl.append(hasParam ? "&" : "?").append("retryWrongOnly=true");
+            }
+            return redirectUrl.toString();
         }
 
         try {
             PracticeResultDto result = practiceService.checkAnswer(form);
             studyProgressService.recordJaViAttempt(session, result, result.getTopicId());
+
+            int wrongCount = studyProgressService.getWrongVocabIds(session, "JA_VI", result.getTopicId()).size();
+            boolean retryCompleted = retryWrongOnly && wrongCount == 0;
+
             model.addAttribute("result", result);
+            model.addAttribute("retryWrongOnly", retryWrongOnly);
+            model.addAttribute("retryCompleted", retryCompleted);
+            model.addAttribute("wrongCount", wrongCount);
             model.addAttribute("sessionStats", studyProgressService.getSummary(session, null, null));
             model.addAttribute("activeNav", "practice");
             return "practice/result";
@@ -142,5 +194,13 @@ public class PracticeController {
             redirectAttributes.addFlashAttribute("errorMessage", "Mã từ vựng không tồn tại hoặc đã bị thay đổi.");
             return "redirect:/practice";
         }
+    }
+
+    private boolean parseRetryWrongOnly(String val) {
+        if (val == null || val.isBlank()) {
+            return false;
+        }
+        String s = val.strip().toLowerCase(Locale.ROOT);
+        return "true".equals(s) || "1".equals(s) || "yes".equals(s) || "on".equals(s);
     }
 }

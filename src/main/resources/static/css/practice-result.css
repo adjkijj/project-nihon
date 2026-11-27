@@ -269,6 +269,65 @@ main {
     background-color: var(--accent-hover);
 }
 
+.retry-congrats-banner {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(16, 185, 129, 0.2));
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    border-radius: var(--radius-md);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.congrats-icon {
+    font-size: 2rem;
+}
+.congrats-title {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.1rem;
+    color: #4ade80;
+    font-weight: 700;
+}
+.congrats-text {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.retry-action-box {
+    margin-top: 1rem;
+    text-align: center;
+}
+.btn-retry-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem 1.25rem;
+    background-color: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.btn-retry-link:hover:not(.disabled) {
+    background-color: rgba(245, 158, 11, 0.22);
+    border-color: #fbbf24;
+}
+.btn-retry-link.disabled, .btn-retry-link:disabled {
+    background-color: rgba(148, 163, 184, 0.08);
+    color: var(--text-muted);
+    border-color: var(--border-color);
+    opacity: 0.55;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 .card-footer-nav {
     display: flex;
     justify-content: space-between;

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhập Ngữ pháp từ Excel - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <link rel="stylesheet" th:href="@{/css/exams-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/grammar.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('grammar')}"></header>
+
+    <main class="container my-4 max-w-800">
+        <!-- Breadcrumb điều hướng -->
+        <nav aria-label="Đường dẫn" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a th:href="@{/grammar/admin}">Quản trị Ngữ pháp</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Nhập Excel</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header border-bottom pb-3 mb-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="page-title h3 m-0">📥 Nhập Ngữ pháp & Trắc nghiệm từ Excel</h1>
+                    <p class="text-secondary font-size-sm mt-1 mb-0">Quy trình 2 bước: Thẩm định xem trước toàn diện trước khi lưu vào CSDL.</p>
+                </div>
+                <div>
+                    <a th:href="@{/grammar/admin/template}" class="btn btn-sm btn-outline">📄 Tải file mẫu GrammarTemplate.xlsx</a>
+                </div>
+            </div>
+
+            <!-- Thông báo lỗi nếu có -->
+            <div th:if="${errorMessage}" class="alert alert-danger mb-4" role="alert" th:text="${errorMessage}">
+                Đã xảy ra lỗi khi đọc tệp Excel.
+            </div>
+
+            <form th:action="@{/grammar/admin/import/preview}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="_csrf" th:value="${_csrf}" />
+
+                <div class="p-4 border rounded bg-light text-center mb-4">
+                    <label for="excelFile" class="d-block font-weight-bold mb-2">
+                        Chọn hoặc kéo thả tệp Excel (.xlsx) chứa 2 sheet "Grammar" và "Quiz":
+                    </label>
+                    <input type="file" id="excelFile" name="file" accept=".xlsx" required class="form-control form-control-sm max-w-400 mx-auto" />
+                    <small class="form-text text-secondary mt-2">
+                        Chỉ chấp nhận tệp định dạng <code>.xlsx</code> (tối đa 5 MB). Hệ thống tự động kiểm tra bảo mật chống Formula Injection và trùng lặp mã.
+                    </small>
+                </div>
+
+                <div class="mb-4 font-size-sm text-secondary">
+                    <h3 class="h6 font-weight-bold text-dark">📋 Quy cách chuẩn định dạng tệp Excel:</h3>
+                    <ul>
+                        <li><strong>Sheet "Grammar":</strong> Cột A (Mã), B (Tiêu đề), C (Loại: GRAMMAR/SUPPLEMENT), D (Công thức), E (Giải thích), F (Ghi chú), G (Ví dụ tiếng Nhật), H (Cách đọc), I (Nghĩa tiếng Việt). Hàng có Mã là chủ đề mới; hàng có Mã trống và có Ví dụ là ví dụ tiếp theo của chủ đề phía trên.</li>
+                        <li><strong>Sheet "Quiz":</strong> Cột A (Mã ngữ pháp), B (Đề bài), C (Đáp án 1), D (Đáp án 2), E (Đáp án 3), F (Đáp án 4), G (Đáp án đúng: 1-4), H (Giải thích).</li>
+                        <li><strong>Giới hạn:</strong> Tối đa 20 ví dụ và 20 câu hỏi cho mỗi chủ đề. Mỗi câu trắc nghiệm phải có từ 2 đến 4 lựa chọn và đúng 1 đáp án đúng.</li>
+                    </ul>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                    <a th:href="@{/grammar/admin}" class="btn btn-secondary">Quay lại danh sách</a>
+                    <button type="submit" class="btn btn-primary">🔍 Xem trước tệp Excel</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Hệ thống ghi nhớ từ vựng và ngữ pháp tiếng Nhật.</p>
+    </footer>
+</body>
+</html>
+

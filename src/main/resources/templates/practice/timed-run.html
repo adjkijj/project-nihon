@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Làm bài thi tính giờ - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/timed-practice.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/timed-practice.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('practice')}"></header>
+
+    <!-- Sticky Top Bar: Đồng hồ đếm ngược, Tiến độ, Streak & Nộp bài -->
+    <div class="timed-sticky-bar">
+        <div class="timed-sticky-inner">
+            <!-- Countdown Timer (Monospace, F42) -->
+            <div id="countdown-timer-wrapper"
+                 class="timed-timer-wrapper"
+                 th:attr="data-remaining-seconds=${question.remainingSeconds}">
+                <span class="timed-timer-icon" aria-hidden="true">⏱️</span>
+                <span id="countdown-timer-display" class="timed-timer-display">00:00</span>
+            </div>
+
+            <!-- Progress & Streak -->
+            <div class="timed-status-center">
+                <div class="timed-progress-badge">
+                    Câu <span th:text="${question.questionIndex}">1</span> / <span th:text="${question.totalQuestions}">20</span>
+                </div>
+
+                <div th:if="${question.currentStreak > 1}" class="timed-streak-badge">
+                    🔥 <span th:text="${question.currentStreak}">2</span> câu đúng liên tiếp!
+                </div>
+            </div>
+
+            <!-- Finish Button -->
+            <div class="timed-actions-right">
+                <button type="button" id="btn-finish-practice" class="btn-tp-outline-danger">
+                    Nộp bài sớm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <main class="timed-container">
+        <!-- Error Alert -->
+        <div th:if="${errorMessage}" class="alert-error">
+            <span>⚠️</span>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi.</span>
+        </div>
+
+        <!-- F50: Instant Evaluation Callout nếu vừa trả lời câu hỏi trước đó -->
+        <div th:if="${question.lastResult != null}"
+             class="timed-instant-callout"
+             th:classappend="${question.lastResult.correct ? 'is-correct' : 'is-wrong'}">
+            <span class="timed-instant-icon" th:text="${question.lastResult.correct ? '🎉' : '❌'}">✓</span>
+            <div class="timed-instant-body">
+                <h4 th:text="${question.lastResult.correct ? 'Câu ' + question.lastResult.questionIndex + ': Chính xác!' : 'Câu ' + question.lastResult.questionIndex + ': Chưa chính xác!'}">
+                    Kết quả câu trước
+                </h4>
+                <p>
+                    Đề bài: <strong th:text="${question.lastResult.prompt}">Từ vựng</strong>
+                    &bull; Đáp án chuẩn: <strong th:text="${question.lastResult.expectedAnswer}">わたし</strong>
+                    <th:block th:if="${!question.lastResult.correct}">
+                        &bull; Bạn chọn: <strong th:text="${(question.lastResult.userAnswer != null and !question.lastResult.userAnswer.isBlank()) ? question.lastResult.userAnswer : '(Bỏ trống)'}">watashi</strong>
+                    </th:block>
+                </p>
+                <p th:if="${question.lastResult.feedbackMessage != null and !question.lastResult.feedbackMessage.isBlank()}"
+                   th:text="${question.lastResult.feedbackMessage}">
+                    Giải thích hoặc phản hồi chi tiết
+                </p>
+            </div>
+        </div>
+
+        <!-- Question Card -->
+        <div class="timed-question-stage">
+            <div class="timed-question-meta">
+                <span class="timed-question-type-badge" th:switch="${question.type != null ? question.type.name() : ''}">
+                    <span th:case="'JA_VI'">🇯🇵 → 🇻🇳 Nhật - Việt</span>
+                    <span th:case="'VI_JA'">🇻🇳 → 🇯🇵 Việt - Nhật</span>
+                    <span th:case="'KANJI_READING'">漢 Kanji - Đoán âm đọc</span>
+                    <span th:case="'CHOICE'">🎯 Trắc nghiệm 4 lựa chọn</span>
+                    <span th:case="*">Luyện tập tính giờ</span>
+                </span>
+                <span th:if="${question.isSpeedPreset}" class="timed-preset-badge">⚡ Đấu trường tốc độ</span>
+            </div>
+
+            <!-- Question Prompt Box (Clean & Bold Typography) -->
+            <div class="timed-prompt-box">
+                <div class="timed-prompt-text">
+                    <span th:text="${question.prompt}">わたし</span>
+                    <th:block th:if="${question.speechText != null and !question.speechText.isBlank()}"
+                              th:replace="~{fragments/speech :: speakerBtn(speechText=${question.speechText})}">
+                    </th:block>
+                </div>
+                <div class="timed-prompt-sub" th:switch="${question.type != null ? question.type.name() : ''}">
+                    <span th:case="'JA_VI'">Nhập nghĩa tiếng Việt (và cách đọc nếu yêu cầu)</span>
+                    <span th:case="'VI_JA'">Nhập từ vựng tiếng Nhật chuẩn</span>
+                    <span th:case="'KANJI_READING'">Nhập cách đọc Hiragana của chữ Hán</span>
+                    <span th:case="'CHOICE'">Chọn 1 trong 4 đáp án bên dưới</span>
+                    <span th:case="*">Trả lời câu hỏi</span>
+                </div>
+            </div>
+
+            <!-- Answer Submission Form -->
+            <form id="timedAnswerForm" th:action="@{/practice/timed/answer}" method="post">
+                <input type="hidden" name="_csrf" th:if="${_csrf}" th:value="${_csrf}">
+                <input type="hidden" name="sessionId" th:value="${question.sessionId}">
+                <input type="hidden" name="questionIndex" th:value="${question.questionIndex}">
+                <input type="hidden" id="timedAnswerInput" name="answer" value="">
+
+                <!-- 1. MODE: CHOICE (4 Option Buttons + Shortcuts 1-4) -->
+                <div th:if="${question.type != null and question.type.name() == 'CHOICE'}">
+                    <input type="hidden" id="choiceVocabIdInput" name="choiceVocabId" value="">
+
+                    <div class="timed-choice-grid">
+                        <button th:each="opt, iter : ${question.choices}"
+                                type="button"
+                                class="timed-choice-button"
+                                th:data-choice-id="${opt.vocabId}"
+                                th:data-choice-val="${opt.displayText}">
+                            <span class="timed-choice-key" th:text="${iter.count}">1</span>
+                            <span class="timed-choice-text">
+                                <th:block th:if="${opt.reading != null and !opt.reading.isBlank()}">
+                                    <th:block th:replace="~{fragments/furigana :: rubyWord(japaneseText=${opt.displayText}, reading=${opt.reading})}"></th:block>
+                                </th:block>
+                                <th:block th:unless="${opt.reading != null and !opt.reading.isBlank()}"
+                                          th:text="${opt.displayText}">
+                                    Đáp án A
+                                </th:block>
+                            </span>
+                        </button>
+                    </div>
+
+                    <div class="timed-keyboard-hint">
+                        Nhấn phím <kbd>1</kbd>, <kbd>2</kbd>, <kbd>3</kbd>, <kbd>4</kbd> hoặc bấm vào ô để chọn ngay lập tức.
+                    </div>
+                </div>
+
+                <!-- 2. MODE: JA_VI (Nhật -> Việt) -->
+                <div th:if="${question.type != null and question.type.name() == 'JA_VI'}">
+                    <div th:if="${question.requireReading}" class="timed-input-group">
+                        <label for="userReading" class="timed-form-label">Cách đọc bằng Hiragana <span class="required">*</span></label>
+                        <input type="text"
+                               id="userReading"
+                               name="userReading"
+                               class="timed-text-input"
+                               placeholder="Ví dụ: わたし"
+                               autocomplete="off"
+                               maxlength="255"
+                               autofocus>
+                    </div>
+
+                    <div class="timed-input-group">
+                        <label for="userMeaning" class="timed-form-label">Nghĩa tiếng Việt <span class="required">*</span></label>
+                        <input type="text"
+                               id="userMeaning"
+                               name="userMeaning"
+                               class="timed-text-input"
+                               placeholder="Ví dụ: Tôi"
+                               autocomplete="off"
+                               maxlength="500"
+                               th:autofocus="${!question.requireReading}">
+                    </div>
+
+                    <div class="timed-input-actions">
+                        <button type="submit" class="btn-tp-primary">
+                            Trả lời (Enter) →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. MODE: VI_JA (Việt -> Nhật) -->
+                <div th:if="${question.type != null and question.type.name() == 'VI_JA'}">
+                    <div class="timed-input-group">
+                        <label for="userJapanese" class="timed-form-label">Từ vựng tiếng Nhật <span class="required">*</span></label>
+                        <input type="text"
+                               id="userJapanese"
+                               name="userJapanese"
+                               class="timed-text-input"
+                               placeholder="Ví dụ: 私 hoặc わたし"
+                               autocomplete="off"
+                               maxlength="255"
+                               autofocus>
+                    </div>
+
+                    <div class="timed-input-actions">
+                        <button type="submit" class="btn-tp-primary">
+                            Trả lời (Enter) →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4. MODE: KANJI_READING (Kanji -> Âm đọc) -->
+                <div th:if="${question.type != null and question.type.name() == 'KANJI_READING'}">
+                    <div class="timed-input-group">
+                        <label for="kanjiAnswer" class="timed-form-label">Cách đọc Hiragana (Onyomi / Kunyomi) <span class="required">*</span></label>
+                        <input type="text"
+                               id="kanjiAnswer"
+                               name="kanjiAnswer"
+                               class="timed-text-input"
+                               placeholder="Ví dụ: わたし, ひと, ..."
+                               autocomplete="off"
+                               maxlength="255"
+                               autofocus>
+                    </div>
+
+                    <div class="timed-input-actions">
+                        <button type="submit" class="btn-tp-primary">
+                            Trả lời (Enter) →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 5. MODE: VERB_TE (Chia thể Te) -->
+                <div th:if="${question.type != null and question.type.name() == 'VERB_TE'}">
+                    <div class="timed-input-group">
+                        <label for="verbTeAnswer" class="timed-form-label">Thể て tương ứng (Hiragana hoặc Kanji) <span class="required">*</span></label>
+                        <input type="text"
+                               id="verbTeAnswer"
+                               name="answer"
+                               class="timed-text-input"
+                               placeholder="Ví dụ: のんで hoặc 飲んで"
+                               autocomplete="off"
+                               maxlength="100"
+                               autofocus>
+                    </div>
+
+                    <div class="timed-input-actions">
+                        <button type="submit" class="btn-tp-primary">
+                            Trả lời (Enter) →
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Cancel Practice Link -->
+        <div class="timed-cancel-bar">
+            <form th:action="@{/practice/timed/cancel}" method="post">
+                <input type="hidden" name="_csrf" th:if="${_csrf}" th:value="${_csrf}">
+                <button type="submit" class="btn-tp-secondary">
+                    ✕ Hủy bài thi này
+                </button>
+            </form>
+        </div>
+
+        <!-- Hidden Form để tự nộp bài khi hết giờ hoặc bấm nộp -->
+        <form id="timedFinishForm" th:action="@{/practice/timed/finish}" method="post">
+            <input type="hidden" name="_csrf" th:if="${_csrf}" th:value="${_csrf}">
+            <input type="hidden" name="sessionId" th:value="${question.sessionId}">
+        </form>
+
+        <!-- Finish Early Confirmation Modal Dialog -->
+        <div id="finishConfirmModal" class="timed-modal-backdrop is-hidden" role="dialog" aria-modal="true" aria-labelledby="confirmFinishTitle">
+            <div class="timed-modal-box">
+                <div class="timed-modal-header">
+                    <h3 id="confirmFinishTitle">Xác nhận nộp bài sớm</h3>
+                    <button type="button" class="timed-modal-close-btn" aria-label="Đóng">&times;</button>
+                </div>
+                <div class="timed-modal-body">
+                    <p>Bạn vẫn còn thời gian làm bài. Bạn có chắc chắn muốn nộp bài ngay lúc này? Những câu chưa làm sẽ được tính là chưa trả lời.</p>
+                </div>
+                <div class="timed-modal-footer">
+                    <button type="button" class="btn-tp-secondary" data-close-modal>
+                        Làm tiếp
+                    </button>
+                    <button type="button" id="btn-confirm-finish" class="btn-tp-crimson">
+                        Nộp bài ngay
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Chế độ luyện tập tính giờ (F42, F50, F17).</p>
+        <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
+    </footer>
+
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+    <th:block th:replace="~{fragments/speech :: scripts}"></th:block>
+</body>
+</html>

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ngữ pháp & Kiến thức bổ sung - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <link rel="stylesheet" th:href="@{/css/grammar.css}">
+    <link rel="stylesheet" th:href="@{/css/counter-people.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/grammar.js}" defer></script>
+    <script th:src="@{/js/grammar-verb-lab.js}" defer></script>
+    <script th:src="@{/js/counter-people.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('grammar')}"></header>
+
+    <main class="page-container max-w-1000 py-4">
+        <!-- Breadcrumb & Top Actions -->
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a th:href="@{/}">Trang chủ</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Ngữ pháp & Kiến thức bổ sung</li>
+                </ol>
+            </nav>
+
+            <div class="d-flex gap-2">
+                <a th:href="@{/grammar/arena}" class="btn btn-warning font-weight-bold">
+                    ⚡ Đấu trường phản xạ
+                </a>
+                <a th:href="@{/grammar/admin}" class="btn btn-secondary font-weight-bold">
+                    ⚙️ Quản trị nội dung
+                </a>
+            </div>
+        </div>
+
+        <div class="page-header mb-4">
+            <h1 class="page-title h2 m-0">📖 Kho Ngữ Pháp & Kiến Thức Bổ Sung</h1>
+            <p class="text-secondary font-size-sm mt-1 mb-0">
+                Hệ thống cấu trúc ngữ pháp và điểm kiến thức bổ trợ tiếng Nhật. Mỗi chủ đề bao gồm công thức, giải thích an toàn, ví dụ kèm furigana, phát âm và bài tập củng cố.
+            </p>
+        </div>
+
+        <!-- Thông báo flash -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible mb-4" role="alert" th:text="${successMessage}">
+            Thành công!
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible mb-4" role="alert" th:text="${errorMessage}">
+            Đã có lỗi xảy ra!
+        </div>
+
+        <!-- F30: Khối hiển thị tiến độ học tập của người học -->
+        <section class="grammar-progress-card" aria-labelledby="progressTitle">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h2 id="progressTitle" class="h5 m-0 font-weight-bold text-dark">🎯 Tiến độ học tập của bạn</h2>
+                    <p class="text-secondary font-size-xs mt-1 mb-0">
+                        Đã học <strong id="grammarProgressText" class="text-primary" th:text="${learnedCount} + '/' + ${totalTopics}">0/0</strong> chủ đề
+                        (<strong id="grammarProgressPercent" class="text-success" th:text="${progressPercent} + '%'">0%</strong>)
+                    </p>
+                </div>
+                <div class="font-size-xs text-secondary">
+                    Lưu tự động qua cookie người học ẩn danh
+                </div>
+            </div>
+
+            <div class="grammar-progress-track" role="progressbar" aria-label="Tiến độ học ngữ pháp"
+                 th:aria-valuenow="${progressPercent}" aria-valuemin="0" aria-valuemax="100">
+                <div id="grammarProgressFill" class="grammar-progress-fill" th:data-percent="${progressPercent}"></div>
+            </div>
+        </section>
+
+        <!-- F34: Phòng biến đổi động từ - Khối tra nhanh thể động từ thu gọn -->
+        <section class="grammar-verb-lab-box" aria-labelledby="verbLabTitle">
+            <button type="button" id="verbLabToggleBtn" class="grammar-verb-lab-toggle"
+                    aria-expanded="false" aria-controls="verbLabContent">
+                <span id="verbLabTitle">🔬 Tra nhanh thể động từ (Verb Lab)</span>
+                <span class="font-size-sm text-secondary">▼ Mở rộng / Thu gọn</span>
+            </button>
+
+            <div id="verbLabContent" class="grammar-verb-lab-content" hidden>
+                <form id="grammarVerbLabForm" class="row g-2 align-items-end">
+                    <div class="col-md-6 mb-2">
+                        <label for="grammarVerbLabInput" class="form-label font-size-sm font-weight-bold">
+                            Động từ cần tra (ます hoặc từ điển):
+                        </label>
+                        <input type="text" id="grammarVerbLabInput" class="form-control form-control-sm"
+                               placeholder="Ví dụ: のむ, のみます, たべる, べんきょうする..." maxlength="100" required>
+                    </div>
+
+                    <div class="col-md-4 mb-2">
+                        <label for="grammarVerbLabGroup" class="form-label font-size-sm font-weight-bold">
+                            Nhóm động từ:
+                        </label>
+                        <select id="grammarVerbLabGroup" class="form-control form-control-sm">
+                            <option value="AUTO">Tự nhận biết (chỉ する/くる)</option>
+                            <option value="1">Nhóm 1 (Godan / 五段)</option>
+                            <option value="2">Nhóm 2 (Ichidan / 一段)</option>
+                            <option value="3">Nhóm 3 (Bất quy tắc / Kuru, Suru)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 mb-2">
+                        <button type="submit" class="btn btn-sm btn-primary w-100">
+                            Tra cứu
+                        </button>
+                    </div>
+                </form>
+
+                <div id="grammarVerbLabError" class="alert alert-danger mt-3 font-size-sm" hidden></div>
+                <div id="grammarVerbLabResult" class="mt-2" aria-live="polite"></div>
+            </div>
+        </section>
+
+        <!-- Bảng đếm số người (~人) từ 1 đến 10 người -->
+        <th:block th:replace="~{fragments/counter-people :: counterPeople}"></th:block>
+
+        <!-- F35: Tabs chọn Phân loại: Ngữ pháp / Kiến thức bổ sung -->
+        <nav class="grammar-nav-tabs" aria-label="Phân loại ngữ pháp">
+            <a th:href="@{/grammar(category='GRAMMAR', topicId=${selectedTopicId}, keyword=${keyword})}"
+               class="grammar-tab-link"
+               th:classappend="${selectedCategory == 'GRAMMAR'} ? 'active' : ''">
+                📘 Ngữ pháp (Grammar)
+            </a>
+            <a th:href="@{/grammar(category='SUPPLEMENT', topicId=${selectedTopicId}, keyword=${keyword})}"
+               class="grammar-tab-link"
+               th:classappend="${selectedCategory == 'SUPPLEMENT'} ? 'active' : ''">
+                💡 Kiến thức bổ sung (Supplement)
+            </a>
+            <a th:href="@{/grammar(category='ALL', topicId=${selectedTopicId}, keyword=${keyword})}"
+               class="grammar-tab-link"
+               th:classappend="${selectedCategory == 'ALL'} ? 'active' : ''">
+                📋 Tất cả
+            </a>
+        </nav>
+
+        <!-- Thanh tìm kiếm & lọc theo bài học -->
+        <form th:action="@{/grammar}" method="get" class="grammar-search-bar mb-4">
+            <input type="hidden" name="category" th:value="${selectedCategory}" />
+
+            <div class="d-flex flex-grow-1 gap-2 flex-wrap">
+                <div class="min-w-200">
+                    <select name="topicId" class="form-control form-control-sm">
+                        <option value="">-- Tất cả bài học --</option>
+                        <option th:each="t : ${generalTopics}"
+                                th:value="${t.id}"
+                                th:text="${t.name}"
+                                th:selected="${selectedTopicId == t.id}">
+                            Bài 1
+                        </option>
+                    </select>
+                </div>
+
+                <div class="flex-grow-1 min-w-200">
+                    <input type="text" name="keyword" th:value="${keyword}" class="form-control form-control-sm"
+                           placeholder="Tìm kiếm theo tiêu đề, mã, công thức..." maxlength="50">
+                </div>
+
+                <div>
+                    <button type="submit" class="btn btn-sm btn-primary">Tìm kiếm</button>
+                    <a th:href="@{/grammar(category=${selectedCategory})}" class="btn btn-sm btn-secondary">Xóa lọc</a>
+                </div>
+            </div>
+        </form>
+
+        <!-- Danh sách thẻ Accordion (Mỗi lần mở một thẻ) -->
+        <div th:if="${topicsPage.content != null and !topicsPage.content.isEmpty()}" class="grammar-accordion">
+            <details th:each="topic : ${topicsPage.content}"
+                     th:id="'topic-' + ${topic.id}"
+                     class="grammar-card"
+                     th:classappend="${learnedGrammarIds.contains(topic.id)} ? 'is-learned' : ''">
+
+                <summary class="grammar-card-summary">
+                    <div class="grammar-card-title-group">
+                        <span class="badge badge-grammar" th:if="${topic.category.name() == 'GRAMMAR'}">Ngữ pháp</span>
+                        <span class="badge badge-supplement" th:if="${topic.category.name() == 'SUPPLEMENT'}">Kiến thức bổ sung</span>
+                        <span class="font-mono text-secondary font-weight-bold font-size-xs" th:text="${topic.code}">N5-GR-01</span>
+                        <span class="badge badge-normal font-size-xs" th:if="${topic.topic != null}" th:text="'Bài: ' + ${topic.topic.name}">Bài 1</span>
+                        <strong class="font-size-md text-dark ml-2" th:text="${topic.title}">Cấu trúc 〜から</strong>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <!-- F30: Nút đánh dấu Đã học / Chưa học -->
+                        <form th:action="@{/grammar/{id}/toggle-progress(id=${topic.id})}"
+                              method="post"
+                              class="grammar-progress-form d-inline">
+                            <input type="hidden" name="_csrf" th:value="${_csrf}" />
+                            <button type="submit"
+                                    class="btn-progress-toggle"
+                                    th:classappend="${learnedGrammarIds.contains(topic.id)} ? 'learned' : ''"
+                                    th:title="${learnedGrammarIds.contains(topic.id)} ? 'Bấm để hủy trạng thái đã học' : 'Bấm để đánh dấu đã học'">
+                                <span class="btn-progress-icon" th:text="${learnedGrammarIds.contains(topic.id)} ? '✓' : '○'">○</span>
+                                <span class="btn-progress-text" th:text="${learnedGrammarIds.contains(topic.id)} ? 'Đã học' : 'Chưa học'">Chưa học</span>
+                            </button>
+                        </form>
+
+                        <span class="text-secondary font-size-xs">▼</span>
+                    </div>
+                </summary>
+
+                <div class="grammar-card-body">
+                    <!-- Công thức -->
+                    <div th:if="${topic.formula != null and !topic.formula.isEmpty()}" class="grammar-formula-box">
+                        <div class="grammar-formula-label">Cấu trúc / Công thức:</div>
+                        <div class="grammar-formula-content" th:text="${topic.formula}">[Thể thường / Thể lịch sự] + から</div>
+                    </div>
+
+                    <!-- Giải thích dựng HTML an toàn (GrammarTextRenderer) -->
+                    <div th:if="${topic.explanation != null and !topic.explanation.isEmpty()}" class="mb-3">
+                        <div class="font-size-xs font-weight-bold text-secondary uppercase mb-1">Giải thích chi tiết:</div>
+                        <div class="grammar-explanation-body" th:text="${topic.explanation}">
+                            Nội dung giải thích ngữ pháp...
+                        </div>
+                    </div>
+
+                    <!-- Ghi chú nếu có -->
+                    <div th:if="${topic.notes != null and !topic.notes.isEmpty()}" class="grammar-notes-box mb-3">
+                        <strong>💡 Ghi chú:</strong> <span th:text="${topic.notes}">Lưu ý khi sử dụng...</span>
+                    </div>
+
+                    <!-- Danh sách ví dụ (F31 Furigana & F05 Loa phát âm) -->
+                    <div th:if="${topic.examples != null and !topic.examples.isEmpty()}" class="mb-4">
+                        <div class="font-size-xs font-weight-bold text-secondary uppercase mb-2">
+                            Ví dụ minh họa (<span th:text="${topic.examples.size()}">1</span> câu):
+                        </div>
+
+                        <div th:each="ex : ${topic.examples}" class="grammar-example-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="grammar-jp-text">
+                                        <!-- F31: Furigana rubyWord nếu có cách đọc -->
+                                        <th:block th:replace="~{fragments/furigana :: rubyWord(japaneseText=${ex.japanese}, reading=${ex.reading})}"></th:block>
+                                    </div>
+                                    <div class="grammar-meaning-text" th:text="${ex.meaningVi}">Vì trời đang mưa...</div>
+                                </div>
+
+                                <!-- F05: Nút loa phát âm câu tiếng Nhật -->
+                                <div class="ml-2 flex-shrink-0">
+                                    <th:block th:replace="~{fragments/speech :: speakerBtnDirect(speechText=${ex.japanese})}"></th:block>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- F32: Bài tập trắc nghiệm mini củng cố ngay tại thẻ -->
+                    <div th:if="${topic.questions != null and !topic.questions.isEmpty()}" class="grammar-mini-quiz-card">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h3 class="h6 font-weight-bold text-primary m-0">
+                                📝 Bài tập trắc nghiệm củng cố (<span th:text="${topic.questions.size()}">1</span> câu)
+                            </h3>
+                            <span class="font-size-xs text-secondary">Chọn đáp án đúng nhất</span>
+                        </div>
+
+                        <form th:action="@{/grammar/{id}/quiz/check(id=${topic.id})}" method="post" class="mini-quiz-form">
+                            <input type="hidden" name="_csrf" th:value="${_csrf}" />
+                            <input type="hidden" name="grammarId" th:value="${topic.id}" />
+
+                            <!-- Vùng hiển thị kết quả chấm điểm sau khi nộp -->
+                            <div class="mini-quiz-feedback" hidden></div>
+
+                            <div th:each="q, qIter : ${topic.questions}"
+                                 class="mini-quiz-question-item"
+                                 th:data-question-id="${q.id}">
+                                <div class="mini-quiz-prompt" th:text="${qIter.count} + '. ' + ${q.prompt}">
+                                    1. あしたは テストが ある（ ）、きょうは べんきょうします。
+                                </div>
+
+                                <input type="hidden" th:name="'answers[' + ${qIter.index} + '].questionId'" th:value="${q.id}" />
+
+                                <div class="mini-quiz-choices">
+                                    <!-- Lựa chọn đáp án: Trang chưa nộp KHÔNG CHỨA cờ đúng (F32) -->
+                                    <label th:each="c, cIter : ${q.choices}" class="mini-quiz-choice-label">
+                                        <input type="radio"
+                                               th:name="'answers[' + ${qIter.index} + '].choiceId'"
+                                               th:value="${c.id}"
+                                               required />
+                                        <span th:text="${cIter.count} + ') ' + ${c.text}">1) から</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="text-right mt-3">
+                                <button type="submit" class="btn btn-sm btn-primary font-weight-bold">
+                                    Nộp bài và chấm điểm
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </details>
+        </div>
+
+        <!-- Trạng thái trống -->
+        <div th:if="${topicsPage.content == null or topicsPage.content.isEmpty()}" class="card text-center p-5">
+            <div class="font-size-xl mb-2">🔍</div>
+            <h3 class="h5 font-weight-bold">Không tìm thấy nội dung phù hợp</h3>
+            <p class="text-secondary font-size-sm mb-3">
+                Không có chủ đề nào thỏa mãn điều kiện lọc và từ khóa hiện tại.
+            </p>
+            <div>
+                <a th:href="@{/grammar(category=${selectedCategory})}" class="btn btn-sm btn-secondary">Xóa bộ lọc</a>
+            </div>
+        </div>
+
+        <!-- Phân trang 20 mục / trang (F30) -->
+        <nav th:if="${topicsPage.totalPages > 1}" class="d-flex justify-content-center mt-4" aria-label="Phân trang ngữ pháp">
+            <ul class="pagination pagination-sm">
+                <li class="page-item" th:classappend="${topicsPage.first} ? 'disabled' : ''">
+                    <a class="page-link" th:href="@{/grammar(category=${selectedCategory}, topicId=${selectedTopicId}, keyword=${keyword}, page=${topicsPage.number - 1})}">« Trước</a>
+                </li>
+
+                <li th:each="p : ${#numbers.sequence(0, topicsPage.totalPages - 1)}"
+                    class="page-item"
+                    th:classappend="${p == topicsPage.number} ? 'active' : ''">
+                    <a class="page-link"
+                       th:href="@{/grammar(category=${selectedCategory}, topicId=${selectedTopicId}, keyword=${keyword}, page=${p})}"
+                       th:text="${p + 1}">1</a>
+                </li>
+
+                <li class="page-item" th:classappend="${topicsPage.last} ? 'disabled' : ''">
+                    <a class="page-link" th:href="@{/grammar(category=${selectedCategory}, topicId=${selectedTopicId}, keyword=${keyword}, page=${topicsPage.number + 1})}">Sau »</a>
+                </li>
+            </ul>
+        </nav>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Hệ thống ghi nhớ từ vựng và ngữ pháp tiếng Nhật.</p>
+    </footer>
+
+    <!-- Nạp script furigana và speech -->
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+    <th:block th:replace="~{fragments/speech :: scripts}"></th:block>
+</body>
+</html>

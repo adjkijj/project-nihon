@@ -232,6 +232,34 @@ label {
     background-color: var(--accent-hover);
 }
 
+.practice-action-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.btn-retry {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+.btn-retry:hover:not(.disabled) {
+    background-color: rgba(245, 158, 11, 0.25);
+    border-color: #fbbf24;
+}
+.btn-retry.disabled, .btn-retry:disabled {
+    background-color: rgba(148, 163, 184, 0.1);
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 .alert-error {
     background-color: rgba(239, 68, 68, 0.15);
     color: #fca5a5;

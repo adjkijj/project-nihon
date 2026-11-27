@@ -36,7 +36,7 @@ Hệ thống đọc đường dẫn keystore và mật khẩu hoàn toàn từ b
 ```powershell
 $env:SSL_ENABLED="true"
 $env:SSL_KEY_STORE_PATH="keystore-dev.p12"
-$env:SSL_KEY_STORE_PASSWORD="devpassword123"
+$env:SSL_KEY_STORE_PASSWORD="your_keystore_password"
 $env:SSL_KEY_STORE_TYPE="PKCS12"
 $env:SSL_KEY_ALIAS="localhost"
 $env:HTTPS_REDIRECT_ENABLED="true"
@@ -46,7 +46,7 @@ $env:HTTPS_REDIRECT_ENABLED="true"
 ```bash
 export SSL_ENABLED="true"
 export SSL_KEY_STORE_PATH="keystore-dev.p12"
-export SSL_KEY_STORE_PASSWORD="devpassword123"
+export SSL_KEY_STORE_PASSWORD="your_keystore_password"
 export SSL_KEY_STORE_TYPE="PKCS12"
 export SSL_KEY_ALIAS="localhost"
 export HTTPS_REDIRECT_ENABLED="true"

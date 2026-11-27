@@ -10,10 +10,17 @@ import jakarta.validation.ConstraintValidatorContext;
  */
 public class JapaneseTextValidator implements ConstraintValidator<JapaneseText, String> {
 
+    private boolean optional;
+
+    @Override
+    public void initialize(JapaneseText constraintAnnotation) {
+        this.optional = constraintAnnotation.optional();
+    }
+
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
-        if (value == null || value.isEmpty()) {
-            return false;
+        if (value == null || value.isBlank()) {
+            return optional;
         }
         if (TextNormalizer.containsControlChars(value)) {
             return false;
@@ -54,13 +61,18 @@ public class JapaneseTextValidator implements ConstraintValidator<JapaneseText, 
                 || cp == '［' || cp == '］') {
             return true;
         }
-        // Dấu 〜 (U+301C, U+FF5E, ~), ー (U+30FC), ・ (U+30FB, U+FF65), khoảng trắng, "/" và "、"
+        // Dấu 〜 (U+301C, U+FF5E, ~), ー (U+30FC), ・ (U+30FB, U+FF65), khoảng trắng, "/" và "、", "。", "?", "？", "!", "！", "_", "＿", "★", "☆", "*", ":", "："
         return cp == '〜' || cp == '～' || cp == '~'
                 || cp == 'ー'
                 || cp == '・' || cp == '･'
                 || cp == ' ' || cp == '\u3000'
                 || cp == '/' || cp == '／'
-                || cp == '、';
+                || cp == '、' || cp == '。'
+                || cp == '?' || cp == '？'
+                || cp == '!' || cp == '！'
+                || cp == '_' || cp == '＿'
+                || cp == '★' || cp == '☆' || cp == '*'
+                || cp == ':' || cp == '：';
     }
 }
 

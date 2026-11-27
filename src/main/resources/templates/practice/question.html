@@ -3,26 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Câu hỏi kiểm tra - Project Nihon</title>
+    <title th:text="${retryWrongOnly ? 'Ôn lại từ làm sai - Project Nihon' : 'Câu hỏi kiểm tra - Project Nihon'}">Câu hỏi kiểm tra - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/practice-question.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
     <script th:src="@{/js/practice-question.js}" defer></script>
+    <script th:src="@{/js/practice-next.js}" defer></script>
 </head>
 <body>
-    <header>
-        <a href="/" class="brand">
-            <span class="brand-badge">日</span>
-            <span>Project Nihon</span>
-        </a>
-        <nav>
-            <a href="/">Trang chủ</a>
-            <a href="/vocabulary">Từ vựng</a>
-            <a href="/topics">Chủ đề</a>
-            <a href="/kanji">Kanji</a>
-            <a href="/practice" class="active">Luyện tập</a>
-            <a href="/stats">Thống kê</a>
-        </nav>
-    </header>
+    <header th:replace="~{fragments/navbar :: headerNav('practice')}"></header>
 
     <main>
         <div th:if="${errorMessage}" class="warning-notice">
@@ -33,12 +24,13 @@
         <div class="question-card">
             <div class="topic-indicator">
                 <span class="topic-badge" th:text="${question.topicName}">Chủ đề</span>
-                <span>Kiểm tra: Nhật → Việt</span>
+                <span th:if="${retryWrongOnly}" class="retry-badge">🔄 Ôn lại từ làm sai</span>
+                <span th:unless="${retryWrongOnly}">Kiểm tra: Nhật → Việt</span>
             </div>
 
-            <!-- Japanese Word Display -->
-            <div class="japanese-display-box">
-                <div class="japanese-word" th:text="${question.japaneseText}">私（わたし）</div>
+            <!-- Japanese Word Display (Không hiển thị phần đọc hoặc thẻ rt để bảo mật đáp án khi hỏi cách đọc) -->
+            <div class="japanese-display-box" th:attr="data-raw-japanese=${question.japaneseText}">
+                <div class="japanese-word" th:text="${T(com.nihon.service.FuriganaHelper).extractBaseText(question.japaneseText)}">私</div>
                 <div class="kanji-notice" th:if="${question.hasKanji}">
                     <span>✦ Từ có chứa chữ Hán (Kanji)</span>
                 </div>
@@ -58,6 +50,7 @@
                 <input type="hidden" name="_csrf" th:value="${_csrf}">
                 <input type="hidden" th:field="*{vocabId}">
                 <input type="hidden" th:field="*{topicId}">
+                <input type="hidden" th:field="*{retryWrongOnly}">
 
                 <!-- Field 1: Hiragana Reading (Only required when word has Kanji and has reading in source) -->
                 <div class="form-group" th:if="${question.requireReading}">
@@ -88,13 +81,22 @@
 
             <div class="card-actions">
                 <a th:href="@{/practice(topicId=${question.topicId})}" class="btn-link">← Đổi chủ đề khác</a>
-                <a th:href="@{/practice/question(topicId=${question.topicId}, excludeId=${question.vocabId})}" class="btn-link">Bỏ qua từ này ↷</a>
+                <a th:href="@{/practice/question(topicId=${question.topicId}, excludeId=${question.vocabId}, retryWrongOnly=${retryWrongOnly})}" class="btn-link">Bỏ qua từ này ↷</a>
+            </div>
+
+            <div class="auto-next-setting">
+                <label class="auto-next-label" for="autoNextToggle">
+                    <input type="checkbox" id="autoNextToggle" class="auto-next-checkbox">
+                    <span>Tự chuyển câu</span>
+                </label>
             </div>
         </div>
     </main>
 
     <footer>
         <p>&copy; 2026 Project Nihon. Chế độ kiểm tra phản xạ Nhật → Việt.</p>
+        <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
     </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
 </body>
 </html>

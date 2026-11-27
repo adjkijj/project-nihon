@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <!-- Fragment bảng đếm số người (~人) từ 1 đến 10 người -->
+    <div th:fragment="counterPeople" id="counter-people-section" class="counter-people-section" aria-labelledby="counterPeopleTitle">
+        <div class="counter-people-header">
+            <div>
+                <h2 id="counterPeopleTitle" class="counter-people-title">
+                    <span>👥</span> Bảng Đếm Số Người (〜人 / にん)
+                </h2>
+                <p class="counter-people-subtitle">
+                    Nhấp vào từng ô để nghe phát âm chuẩn bằng tiếng Nhật. Chú ý các trường hợp đặc biệt được đánh dấu màu cam.
+                </p>
+            </div>
+            <div class="counter-people-legend">
+                <span class="legend-badge-orange">Màu cam</span>
+                <span>= Biến âm bất quy tắc / Cần lưu ý</span>
+            </div>
+        </div>
+
+        <div class="counter-people-grid" role="list">
+            <!-- 1 người: ひとり (Màu cam) -->
+            <button type="button" class="counter-person-btn highlight-orange" data-speak="ひとり" aria-label="1 người: ひとり (Đặc biệt)">
+                <span class="counter-badge">Đặc biệt</span>
+                <span class="counter-num">1人</span>
+                <span class="counter-kana">ひとり</span>
+                <span class="counter-meaning">1 người</span>
+                <span class="counter-speak-icon" aria-hidden="true">🔊</span>
+            </button>
+
+            <!-- 2 người: ふたり (Màu cam) -->
+            <button type="button" class="counter-person-btn highlight-orange" data-speak="ふたり" aria-label="2 người: ふたり (Đặc biệt)">
+                <span class="counter-badge">Đặc biệt</span>
+                <span class="counter-num">2人</span>
+                <span class="counter-kana">ふたり</span>
+                <span class="counter-meaning">2 người</span>
+                <span class="counter-speak-icon" aria-hidden="true">🔊</span>
+            </button>
+
+            <!-- 3 người: さんにん -->
+            <button type="button" class="counter-person-btn" data-speak="さんにん" aria-label="3 người: さんにん">
+                <span class="counter-num">3人</span>
+                <span class="counter-kana">さんにん</span>
+                <span class="counter-meaning">3 người</span>
+                <span class="counter-speak-icon" aria-hidden="true">🔊</span>
+            </button>
+
+            <!-- 4 người: よにん (Màu cam) -->
+            <button type="button" class="counter-person-btn highlight-orange" data-speak="よにん" aria-label="4 người: よにん (Đặc biệt)">
+                <span class="counter-badge">Đặc biệt</span>
+                <span class="counter-num">4人</span>
+                <span class="counter-kana">よにん</span>
+                <span class="counter-meaning">4 người</span>
+                <span class="counter-speak-icon" aria-hidden="true">🔊</span>
+            </button>
+
+            <!-- 5 người: ごにん -->
+            <button type="button" class="counter-person-btn" data-speak="ごにん" aria-label="5 người: ごにん">
+                <span class="counter-num">5人</span>
+                <span class="counter-kana">ごにん</span>
+                <span class="counter-meaning">5 người</span>
+                <span class="counter-speak-icon" aria-hidden="true">🔊</span>
+            </button>
+
+            <!-- 6 người: ろくにん -->
+            <button type="button" class="counter-person-btn" data-speak="ろくにん" aria-label="6 người: ろくにん">
+                <span class="counter-num">6人</span>
+                <span class="counter-kana">ろくにん</span>
+                <span class="counter-meaning">6 người</span>
+                <span class="counter-speak-icon" aria-hidden="true">🔊</span>
+            </button>
+
+            <!-- 7 người: ななにん hoặc しちにん (Màu cam) -->
+            <button type="button" class="counter-person-btn highlight-orange" data-speak="ななにん" aria-label="7 người: ななにん hoặc しちにん (Đặc biệt)">
+                <span class="counter-badge">Đặc biệt</span>
+                <span class="counter-num">7人</span>
+                <span class="counter-kana">ななにん / しちにん</span>
+                <span class="counter-meaning">7 người</span>
+                <span class="counter-speak-icon" aria-hidden="true">🔊</span>
+            </button>
+
+            <!-- 8 người: はちにん -->
+            <button type="button" class="counter-person-btn" data-speak="はちにん" aria-label="8 người: はちにん">
+                <span class="counter-num">8人</span>
+                <span class="counter-kana">はちにん</span>
+                <span class="counter-meaning">8 người</span>
+                <span class="counter-speak-icon" aria-hidden="true">🔊</span>
+            </button>
+
+            <!-- 9 người: きゅうにん -->
+            <button type="button" class="counter-person-btn" data-speak="きゅうにん" aria-label="9 người: きゅうにん">
+                <span class="counter-num">9人</span>
+                <span class="counter-kana">きゅうにん</span>
+                <span class="counter-meaning">9 người</span>
+                <span class="counter-speak-icon" aria-hidden="true">🔊</span>
+            </button>
+
+            <!-- 10 người: じゅうにん -->
+            <button type="button" class="counter-person-btn" data-speak="じゅうにん" aria-label="10 người: じゅうにん">
+                <span class="counter-num">10人</span>
+                <span class="counter-kana">じゅうにん</span>
+                <span class="counter-meaning">10 người</span>
+                <span class="counter-speak-icon" aria-hidden="true">🔊</span>
+            </button>
+        </div>
+    </div>
+</body>
+</html>
+

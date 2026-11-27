@@ -6,23 +6,15 @@
     <title>Thống kê & Tiến độ học tập - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/stats.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <link rel="stylesheet" th:href="@{/css/timed-practice.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <link rel="stylesheet" th:href="@{/css/history.css}">
 </head>
 <body>
-    <header>
-        <a href="/" class="brand">
-            <span class="brand-badge">日</span>
-            <span>Project Nihon</span>
-        </a>
-        <nav>
-            <a href="/">Trang chủ</a>
-            <a href="/vocabulary">Từ vựng</a>
-            <a href="/topics">Chủ đề</a>
-            <a href="/kanji">Kanji</a>
-            <a href="/practice">Luyện tập</a>
-            <a href="/stats" class="active">Thống kê</a>
-        </nav>
-    </header>
+    <header th:replace="~{fragments/navbar :: headerNav('stats')}"></header>
 
     <main>
         <div class="page-header">
@@ -62,8 +54,23 @@
                     <label for="mode">Chế độ kiểm tra</label>
                     <select id="mode" name="mode" class="form-control">
                         <option value="ALL" th:selected="${selectedMode == null or selectedMode == 'ALL'}">-- Tất cả chế độ --</option>
-                        <option value="JA_VI" th:selected="${selectedMode == 'JA_VI'}">🇯🇵 → 🇻🇳 Nhật → Việt</option>
-                        <option value="VI_JA" th:selected="${selectedMode == 'VI_JA'}">🇻🇳 → 🇯🇵 Việt → Nhật</option>
+                        <option value="JA_VI" th:selected="${selectedMode == 'JA_VI'}">🇯🇵 → 🇻🇳 Nhật → Việt (Tự luận)</option>
+                        <option value="VI_JA" th:selected="${selectedMode == 'VI_JA'}">🇻🇳 → 🇯🇵 Việt → Nhật (Tự luận)</option>
+                        <option value="MC_JA_VI" th:selected="${selectedMode == 'MC_JA_VI'}">🎯 Trắc nghiệm Nhật → Việt</option>
+                        <option value="MC_VI_JA" th:selected="${selectedMode == 'MC_VI_JA'}">🎯 Trắc nghiệm Việt → Nhật</option>
+                        <option value="KANJI_READING" th:selected="${selectedMode == 'KANJI_READING'}">漢 Kanji: Đoán âm đọc</option>
+                        <option value="KANJI_WRITE" th:selected="${selectedMode == 'KANJI_WRITE'}">✍️ Kanji: Viết chữ Hán</option>
+                        <option value="KANJI_CHOICE" th:selected="${selectedMode == 'KANJI_CHOICE'}">🎲 Kanji: Trắc nghiệm</option>
+                        <option value="TIMED_JA_VI" th:selected="${selectedMode == 'TIMED_JA_VI'}">⏱️ Tính giờ (Nhật - Việt)</option>
+                        <option value="TIMED_VI_JA" th:selected="${selectedMode == 'TIMED_VI_JA'}">⏱️ Tính giờ (Việt - Nhật)</option>
+                        <option value="TIMED_KANJI_READING" th:selected="${selectedMode == 'TIMED_KANJI_READING'}">⏱️ Tính giờ (Kanji)</option>
+                        <option value="TIMED_CHOICE" th:selected="${selectedMode == 'TIMED_CHOICE'}">⏱️ Tính giờ (Trắc nghiệm)</option>
+                        <option value="TIMED_VERB_TE" th:selected="${selectedMode == 'TIMED_VERB_TE'}">⏱️ Tính giờ: Đấu trường thể Te</option>
+                        <option value="VERB_TE" th:selected="${selectedMode == 'VERB_TE'}">🔄 Động từ: Thể Te (て)</option>
+                        <option value="VERB_RU" th:selected="${selectedMode == 'VERB_RU'}">🔄 Động từ: Thể Từ điển (る)</option>
+                        <option value="VERB_TA" th:selected="${selectedMode == 'VERB_TA'}">🔄 Động từ: Thể Ta (た)</option>
+                        <option value="VERB_NAI" th:selected="${selectedMode == 'VERB_NAI'}">🔄 Động từ: Thể Nai (ない)</option>
+                        <option value="VERB_MASU" th:selected="${selectedMode == 'VERB_MASU'}">🔄 Động từ: Thể Masu (ます)</option>
                     </select>
                 </div>
 
@@ -85,6 +92,41 @@
                     <a th:href="@{/stats}" class="btn btn-secondary">Đặt lại</a>
                 </div>
             </form>
+        </div>
+
+        <!-- Retry Wrong Words Button in Stats -->
+        <div class="stats-retry-toolbar">
+            <a th:if="${wrongCount > 0 and (selectedMode == 'KANJI_READING' or selectedMode == 'KANJI_WRITE' or selectedMode == 'KANJI_CHOICE')}"
+               th:href="@{/practice/kanji/question(topicId=${selectedTopicId}, mode=${selectedMode == 'KANJI_WRITE' ? 'MEANING_TO_KANJI' : (selectedMode == 'KANJI_CHOICE' ? 'KANJI_CHOICE' : 'KANJI_TO_READING')}, retryWrongOnly=true)}"
+               class="btn btn-retry-stats">
+                <span>🔄</span> Ôn lại Kanji làm sai (<span th:text="${wrongCount}">0</span>)
+            </a>
+            <a th:if="${wrongCount > 0 and selectedMode == 'VI_JA'}"
+               th:href="@{/practice/vi-ja/question(topicId=${selectedTopicId}, retryWrongOnly=true)}"
+               class="btn btn-retry-stats">
+                <span>🔄</span> Ôn lại từ làm sai (<span th:text="${wrongCount}">0</span>)
+            </a>
+            <a th:if="${wrongCount > 0 and (selectedMode == 'TIMED_JA_VI' or selectedMode == 'TIMED_VI_JA' or selectedMode == 'TIMED_KANJI_READING' or selectedMode == 'TIMED_CHOICE' or selectedMode == 'TIMED_VERB_TE')}"
+               th:href="@{/practice/timed}"
+               class="btn btn-retry-stats">
+                <span>⏱️</span> Ôn lại bài tính giờ (<span th:text="${wrongCount}">0</span>)
+            </a>
+            <a th:if="${wrongCount > 0 and (selectedMode.startsWith('VERB_'))}"
+               th:href="@{/verbs/practice/question(targetForm=${selectedMode.replace('VERB_', '')}, topicId=${selectedTopicId}, retryWrongOnly=true)}"
+               class="btn btn-retry-stats">
+                <span>🔄</span> Ôn lại động từ làm sai (<span th:text="${wrongCount}">0</span>)
+            </a>
+            <a th:if="${wrongCount > 0 and selectedMode != 'VI_JA' and selectedMode != 'KANJI_READING' and selectedMode != 'KANJI_WRITE' and selectedMode != 'KANJI_CHOICE' and selectedMode != 'TIMED_JA_VI' and selectedMode != 'TIMED_VI_JA' and selectedMode != 'TIMED_KANJI_READING' and selectedMode != 'TIMED_CHOICE' and selectedMode != 'TIMED_VERB_TE' and !selectedMode.startsWith('VERB_')}"
+               th:href="@{/practice/question(topicId=${selectedTopicId}, retryWrongOnly=true)}"
+               class="btn btn-retry-stats">
+                <span>🔄</span> Ôn lại từ làm sai (<span th:text="${wrongCount}">0</span>)
+            </a>
+            <button th:unless="${wrongCount > 0}"
+                    type="button"
+                    class="btn btn-retry-stats disabled"
+                    disabled>
+                <span>🔄</span> Ôn lại từ làm sai (0)
+            </button>
         </div>
 
         <!-- KPI Grid for User Study Progress -->
@@ -161,6 +203,15 @@
                             <td>
                                 <span th:if="${item.mode == 'JA_VI'}" class="badge-mode badge-mode-ja-vi">Nhật → Việt</span>
                                 <span th:if="${item.mode == 'VI_JA'}" class="badge-mode badge-mode-vi-ja">Việt → Nhật</span>
+                                <span th:if="${item.mode == 'MC_JA_VI'}" class="badge-mode badge-mode-ja-vi">Trắc nghiệm (Nhật → Việt)</span>
+                                <span th:if="${item.mode == 'MC_VI_JA'}" class="badge-mode badge-mode-vi-ja">Trắc nghiệm (Việt → Nhật)</span>
+                                <span th:if="${item.mode == 'KANJI_READING'}" class="badge-mode badge-mode-kanji">Kanji: Đoán âm đọc</span>
+                                <span th:if="${item.mode == 'KANJI_WRITE'}" class="badge-mode badge-mode-kanji">Kanji: Viết chữ</span>
+                                <span th:if="${item.mode == 'KANJI_CHOICE'}" class="badge-mode badge-mode-kanji">Kanji: Trắc nghiệm</span>
+                                <span th:if="${item.mode == 'TIMED_JA_VI'}" class="badge-mode badge-mode-timed">Tính giờ (Nhật - Việt)</span>
+                                <span th:if="${item.mode == 'TIMED_VI_JA'}" class="badge-mode badge-mode-timed">Tính giờ (Việt - Nhật)</span>
+                                <span th:if="${item.mode == 'TIMED_KANJI_READING'}" class="badge-mode badge-mode-timed">Tính giờ (Kanji)</span>
+                                <span th:if="${item.mode == 'TIMED_CHOICE'}" class="badge-mode badge-mode-timed">Tính giờ (Trắc nghiệm)</span>
                             </td>
                             <td>
                                 <strong class="u-font-size-1-05rem" th:text="${(item.questionPrompt != null && !item.questionPrompt.isBlank()) ? item.questionPrompt : '-'}">Từ vựng</strong>
@@ -175,6 +226,9 @@
                             <td class="u-text-align-right">
                                 <a th:if="${item.mode == 'JA_VI'}" th:href="@{/practice/question(topicId=${item.topicId})}" class="btn-sm u-96b36b49" title="Ôn tập chủ đề này">Ôn tập ↺</a>
                                 <a th:if="${item.mode == 'VI_JA'}" th:href="@{/practice/vi-ja/question(topicId=${item.topicId})}" class="btn-sm u-96b36b49" title="Ôn tập chủ đề này">Ôn tập ↺</a>
+                                <a th:if="${item.mode == 'MC_JA_VI' or item.mode == 'MC_VI_JA'}" th:href="@{/practice/choice/question(topicId=${item.topicId})}" class="btn-sm u-96b36b49" title="Ôn tập chủ đề này">Ôn tập ↺</a>
+                                <a th:if="${item.mode == 'KANJI_READING' or item.mode == 'KANJI_WRITE' or item.mode == 'KANJI_CHOICE'}" th:href="@{/practice/kanji/question(topicId=${item.topicId}, mode=${item.mode == 'KANJI_WRITE' ? 'MEANING_TO_KANJI' : (item.mode == 'KANJI_CHOICE' ? 'KANJI_CHOICE' : 'KANJI_TO_READING')})}" class="btn-sm u-96b36b49" title="Ôn tập bài học Kanji này">Ôn tập ↺</a>
+                                <a th:if="${item.mode == 'TIMED_JA_VI' or item.mode == 'TIMED_VI_JA' or item.mode == 'TIMED_KANJI_READING' or item.mode == 'TIMED_CHOICE'}" th:href="@{/practice/timed}" class="btn-sm u-96b36b49" title="Luyện tập tính giờ">Luyện tập ↺</a>
                             </td>
                         </tr>
                     </tbody>
@@ -212,6 +266,15 @@
                             <td>
                                 <span th:if="${r.mode == 'JA_VI'}" class="badge-mode badge-mode-ja-vi">Nhật → Việt</span>
                                 <span th:if="${r.mode == 'VI_JA'}" class="badge-mode badge-mode-vi-ja">Việt → Nhật</span>
+                                <span th:if="${r.mode == 'MC_JA_VI'}" class="badge-mode badge-mode-ja-vi">Trắc nghiệm (Nhật → Việt)</span>
+                                <span th:if="${r.mode == 'MC_VI_JA'}" class="badge-mode badge-mode-vi-ja">Trắc nghiệm (Việt → Nhật)</span>
+                                <span th:if="${r.mode == 'KANJI_READING'}" class="badge-mode badge-mode-kanji">Kanji: Đoán âm đọc</span>
+                                <span th:if="${r.mode == 'KANJI_WRITE'}" class="badge-mode badge-mode-kanji">Kanji: Viết chữ</span>
+                                <span th:if="${r.mode == 'KANJI_CHOICE'}" class="badge-mode badge-mode-kanji">Kanji: Trắc nghiệm</span>
+                                <span th:if="${r.mode == 'TIMED_JA_VI'}" class="badge-mode badge-mode-timed">Tính giờ (Nhật - Việt)</span>
+                                <span th:if="${r.mode == 'TIMED_VI_JA'}" class="badge-mode badge-mode-timed">Tính giờ (Việt - Nhật)</span>
+                                <span th:if="${r.mode == 'TIMED_KANJI_READING'}" class="badge-mode badge-mode-timed">Tính giờ (Kanji)</span>
+                                <span th:if="${r.mode == 'TIMED_CHOICE'}" class="badge-mode badge-mode-timed">Tính giờ (Trắc nghiệm)</span>
                             </td>
                             <td>
                                 <strong th:text="${(r.questionPrompt != null && !r.questionPrompt.isBlank()) ? r.questionPrompt : '-'}">Từ vựng</strong>
@@ -336,10 +399,17 @@
                 </table>
             </div>
         </div>
+            <form th:action="@{/history/end-session}" method="post" class="end-session-form">
+            <input type="hidden" name="_csrf" th:value="${_csrf}">
+            <button type="submit" class="btn-end-session">Kết thúc buổi học</button>
+            <p class="end-session-hint">Lưu kết quả buổi học vào <a th:href="@{/history}">Lịch sử</a> của bạn.</p>
+        </form>
     </main>
 
     <footer>
         <p>&copy; 2026 Project Nihon. Hệ thống ghi nhớ từ vựng tiếng Nhật.</p>
+        <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
     </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
 </body>
 </html>

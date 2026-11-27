@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <!-- Fragment khai báo CSS cho nút phát âm tiếng Nhật -->
+    <th:block th:fragment="headAssets">
+        <link rel="stylesheet" th:href="@{/css/speaker.css}">
+    </th:block>
+</head>
+<body>
+    <!-- Fragment nút loa phát âm tự động nhận speechText đã tính toán -->
+    <th:block th:fragment="speakerBtn(speechText)">
+        <button type="button"
+                class="btn-speaker"
+                aria-label="Nghe phát âm"
+                th:title="'Nghe phát âm tiếng Nhật'"
+                th:data-speech-text="${speechText}">
+            <span class="speaker-icon" aria-hidden="true">🔊</span>
+        </button>
+    </th:block>
+
+    <!-- Bí danh hỗ trợ truyền trực tiếp speechText -->
+    <th:block th:fragment="speakerBtnDirect(speechText)">
+        <button type="button"
+                class="btn-speaker"
+                aria-label="Nghe phát âm"
+                th:title="'Nghe phát âm tiếng Nhật'"
+                th:data-speech-text="${speechText}">
+            <span class="speaker-icon" aria-hidden="true">🔊</span>
+        </button>
+    </th:block>
+
+    <!-- Fragment nút loa với speechText trực tiếp -->
+    <th:block th:fragment="speakerBtnDirect(speechText)">
+        <button type="button"
+                class="btn-speaker"
+                aria-label="Nghe phát âm"
+                th:title="'Nghe phát âm tiếng Nhật'"
+                th:data-speech-text="${speechText}">
+            <span class="speaker-icon" aria-hidden="true">🔊</span>
+        </button>
+    </th:block>
+
+    <!-- Fragment nạp script nihon-speech.js ở cuối body -->
+    <th:block th:fragment="scripts">
+        <script th:src="@{/js/nihon-speech.js}" defer></script>
+    </th:block>
+
+    <!-- Fragment select điều chỉnh tốc độ phát âm tiếng Nhật trên navbar -->
+    <div th:fragment="speedSelect" class="tts-speed-control">
+        <label for="tts-speed-select" class="tts-speed-label" title="Tốc độ phát âm tiếng Nhật">Tốc độ:</label>
+        <select id="tts-speed-select" name="ttsSpeed" class="tts-speed-select" aria-label="Tốc độ phát âm tiếng Nhật">
+            <option value="1.0">1.0x</option>
+            <option value="0.85">0.85x</option>
+            <option value="0.75">0.75x</option>
+        </select>
+    </div>
+</body>
+</html>
+

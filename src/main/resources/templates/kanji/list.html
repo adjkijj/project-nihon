@@ -6,23 +6,13 @@
     <title>Khu vực Kanji - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/kanji-list.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
 </head>
 <body>
-    <header>
-        <a href="/" class="brand">
-            <span class="brand-badge">日</span>
-            <span>Project Nihon</span>
-        </a>
-        <nav>
-            <a href="/">Trang chủ</a>
-            <a href="/vocabulary">Từ vựng</a>
-            <a href="/topics">Chủ đề</a>
-            <a href="/kanji" class="active">Kanji</a>
-            <a href="/practice">Luyện tập</a>
-            <a href="/stats">Thống kê</a>
-        </nav>
-    </header>
+    <header th:replace="~{fragments/navbar :: headerNav('kanji')}"></header>
 
     <main>
         <div class="page-header">
@@ -55,20 +45,46 @@
                     <label for="keyword">Từ khóa tìm kiếm</label>
                     <input type="text" id="keyword" name="keyword" th:value="${keyword}"
                            class="form-control"
-                           placeholder="Ký tự Kanji (魚), Hán Việt (NGƯ), On (ギョ), Kun (さかな) hoặc nghĩa...">
+                           placeholder="Ký tự Kanji (魚), Hán Việt (NGƯ), hoặc nghĩa...">
+                </div>
+
+                <div class="input-group">
+                    <label for="reading">Âm On / Kun (Kana hoặc Romaji)</label>
+                    <input type="text" id="reading" name="reading" th:value="${reading}"
+                           class="form-control"
+                           placeholder="VD: gyo, sakana, ギョ, さかな...">
                 </div>
 
                 <div class="input-group">
                     <label for="topicId">Bài học Kanji</label>
                     <select id="topicId" name="topicId" class="form-control">
                         <option value="">-- Tất cả bài học Kanji --</option>
-                        <option th:each="t : ${topics}"
-                                th:value="${t.id}"
-                                th:text="${t.name}"
-                                th:selected="${selectedTopicId != null and selectedTopicId == t.id}">
-                            Kanji Lesson 5
-                        </option>
+                        <optgroup th:each="group : ${topicGroups}" th:label="${group.parentName}">
+                            <option th:each="t : ${group.children}"
+                                    th:value="${t.id}"
+                                    th:text="${t.name}"
+                                    th:selected="${selectedTopicId != null and selectedTopicId == t.id}">
+                                Kanji Lesson 5
+                            </option>
+                        </optgroup>
                     </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="sort">Sắp xếp</label>
+                    <select id="sort" name="sort" class="form-control">
+                        <option value="SOURCE_LINE" th:selected="${sort == 'SOURCE_LINE'}">Theo bài học</option>
+                        <option value="CHARACTER" th:selected="${sort == 'CHARACTER'}">Ký tự Kanji</option>
+                        <option value="HAN_VIET" th:selected="${sort == 'HAN_VIET'}">Âm Hán Việt (A-Z)</option>
+                    </select>
+                </div>
+
+                <div class="input-group-checkbox">
+                    <label class="checkbox-label" for="hasWordsOnly">
+                        <input type="checkbox" id="hasWordsOnly" name="hasWordsOnly" value="true"
+                               th:checked="${hasWordsOnly}">
+                        <span>Chỉ Kanji có từ cần nhớ</span>
+                    </label>
                 </div>
 
                 <div class="filter-actions">
@@ -81,10 +97,10 @@
         <!-- Stats Summary -->
         <div class="stats-summary">
             <div class="stats-count">
-                Hiển thị <strong th:text="${kanjiPage.numberOfElements}">0</strong> /
-                <strong th:text="${kanjiPage.totalElements}">0</strong> ký tự Kanji
-                <span th:if="${keyword != null and !keyword.isEmpty() or selectedTopicId != null}">
-                    (đang lọc kết quả)
+                Tìm thấy <strong th:text="${kanjiPage.totalElements}">0</strong> kết quả
+                (hiển thị trang <strong th:text="${kanjiPage.number + 1}">1</strong> / <strong th:text="${kanjiPage.totalPages > 0 ? kanjiPage.totalPages : 1}">1</strong>)
+                <span th:if="${(keyword != null and !keyword.isEmpty()) or (reading != null and !reading.isEmpty()) or selectedTopicId != null or hasWordsOnly}">
+                    — đang lọc kết quả
                 </span>
             </div>
             <div>
@@ -146,7 +162,9 @@
                     <div th:if="${k.words == null || k.words.isEmpty()}" class="tag-missing">-</div>
                     <ul th:unless="${k.words == null || k.words.isEmpty()}" class="kanji-words-list">
                         <li th:each="w : ${k.words}">
-                            <span class="kw-jp" th:text="${(w.japaneseText != null && !w.japaneseText.isBlank()) ? w.japaneseText : '-'}">お酒（おさけ）</span>
+                            <span class="kw-jp" th:title="${w.japaneseText}">
+                                <th:block th:replace="~{fragments/furigana :: rubyWord(${w.japaneseText}, ${w.reading})}"></th:block>
+                            </span>
                             <span class="kw-meta">
                                 <span class="kw-romaji" th:text="${(w.romaji != null && !w.romaji.isBlank()) ? w.romaji : '-'}">osake</span> •
                                 <span class="kw-meaning" th:text="${(w.meaningVi != null && !w.meaningVi.isBlank()) ? w.meaningVi : '-'}">Rượu</span>
@@ -171,18 +189,18 @@
 
         <!-- Pagination -->
         <nav th:if="${kanjiPage.totalPages > 1}" class="pagination">
-            <a th:href="@{/kanji(page=${kanjiPage.number - 1}, size=${kanjiPage.size}, keyword=${keyword}, topicId=${selectedTopicId})}"
+            <a th:href="@{/kanji(page=${kanjiPage.number - 1}, size=${kanjiPage.size}, keyword=${keyword}, reading=${reading}, topicId=${selectedTopicId}, hasWordsOnly=${hasWordsOnly}, sort=${sort})}"
                class="page-link"
                th:classappend="${kanjiPage.first} ? 'disabled'">« Trước</a>
 
             <span th:each="i : ${#numbers.sequence(0, kanjiPage.totalPages - 1)}">
-                <a th:href="@{/kanji(page=${i}, size=${kanjiPage.size}, keyword=${keyword}, topicId=${selectedTopicId})}"
+                <a th:href="@{/kanji(page=${i}, size=${kanjiPage.size}, keyword=${keyword}, reading=${reading}, topicId=${selectedTopicId}, hasWordsOnly=${hasWordsOnly}, sort=${sort})}"
                    class="page-link"
                    th:classappend="${i == kanjiPage.number} ? 'active'"
                    th:text="${i + 1}">1</a>
             </span>
 
-            <a th:href="@{/kanji(page=${kanjiPage.number + 1}, size=${kanjiPage.size}, keyword=${keyword}, topicId=${selectedTopicId})}"
+            <a th:href="@{/kanji(page=${kanjiPage.number + 1}, size=${kanjiPage.size}, keyword=${keyword}, reading=${reading}, topicId=${selectedTopicId}, hasWordsOnly=${hasWordsOnly}, sort=${sort})}"
                class="page-link"
                th:classappend="${kanjiPage.last} ? 'disabled'">Sau »</a>
         </nav>
@@ -190,6 +208,8 @@
 
     <footer>
         <p>&copy; 2026 Project Nihon. Khu vực Kanji chuyên biệt.</p>
+        <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
     </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
 </body>
 </html>

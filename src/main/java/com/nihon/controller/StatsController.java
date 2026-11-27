@@ -100,6 +100,7 @@ public class StatsController {
                 model.addAttribute("progress", emptyProgress);
                 model.addAttribute("selectedMode", safeMode);
                 model.addAttribute("selectedTopicId", topicId);
+                model.addAttribute("wrongCount", 0);
                 model.addAttribute("activeNav", "stats");
                 return "stats";
             }
@@ -118,9 +119,19 @@ public class StatsController {
                     .currentTopicFilter(effectiveTopicId)
                     .build();
         }
+        int wrongCount;
+        if (safeMode.startsWith("KANJI_") || "TIMED_KANJI_READING".equals(safeMode)) {
+            wrongCount = studyProgressService.getWrongKanjiIds(session, safeMode, effectiveTopicId).size();
+        } else if (safeMode.startsWith("VERB_") || "TIMED_VERB_TE".equals(safeMode)) {
+            wrongCount = studyProgressService.getWrongVerbIds(session, safeMode, effectiveTopicId).size();
+        } else {
+            wrongCount = studyProgressService.getWrongVocabIds(session, safeMode, effectiveTopicId).size();
+        }
+
         model.addAttribute("progress", progress);
         model.addAttribute("selectedMode", safeMode);
         model.addAttribute("selectedTopicId", effectiveTopicId);
+        model.addAttribute("wrongCount", wrongCount);
         model.addAttribute("activeNav", "stats");
 
         return "stats";
@@ -131,7 +142,17 @@ public class StatsController {
             return "ALL";
         }
         String trimmedUpper = mode.strip().toUpperCase(Locale.ROOT);
-        if ("JA_VI".equals(trimmedUpper) || "VI_JA".equals(trimmedUpper) || "ALL".equals(trimmedUpper)) {
+        if ("JA_VI".equals(trimmedUpper) || "VI_JA".equals(trimmedUpper)
+                || "MC_JA_VI".equals(trimmedUpper) || "MC_VI_JA".equals(trimmedUpper)
+                || "KANJI_READING".equals(trimmedUpper) || "KANJI_WRITE".equals(trimmedUpper)
+                || "KANJI_CHOICE".equals(trimmedUpper)
+                || "TIMED_JA_VI".equals(trimmedUpper) || "TIMED_VI_JA".equals(trimmedUpper)
+                || "TIMED_KANJI_READING".equals(trimmedUpper) || "TIMED_CHOICE".equals(trimmedUpper)
+                || "TIMED_VERB_TE".equals(trimmedUpper)
+                || "VERB_TE".equals(trimmedUpper) || "VERB_RU".equals(trimmedUpper)
+                || "VERB_TA".equals(trimmedUpper) || "VERB_NAI".equals(trimmedUpper)
+                || "VERB_MASU".equals(trimmedUpper)
+                || "ALL".equals(trimmedUpper)) {
             return trimmedUpper;
         }
         return "ALL";

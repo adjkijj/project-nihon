@@ -39,10 +39,11 @@ public class KanaReadingValidator implements ConstraintValidator<KanaReading, St
     private static boolean isAllowedKanaSymbol(int cp) {
         return cp == 'ー'
                 || cp == '・' || cp == '･'
-                || cp == '、'
+                || cp == '、' || cp == '。'
                 || cp == ' ' || cp == '\u3000'
                 || cp == '/' || cp == '／'
-                || cp == '-' || cp == '－' || cp == '‐';
+                || cp == '-' || cp == '－' || cp == '‐'
+                || cp == '？' || cp == '！' || cp == '?' || cp == '!';
     }
 }
 

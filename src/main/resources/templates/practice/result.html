@@ -1,38 +1,35 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kết quả kiểm tra - Project Nihon</title>
+    <title
+        th:text="${retryWrongOnly ? 'Ôn lại từ làm sai - Kết quả - Project Nihon' : 'Kết quả kiểm tra - Project Nihon'}">
+        Kết quả kiểm tra - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/practice-result.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
     <script th:src="@{/js/practice-next.js}" defer></script>
+    <link rel="stylesheet" th:href="@{/css/history.css}">
 </head>
+
 <body>
-    <header>
-        <a href="/" class="brand">
-            <span class="brand-badge">日</span>
-            <span>Project Nihon</span>
-        </a>
-        <nav>
-            <a href="/">Trang chủ</a>
-            <a href="/vocabulary">Từ vựng</a>
-            <a href="/topics">Chủ đề</a>
-            <a href="/kanji">Kanji</a>
-            <a href="/practice" class="active">Luyện tập</a>
-            <a href="/stats">Thống kê</a>
-        </nav>
-    </header>
+    <header th:replace="~{fragments/navbar :: headerNav('practice')}"></header>
 
     <main>
-        <div class="result-card">
+        <div class="result-card" th:attr="data-practice-correct=${result.overallCorrect}">
             <!-- Status Banner -->
             <div th:if="${result.overallCorrect}" class="status-banner status-banner-success">
                 <div class="status-icon">✓</div>
                 <div>
                     <div class="status-title">Chính xác hoàn toàn!</div>
-                    <div class="status-desc" th:text="${result.feedbackMessage}">Bạn đã trả lời đúng tất cả tiêu chí.</div>
+                    <div class="status-desc" th:text="${result.feedbackMessage}">Bạn đã trả lời đúng tất cả tiêu chí.
+                    </div>
                 </div>
             </div>
 
@@ -40,13 +37,19 @@
                 <div class="status-icon">✗</div>
                 <div>
                     <div class="status-title">Chưa chính xác!</div>
-                    <div class="status-desc" th:text="${result.feedbackMessage}">Hãy đối chiếu với đáp án chuẩn bên dưới.</div>
+                    <div class="status-desc" th:text="${result.feedbackMessage}">Hãy đối chiếu với đáp án chuẩn bên
+                        dưới.</div>
                 </div>
             </div>
 
             <!-- Question Word Preview -->
             <div class="question-box">
-                <div class="question-word" th:text="${result.japaneseText}">私（わたし）</div>
+                <div class="question-word" th:title="${result.japaneseText}">
+                    <th:block
+                        th:replace="~{fragments/furigana :: rubyWord(${result.japaneseText}, ${result.expectedReading})}">
+                    </th:block>
+                    <th:block th:replace="~{fragments/speech :: speakerBtn(${result.speechText})}"></th:block>
+                </div>
                 <div class="question-topic" th:text="${'Chủ đề: ' + result.topicName}">Chủ đề</div>
             </div>
 
@@ -63,7 +66,7 @@
                         <div class="answer-col">
                             <label>Câu trả lời của bạn</label>
                             <span th:text="${result.userReading.isEmpty() ? '(Để trống)' : result.userReading}"
-                                  th:classappend="${result.readingCorrect} ? 'user-val correct' : 'user-val wrong'">
+                                th:classappend="${result.readingCorrect} ? 'user-val correct' : 'user-val wrong'">
                                 watashi
                             </span>
                         </div>
@@ -95,33 +98,78 @@
                         <div class="answer-col">
                             <label>Câu trả lời của bạn</label>
                             <span th:text="${result.userMeaning.isEmpty() ? '(Để trống)' : result.userMeaning}"
-                                  th:classappend="${result.meaningCorrect} ? 'user-val correct' : 'user-val wrong'">
+                                th:classappend="${result.meaningCorrect} ? 'user-val correct' : 'user-val wrong'">
                                 Tôi
                             </span>
                         </div>
                         <div class="answer-col">
                             <label>Đáp án chuẩn trong dữ liệu</label>
-                            <span class="expected-val" th:text="${(result.expectedMeaning != null && !result.expectedMeaning.isEmpty()) ? result.expectedMeaning : '-'}">Tôi</span>
+                            <span class="expected-val"
+                                th:text="${(result.expectedMeaning != null && !result.expectedMeaning.isEmpty()) ? result.expectedMeaning : '-'}">Tôi</span>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Congratulations Banner when retry is completed -->
+            <div th:if="${retryWrongOnly and retryCompleted}" class="retry-congrats-banner">
+                <div class="congrats-icon">🎉</div>
+                <div class="congrats-content">
+                    <h3 class="congrats-title">Chúc mừng! Bạn đã hoàn thành ôn lại tất cả các từ làm sai!</h3>
+                    <p class="congrats-text">Tất cả các từ vựng làm sai trong phiên này đã được trả lời chính xác.</p>
+                </div>
+            </div>
+
             <!-- Action Button to Next Word -->
-            <a th:href="@{/practice/question(topicId=${result.topicId}, excludeId=${result.vocabId})}"
-               class="btn-next" id="btnNext" autofocus>
-                Chuyển sang từ tiếp theo (Enter) ➔
-            </a>
+            <div th:if="${retryWrongOnly and retryCompleted}" class="result-actions">
+                <a th:href="@{/practice(topicId=${result.topicId})}" class="btn-next" id="btnNext" autofocus>
+                    Quay về trang luyện tập ➔
+                </a>
+            </div>
+
+            <div th:unless="${retryWrongOnly and retryCompleted}" class="result-actions">
+                <a th:href="@{/practice/question(topicId=${result.topicId}, excludeId=${result.vocabId}, retryWrongOnly=${retryWrongOnly})}"
+                    class="btn-next" id="btnNext" autofocus>
+                    Chuyển sang từ tiếp theo (Enter) ➔
+                </a>
+            </div>
+
+            <div class="auto-next-setting">
+                <label class="auto-next-label" for="autoNextToggle">
+                    <input type="checkbox" id="autoNextToggle" class="auto-next-checkbox">
+                    <span>Tự chuyển câu</span>
+                </label>
+            </div>
+
+            <div class="retry-action-box">
+                <a th:if="${wrongCount > 0}"
+                    th:href="@{/practice/question(topicId=${result.topicId}, retryWrongOnly=true)}"
+                    class="btn-retry-link">
+                    <span>🔄</span> Ôn lại từ làm sai (<span th:text="${wrongCount}">0</span>)
+                </a>
+                <button th:unless="${wrongCount > 0}" type="button" class="btn-retry-link disabled" disabled>
+                    <span>🔄</span> Ôn lại từ làm sai (0)
+                </button>
+            </div>
 
             <div class="card-footer-nav">
                 <a th:href="@{/practice(topicId=${result.topicId})}" class="btn-link">← Đổi chủ đề khác</a>
                 <a href="/vocabulary" class="btn-link">Tra cứu từ vựng 📚</a>
             </div>
         </div>
+            <form th:action="@{/history/end-session}" method="post" class="end-session-form">
+            <input type="hidden" name="_csrf" th:value="${_csrf}">
+            <button type="submit" class="btn-end-session">Kết thúc buổi học</button>
+            <p class="end-session-hint">Lưu kết quả buổi học vào <a th:href="@{/history}">Lịch sử</a> của bạn.</p>
+        </form>
     </main>
 
     <footer>
         <p>&copy; 2026 Project Nihon. Chế độ kiểm tra phản xạ Nhật → Việt.</p>
+        <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
     </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+    <th:block th:replace="~{fragments/speech :: scripts}"></th:block>
 </body>
+
 </html>

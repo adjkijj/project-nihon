@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luyện tập tính giờ - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/timed-practice.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/timed-practice.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('practice')}"></header>
+
+    <main class="timed-container">
+        <!-- Breadcrumbs -->
+        <nav class="timed-breadcrumbs" aria-label="Breadcrumb">
+            <a th:href="@{/}">Trang chủ</a>
+            <span class="separator">/</span>
+            <a th:href="@{/practice}">Luyện tập</a>
+            <span class="separator">/</span>
+            <span>Tính giờ</span>
+        </nav>
+
+        <!-- Header -->
+        <div class="timed-header">
+            <div class="timed-badge-header">⏱️ Giới Hạn Thời Gian &amp; Chấm Tức Thì</div>
+            <h1><span>⚡</span> Luyện Tập Tính Giờ</h1>
+            <p>Rèn luyện phản xạ ngôn ngữ dưới áp lực thời gian. Tự động thu bài khi hết giờ và ghi nhận chuỗi câu đúng liên tiếp.</p>
+        </div>
+
+        <!-- Mode Switcher Tabs -->
+        <div class="mode-switcher">
+            <a th:href="@{/practice}" class="mode-tab">🇯🇵 → 🇻🇳 Nhật → Việt</a>
+            <a th:href="@{/practice/vi-ja}" class="mode-tab">🇻🇳 → 🇯🇵 Việt → Nhật</a>
+            <a th:href="@{/practice/choice}" class="mode-tab">🎯 Trắc nghiệm</a>
+            <a th:href="@{/practice/timed}" class="mode-tab active">⏱️ Tính giờ</a>
+        </div>
+
+        <!-- Error Alert -->
+        <div th:if="${errorMessage}" class="alert-error">
+            <span>⚠️</span>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi.</span>
+        </div>
+
+        <!-- Active Running Session Banner & Quick Actions -->
+        <div th:if="${activeSession != null}" class="timed-alert-active" id="activeSessionBanner">
+            <div class="timed-alert-content">
+                <span class="timed-alert-icon">⏳</span>
+                <div class="timed-alert-text">
+                    <h3>Bạn đang có bài thi tính giờ đang diễn ra!</h3>
+                    <p>Hệ thống ghi nhận bài thi chưa kết thúc. Bạn có thể tiếp tục làm bài hoặc hủy bài cũ để bắt đầu bài mới.</p>
+                </div>
+            </div>
+            <div class="timed-alert-actions">
+                <a th:href="@{/practice/timed/run}" class="btn-tp-primary">
+                    Tiếp tục bài thi →
+                </a>
+                <button type="button" class="btn-tp-outline-danger" data-open-modal="activeSessionModal">
+                    Hủy &amp; Làm bài mới
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Config Grid -->
+        <div class="timed-config-grid">
+            <!-- Preset Speed Card (F17 - Vocab) -->
+            <div class="timed-preset-card">
+                <span class="timed-preset-badge">⚡ Khuyến nghị</span>
+                <h2 class="timed-preset-title"><span>🏃</span> Đấu Trường Tốc Độ</h2>
+                <p class="timed-preset-desc">Chế độ kiểm tra phản xạ nhanh với 20 câu hỏi trắc nghiệm trong 3 phút. Thử thách giữ vững chuỗi câu đúng cao nhất!</p>
+
+                <div class="timed-preset-specs">
+                    <div class="timed-spec-item">
+                        <span class="timed-spec-label">Số câu hỏi</span>
+                        <span class="timed-spec-value">20 câu</span>
+                    </div>
+                    <div class="timed-spec-item">
+                        <span class="timed-spec-label">Thời gian</span>
+                        <span class="timed-spec-value">03:00</span>
+                    </div>
+                    <div class="timed-spec-item">
+                        <span class="timed-spec-label">Hình thức</span>
+                        <span class="timed-spec-value">Trắc nghiệm</span>
+                    </div>
+                    <div class="timed-spec-item">
+                        <span class="timed-spec-label">Chấm điểm</span>
+                        <span class="timed-spec-value">Tức thì</span>
+                    </div>
+                </div>
+
+                <form th:action="@{/practice/timed/start}" method="post" class="timed-preset-footer">
+                    <input type="hidden" name="_csrf" th:if="${_csrf}" th:value="${_csrf}">
+                    <input type="hidden" name="type" value="CHOICE">
+                    <input type="hidden" name="questionCount" value="20">
+                    <input type="hidden" name="durationMinutes" value="3">
+                    <input type="hidden" name="evaluationMode" value="INSTANT">
+                    <input type="hidden" name="isSpeedPreset" value="true">
+                    <input type="hidden" name="confirmCancelOld" th:value="${activeSession != null ? 'true' : 'false'}">
+
+                    <button type="submit" class="btn-tp-primary">
+                        Bắt đầu Đấu trường tốc độ ⚡
+                    </button>
+                </form>
+            </div>
+
+            <!-- Preset Speed Card (F17 - Te Form) -->
+            <div class="timed-preset-card">
+                <span class="timed-preset-badge">⚡ Đấu trường thể Te</span>
+                <h2 class="timed-preset-title"><span>🔄</span> Đấu Trường Thể Te</h2>
+                <p class="timed-preset-desc">Thử thách phản xạ biến đổi thể て cho 20 động từ trong 3 phút. Rèn luyện tốc độ chia thể tự động và chuẩn xác!</p>
+
+                <div class="timed-preset-specs">
+                    <div class="timed-spec-item">
+                        <span class="timed-spec-label">Số câu hỏi</span>
+                        <span class="timed-spec-value">20 câu</span>
+                    </div>
+                    <div class="timed-spec-item">
+                        <span class="timed-spec-label">Thời gian</span>
+                        <span class="timed-spec-value">03:00</span>
+                    </div>
+                    <div class="timed-spec-item">
+                        <span class="timed-spec-label">Hình thức</span>
+                        <span class="timed-spec-value">Chia thể て</span>
+                    </div>
+                    <div class="timed-spec-item">
+                        <span class="timed-spec-label">Chấm điểm</span>
+                        <span class="timed-spec-value">Tức thì</span>
+                    </div>
+                </div>
+
+                <form th:action="@{/practice/timed/start}" method="post" class="timed-preset-footer">
+                    <input type="hidden" name="_csrf" th:if="${_csrf}" th:value="${_csrf}">
+                    <input type="hidden" name="type" value="VERB_TE">
+                    <input type="hidden" name="questionCount" value="20">
+                    <input type="hidden" name="durationMinutes" value="3">
+                    <input type="hidden" name="evaluationMode" value="INSTANT">
+                    <input type="hidden" name="isSpeedPreset" value="true">
+                    <input type="hidden" name="confirmCancelOld" th:value="${activeSession != null ? 'true' : 'false'}">
+
+                    <button type="submit" class="btn-tp-primary">
+                        Bắt đầu Đấu trường thể Te ⚡
+                    </button>
+                </form>
+            </div>
+
+            <!-- Custom Configuration Card -->
+            <div class="timed-custom-card">
+                <h2 class="timed-card-title">
+                    <span>⚙️</span> Tùy Chọn Cấu Hình Bài Thi
+                </h2>
+
+                <form th:action="@{/practice/timed/start}" method="post" id="timedStartCustomForm">
+                    <input type="hidden" name="_csrf" th:if="${_csrf}" th:value="${_csrf}">
+                    <input type="hidden" name="isSpeedPreset" value="false">
+                    <input type="hidden" name="confirmCancelOld" th:value="${activeSession != null ? 'true' : 'false'}">
+
+                    <!-- 1. Chế độ câu hỏi (Mode) -->
+                    <div class="timed-form-group">
+                        <label class="timed-form-label">Chế độ kiểm tra</label>
+                        <div class="timed-mode-grid">
+                            <label class="timed-mode-label">
+                                <input type="radio" name="type" value="JA_VI" class="timed-mode-input" checked>
+                                <div class="timed-mode-card">
+                                    <div class="timed-mode-title">🇯🇵 → 🇻🇳 Nhật - Việt</div>
+                                    <div class="timed-mode-desc">Nhìn từ tiếng Nhật, gõ nghĩa tiếng Việt tương ứng</div>
+                                </div>
+                            </label>
+
+                            <label class="timed-mode-label">
+                                <input type="radio" name="type" value="VI_JA" class="timed-mode-input">
+                                <div class="timed-mode-card">
+                                    <div class="timed-mode-title">🇻🇳 → 🇯🇵 Việt - Nhật</div>
+                                    <div class="timed-mode-desc">Nhìn nghĩa tiếng Việt, gõ từ vựng tiếng Nhật chuẩn</div>
+                                </div>
+                            </label>
+
+                            <label class="timed-mode-label">
+                                <input type="radio" name="type" value="KANJI_READING" class="timed-mode-input">
+                                <div class="timed-mode-card">
+                                    <div class="timed-mode-title">漢 Kanji - Âm đọc</div>
+                                    <div class="timed-mode-desc">Đoán và gõ âm đọc Hiragana chuẩn của chữ Hán</div>
+                                </div>
+                            </label>
+
+                            <label class="timed-mode-label">
+                                <input type="radio" name="type" value="CHOICE" class="timed-mode-input">
+                                <div class="timed-mode-card">
+                                    <div class="timed-mode-title">🎯 Trắc nghiệm</div>
+                                    <div class="timed-mode-desc">Chọn 1 trong 4 đáp án nhanh bằng phím 1-4</div>
+                                </div>
+                            </label>
+
+                            <label class="timed-mode-label">
+                                <input type="radio" name="type" value="VERB_TE" class="timed-mode-input">
+                                <div class="timed-mode-card">
+                                    <div class="timed-mode-title">🔄 Chia thể Te</div>
+                                    <div class="timed-mode-desc">Nhìn thể Masu và nghĩa, gõ thể て nhanh và chuẩn xác</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 2. Chọn chủ đề -->
+                    <div class="timed-form-group">
+                        <label for="topicIdSelect" class="timed-form-label">Chủ đề bài học</label>
+                        <select id="topicIdSelect" name="topicId" class="timed-form-control">
+                            <option value="">-- Tất cả chủ đề (Ngẫu nhiên toàn bộ từ vựng) --</option>
+                            <option th:each="t : ${topics}"
+                                    th:value="${t.id}"
+                                    th:text="${t.parent != null ? '↳ ' + t.name : t.name}">
+                                Chủ đề 1
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- 3. Số lượng câu hỏi -->
+                    <div class="timed-form-group">
+                        <label class="timed-form-label">Số lượng câu hỏi</label>
+                        <div class="timed-segmented-group">
+                            <label class="timed-segmented-label">
+                                <input type="radio" name="questionCount" value="10" class="timed-segmented-input">
+                                <span class="timed-segmented-btn">10 câu</span>
+                            </label>
+                            <label class="timed-segmented-label">
+                                <input type="radio" name="questionCount" value="20" class="timed-segmented-input" checked>
+                                <span class="timed-segmented-btn">20 câu</span>
+                            </label>
+                            <label class="timed-segmented-label">
+                                <input type="radio" name="questionCount" value="30" class="timed-segmented-input">
+                                <span class="timed-segmented-btn">30 câu</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 4. Thời lượng làm bài -->
+                    <div class="timed-form-group">
+                        <label class="timed-form-label">Thời lượng giới hạn</label>
+                        <div class="timed-segmented-group">
+                            <label class="timed-segmented-label">
+                                <input type="radio" name="durationMinutes" value="2" class="timed-segmented-input">
+                                <span class="timed-segmented-btn">2 phút</span>
+                            </label>
+                            <label class="timed-segmented-label">
+                                <input type="radio" name="durationMinutes" value="5" class="timed-segmented-input" checked>
+                                <span class="timed-segmented-btn">5 phút</span>
+                            </label>
+                            <label class="timed-segmented-label">
+                                <input type="radio" name="durationMinutes" value="10" class="timed-segmented-input">
+                                <span class="timed-segmented-btn">10 phút</span>
+                            </label>
+                            <label class="timed-segmented-label">
+                                <input type="radio" name="durationMinutes" value="15" class="timed-segmented-input">
+                                <span class="timed-segmented-btn">15 phút</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 5. Chế độ chấm điểm (F50) -->
+                    <div class="timed-form-group">
+                        <label class="timed-form-label">Chế độ chấm điểm</label>
+                        <div class="timed-segmented-group">
+                            <label class="timed-segmented-label">
+                                <input type="radio" name="evaluationMode" value="INSTANT" class="timed-segmented-input" checked>
+                                <span class="timed-segmented-btn">⚡ Tức thì (Xem kết quả sau mỗi câu)</span>
+                            </label>
+                            <label class="timed-segmented-label">
+                                <input type="radio" name="evaluationMode" value="AT_END" class="timed-segmented-input">
+                                <span class="timed-segmented-btn">📋 Toàn bài (Chỉ xem kết quả ở cuối)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="timed-form-group">
+                        <button type="submit" class="btn-tp-primary" id="btn-start-timed-practice">
+                            Bắt đầu bài thi tính giờ ⏱️
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Active Session Confirmation Modal Dialog -->
+        <div id="activeSessionModal" class="timed-modal-backdrop is-hidden" role="dialog" aria-modal="true" aria-labelledby="activeSessionModalTitle">
+            <div class="timed-modal-box">
+                <div class="timed-modal-header">
+                    <h3 id="activeSessionModalTitle">Bài thi tính giờ đang diễn ra</h3>
+                    <button type="button" class="timed-modal-close-btn" aria-label="Đóng hộp thoại">&times;</button>
+                </div>
+                <div class="timed-modal-body">
+                    <p>Bạn đang có một bài thi tính giờ chưa hoàn thành. Bạn muốn tiếp tục làm bài hiện tại hay hủy bài cũ để bắt đầu bài mới?</p>
+                </div>
+                <div class="timed-modal-footer">
+                    <a th:href="@{/practice/timed/run}" class="btn-tp-primary">
+                        Tiếp tục bài thi
+                    </a>
+                    <form th:action="@{/practice/timed/cancel}" method="post">
+                        <input type="hidden" name="_csrf" th:if="${_csrf}" th:value="${_csrf}">
+                        <button type="submit" class="btn-tp-outline-danger">
+                            Hủy &amp; Tạo bài mới
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Chế độ luyện tập tính giờ (F42, F50, F17).</p>
+        <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
+    </footer>
+
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+</body>
+</html>

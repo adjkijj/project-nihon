@@ -6,23 +6,13 @@
     <title th:text="${isEdit ? 'Chỉnh sửa chủ đề' : 'Tạo chủ đề mới'} + ' - Project Nihon'">Tạo/Sửa chủ đề</title>
     <link rel="stylesheet" th:href="@{/css/topics-form.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
 </head>
 <body>
-    <header>
-        <a href="/" class="brand">
-            <span class="brand-badge">日</span>
-            <span>Project Nihon</span>
-        </a>
-        <nav class="u-7dbd1ca1">
-            <a href="/">Trang chủ</a>
-            <a href="/vocabulary">Từ vựng</a>
-            <a href="/topics" class="active">Chủ đề</a>
-            <a href="/kanji">Kanji</a>
-            <a href="/practice">Luyện tập</a>
-            <a href="/stats">Thống kê</a>
-        </nav>
-    </header>
+    <header th:replace="~{fragments/navbar :: headerNav('topics')}"></header>
 
     <main>
         <div class="form-card">
@@ -75,5 +65,6 @@
             </form>
         </div>
     </main>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
 </body>
 </html>

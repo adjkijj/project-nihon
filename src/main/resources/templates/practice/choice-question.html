@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Câu hỏi trắc nghiệm - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/practice-index.css}">
+    <link rel="stylesheet" th:href="@{/css/practice-choice.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('practice')}"></header>
+
+    <main>
+        <div class="choice-question-stage">
+            <!-- Đề bài câu hỏi -->
+            <div class="choice-prompt-card">
+                <div class="prompt-meta">
+                    <span class="prompt-badge" th:text="${question.direction == 'VI_JA' ? '🇻🇳 → 🇯🇵 Chọn từ tiếng Nhật' : '🇯🇵 → 🇻🇳 Chọn nghĩa tiếng Việt'}">
+                        TRẮC NGHIỆM
+                    </span>
+                    <span class="toolbar-label" th:text="${question.topicName != null ? question.topicName : 'Tất cả chủ đề'}">
+                        Chủ đề
+                    </span>
+                </div>
+
+                <!-- Nội dung đề bài khi JA_VI (Hiện tiếng Nhật) -->
+                <div th:if="${question.direction == 'JA_VI'}" class="prompt-text-japanese">
+                    <th:block th:replace="~{fragments/furigana :: rubyWord(japaneseText=${question.questionPrompt}, reading=${question.reading})}"></th:block>
+                </div>
+
+                <!-- Nội dung đề bài khi VI_JA (Hiện nghĩa tiếng Việt) -->
+                <div th:if="${question.direction == 'VI_JA'}" class="prompt-text-meaning" th:text="${question.questionPrompt}">
+                    Nghĩa tiếng Việt
+                </div>
+            </div>
+
+            <!-- Form nộp câu trả lời trắc nghiệm -->
+            <form id="choice-answer-form" th:action="@{/practice/choice/check}" th:object="${form}" method="post">
+                <input type="hidden" th:field="*{vocabId}">
+                <input type="hidden" th:field="*{direction}">
+                <input type="hidden" th:field="*{topicId}">
+                <input type="hidden" id="choiceVocabIdInput" name="choiceVocabId" value="">
+
+                <!-- Lưới 4 phương án lựa chọn ngẫu nhiên -->
+                <div class="choice-options-grid">
+                    <button th:each="option, iter : ${question.options}"
+                            type="button"
+                            class="choice-card-button"
+                            th:data-choice-id="${option.vocabId}">
+                        <span class="choice-index-badge" th:text="${iter.count}">1</span>
+                        <span class="choice-text-content">
+                            <!-- Hiển thị khi hướng JA_VI: Nghĩa tiếng Việt -->
+                            <th:block th:if="${question.direction == 'JA_VI'}" th:text="${option.displayText}">
+                                Nghĩa tiếng Việt
+                            </th:block>
+                            <!-- Hiển thị khi hướng VI_JA: Tiếng Nhật có ruby -->
+                            <th:block th:if="${question.direction == 'VI_JA'}">
+                                <th:block th:replace="~{fragments/furigana :: rubyWord(japaneseText=${option.displayText}, reading=${option.reading})}"></th:block>
+                            </th:block>
+                        </span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Gợi ý phím tắt -->
+            <div class="choice-keyboard-hint">
+                Nhấn phím <kbd>1</kbd>, <kbd>2</kbd>, <kbd>3</kbd>, <kbd>4</kbd> hoặc click vào ô để chọn đáp án tức thì.
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Chế độ luyện tập trắc nghiệm 4 lựa chọn.</p>
+        <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
+    </footer>
+
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+    <script th:src="@{/js/practice-choice.js}" defer></script>
+</body>
+</html>
+

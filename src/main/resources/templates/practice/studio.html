@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tổ hợp Luyện gõ Tiếng Nhật Đa chế độ - Typing Studio - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/practice-index.css}">
+    <link rel="stylesheet" th:href="@{/css/kanji-practice.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/practice-next.js}" defer></script>
+    <script th:src="@{/js/practice-studio.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('practice')}"></header>
+
+    <main class="studio-container">
+        <!-- Studio Header & Tiêu đề -->
+        <div class="page-header mb-3">
+            <div class="page-title">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge-topic-type">🎙️ Typing Studio (F53)</span>
+                    <span class="badge-normal">Tổ hợp Luyện gõ Đa chế độ</span>
+                </div>
+                <h1>Tổ Hợp Luyện Gõ Tiếng Nhật Đa Chế Độ</h1>
+                <p>Không gian tích hợp toàn diện: Gõ phản xạ Nhật ➔ Việt, thử thách viết chính tả Việt ➔ Nhật và Luyện chữ Hán Kanji trên cùng một giao diện.</p>
+            </div>
+            <div class="actions-cell">
+                <a th:href="@{/practice}" class="btn btn-secondary" title="Mở trang Nhật ➔ Việt độc lập">Màn hình /practice</a>
+                <a th:href="@{/practice/vi-ja}" class="btn btn-secondary" title="Mở trang Việt ➔ Nhật độc lập">Màn hình /practice/vi-ja</a>
+                <a th:href="@{/practice/kanji}" class="btn btn-secondary" title="Mở trang Kanji độc lập">Màn hình /practice/kanji</a>
+            </div>
+        </div>
+
+        <!-- Thanh chuyển chế độ (Studio Mode Switcher Bar) -->
+        <nav class="mode-switcher studio-tabs mb-4" aria-label="Thanh chuyển chế độ luyện gõ">
+            <a th:href="@{/practice/studio(mode='ja-vi', topicId=${selectedTopicId})}"
+               class="mode-tab studio-tab"
+               data-mode="ja-vi"
+               th:classappend="${studioMode == 'ja-vi'} ? 'active' : ''"
+               role="tab"
+               th:aria-selected="${studioMode == 'ja-vi'}">
+                🇯🇵 → 🇻🇳 Nhật → Việt
+                <span th:if="${jaViWrongCount > 0}" class="badge-wrong ml-1" th:text="${'(' + jaViWrongCount + ' từ sai)'}"></span>
+            </a>
+            <a th:href="@{/practice/studio(mode='vi-ja', topicId=${selectedTopicId})}"
+               class="mode-tab studio-tab"
+               data-mode="vi-ja"
+               th:classappend="${studioMode == 'vi-ja'} ? 'active' : ''"
+               role="tab"
+               th:aria-selected="${studioMode == 'vi-ja'}">
+                🇻🇳 → 🇯🇵 Việt → Nhật
+                <span th:if="${viJaWrongCount > 0}" class="badge-wrong ml-1" th:text="${'(' + viJaWrongCount + ' từ sai)'}"></span>
+            </a>
+            <a th:href="@{/practice/studio(mode='kanji', topicId=${selectedTopicId})}"
+               class="mode-tab studio-tab"
+               data-mode="kanji"
+               th:classappend="${studioMode == 'kanji'} ? 'active' : ''"
+               role="tab"
+               th:aria-selected="${studioMode == 'kanji'}">
+                漢 Luyện tập Kanji
+                <span th:if="${kanjiWrongCount > 0}" class="badge-wrong ml-1" th:text="${'(' + kanjiWrongCount + ' chữ sai)'}"></span>
+            </a>
+        </nav>
+
+        <div th:if="${errorMessage}" class="alert-error">
+            <span>⚠️</span>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi.</span>
+        </div>
+
+        <!-- Panel 1: Chế độ Nhật -> Việt (/practice) -->
+        <section id="panel-ja-vi"
+                 class="studio-panel"
+                 role="tabpanel"
+                 aria-label="Luyện gõ Nhật sang Việt"
+                 th:hidden="${studioMode != 'ja-vi'}">
+            <div th:replace="~{practice/index :: jaViCard}"></div>
+        </section>
+
+        <!-- Panel 2: Chế độ Việt -> Nhật (/practice/vi-ja) -->
+        <section id="panel-vi-ja"
+                 class="studio-panel"
+                 role="tabpanel"
+                 aria-label="Luyện gõ Việt sang Nhật"
+                 th:hidden="${studioMode != 'vi-ja'}">
+            <div th:replace="~{practice/vi-ja-index :: viJaCard}"></div>
+        </section>
+
+        <!-- Panel 3: Chế độ Luyện Kanji (/practice/kanji) -->
+        <section id="panel-kanji"
+                 class="studio-panel"
+                 role="tabpanel"
+                 aria-label="Luyện tập chữ Hán Kanji"
+                 th:hidden="${studioMode != 'kanji'}">
+            <div th:replace="~{practice/kanji-index :: kanjiCard}"></div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Typing Studio - Tổ hợp luyện gõ tiếng Nhật đa chế độ.</p>
+        <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
+    </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+</body>
+</html>
+

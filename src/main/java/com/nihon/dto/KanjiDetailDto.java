@@ -32,6 +32,8 @@ public class KanjiDetailDto {
     private String topicName;
     private String parentTopicName;
     private Integer sourceLine;
+    private String strokeFileName;
+    private boolean hasStrokeData;
 
     @Builder.Default
     private List<KanjiWordSummaryDto> words = new ArrayList<>();
@@ -45,6 +47,9 @@ public class KanjiDetailDto {
             parentName = entity.getTopic().getParent().getName();
         }
 
+        String strokeFileName = com.nihon.service.KanjiStrokeHelper.computeStrokeFileName(entity.getCharacter());
+        boolean hasStroke = com.nihon.service.KanjiStrokeHelper.hasStrokeData(strokeFileName);
+
         return KanjiDetailDto.builder()
                 .id(entity.getId())
                 .character(entity.getCharacter())
@@ -57,6 +62,8 @@ public class KanjiDetailDto {
                 .parentTopicName(parentName)
                 .sourceLine(entity.getSourceLine())
                 .words(new ArrayList<>())
+                .strokeFileName(strokeFileName)
+                .hasStrokeData(hasStroke)
                 .build();
     }
 

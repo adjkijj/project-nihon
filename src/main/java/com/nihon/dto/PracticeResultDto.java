@@ -52,4 +52,11 @@ public class PracticeResultDto {
     private List<String> acceptedMeanings;
 
     private String feedbackMessage;
+
+    /**
+     * Chuỗi văn bản phục vụ phát âm tiếng Nhật qua Web Speech API.
+     */
+    public String getSpeechText() {
+        return com.nihon.service.SpeechHelper.resolveSpeechText(this.japaneseText, this.expectedReading);
+    }
 }

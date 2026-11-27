@@ -18,6 +18,7 @@ import java.text.Normalizer;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -317,5 +318,26 @@ class PracticeServiceTest {
         form.setTopicId(1L);
         PracticeResultDto matchingResult = practiceService.checkAnswer(form);
         assertThat(matchingResult.getTopicId()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("Test 5: Câu hỏi chọn ra luôn thuộc tập sai (allowedIds)")
+    void testGetNextQuestion_alwaysBelongsToAllowedIds() {
+        when(vocabularyRepository.findIdsByTopicId(1L)).thenReturn(List.of(10L, 20L, 30L, 40L));
+        when(vocabularyRepository.findById(20L)).thenReturn(Optional.of(vocabKanaOnly));
+        when(vocabularyRepository.findById(30L)).thenReturn(Optional.of(vocabKanjiMissingReading));
+
+        Set<Long> allowedWrongIds = Set.of(20L, 30L);
+
+        // Chạy nhiều lần để kiểm tra tính ngẫu nhiên nhưng vẫn luôn nằm trong allowedWrongIds
+        for (int i = 0; i < 10; i++) {
+            Optional<PracticeQuestionDto> q = practiceService.getNextQuestion(1L, null, allowedWrongIds);
+            assertThat(q).isPresent();
+            assertThat(q.get().getVocabId()).isIn(20L, 30L);
+        }
+
+        // Khi allowedIds không chứa ID nào của topic -> trả về empty
+        Optional<PracticeQuestionDto> emptyQ = practiceService.getNextQuestion(1L, null, Set.of(999L));
+        assertThat(emptyQ).isEmpty();
     }
 }

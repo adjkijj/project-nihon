@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Kết quả bài thi: ' + ${paper.title} + ' - Project Nihon'">Kết quả bài thi - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <link rel="stylesheet" th:href="@{/css/exams-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/exam.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/exam-result.js}" defer></script>
+    <script th:src="@{/js/confetti.js}" defer></script>
+</head>
+
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('exams')}"></header>
+
+    <main class="container my-4">
+        <!-- Thông báo Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success mb-4" role="status" th:text="${successMessage}">
+            Bạn đã nộp bài thi thành công!
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger mb-4" role="alert" th:text="${errorMessage}">
+            Đã có lỗi xảy ra.
+        </div>
+
+        <!-- Thẻ tổng quan kết quả bài thi -->
+        <section class="result-header-card" aria-labelledby="examResultTitle" th:attr="data-percentage=${result.percentage}">
+            <div class="result-score-banner">
+                <div>
+                    <div class="mb-2">
+                        <span class="badge badge-published" th:if="${attempt.status.name() == 'FINISHED'}">✓ ĐÃ NỘP BÀI THÀNH CÔNG</span>
+                        <span class="badge badge-rejected" th:if="${attempt.status.name() == 'EXPIRED'}">⏱️ ĐÃ HẾT GIỜ LÀM BÀI</span>
+                        <span class="badge badge-normal ml-2" th:text="${paper.code}">N5-01</span>
+                        <span class="exam-grade-badge ml-2"
+                              th:classappend="'grade-' + ${#strings.toLowerCase(result.grade)}"
+                              th:text="'Hạng ' + ${result.grade}">Hạng A</span>
+                    </div>
+                    <h1 id="examResultTitle" class="page-title h2 m-0" th:text="${paper.title}">Đề thi thử JLPT N5</h1>
+                </div>
+
+                <div class="text-right">
+                    <div class="result-main-score">
+                        <span th:text="${result.totalPoints}">25.00</span>
+                        <span class="font-size-md text-secondary">/</span>
+                        <span class="font-size-md text-secondary" th:text="${result.maxPoints}">30.00</span>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-end gap-2 mt-1">
+                        <div class="text-secondary font-weight-bold" th:attr="data-percentage=${result.percentage}" th:text="${result.percentage} + '%'">83.3%</div>
+                        <span class="exam-grade-badge"
+                              th:classappend="'grade-' + ${#strings.toLowerCase(result.grade)}"
+                              th:text="'Hạng ' + ${result.grade}">Hạng A</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Các chỉ số thống kê chi tiết -->
+            <div class="result-stats-row">
+                <div class="result-stat-card">
+                    <div class="result-stat-val text-success" th:text="${result.correctCount}">25</div>
+                    <div class="result-stat-lbl">Số câu đúng</div>
+                </div>
+                <div class="result-stat-card">
+                    <div class="result-stat-val text-danger" th:text="${result.incorrectCount}">3</div>
+                    <div class="result-stat-lbl">Số câu sai</div>
+                </div>
+                <div class="result-stat-card" th:if="${result.essayCount > 0}">
+                    <div class="result-stat-val text-accent" th:text="${result.essayCount}">2</div>
+                    <div class="result-stat-lbl">Câu hỏi tự luận</div>
+                </div>
+                <div class="result-stat-card">
+                    <div class="result-stat-val">
+                        <span th:text="${result.durationSeconds / 60}">15</span>'
+                        <span th:text="${result.durationSeconds % 60}">30</span>"
+                    </div>
+                    <div class="result-stat-lbl">Thời gian làm bài</div>
+                </div>
+            </div>
+
+            <!-- Các thao tác chính: Làm lại đề, Luyện lại câu sai, Quay lại -->
+            <div class="d-flex flex-wrap gap-2 pt-2 border-top">
+                <form th:action="@{'/exams/' + ${paper.code} + '/start'}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${_csrf}">
+                    <button type="submit" class="btn btn-primary font-size-sm">
+                        🔄 Làm lại đề thi
+                    </button>
+                </form>
+
+                <form th:if="${result.incorrectCount > 0}" th:action="@{'/exams/attempt/' + ${attempt.id} + '/retry-incorrect'}" method="post">
+                    <input type="hidden" name="_csrf" th:value="${_csrf}">
+                    <button type="submit" class="btn btn-warning font-size-sm">
+                        🎯 Luyện lại các câu sai (<span th:text="${result.incorrectCount}">3</span> câu)
+                    </button>
+                </form>
+
+                <a th:href="@{/history}" class="btn btn-secondary font-size-sm">
+                    📊 Lịch sử học tập
+                </a>
+
+                <a th:href="@{/exams}" class="btn btn-ghost font-size-sm">
+                    📚 Danh sách đề thi
+                </a>
+            </div>
+        </section>
+
+        <!-- Điểm số theo từng phần thi (Section breakdown) -->
+        <section th:if="${!#lists.isEmpty(result.sectionResults)}" class="mb-4" aria-labelledby="sectionScoresTitle">
+            <h2 id="sectionScoresTitle" class="section-title h3 mb-3">Điểm số theo từng phần thi</h2>
+            <div class="section-scores-grid">
+                <div th:each="sec : ${result.sectionResults}" class="section-score-card">
+                    <div class="section-score-title" th:text="${sec.title}">Phần 1: Kiến thức ngôn ngữ</div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong class="font-size-md text-accent" th:text="${sec.pointsEarned} + ' / ' + ${sec.maxPoints}">8.00 / 10.00</strong>
+                            <span class="text-secondary font-size-xs">điểm</span>
+                        </div>
+                        <div class="badge badge-normal" th:text="${sec.percentage} + '%'">80%</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bảng chi tiết từng câu hỏi & bộ lọc -->
+        <section aria-labelledby="questionDetailsTitle">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h2 id="questionDetailsTitle" class="section-title h3 m-0">Chi tiết từng câu hỏi</h2>
+                <div class="result-filter-tabs">
+                    <button type="button" class="result-filter-btn active" data-filter="all">
+                        Tất cả (<span th:text="${result.totalQuestions}">30</span>)
+                    </button>
+                    <button type="button" class="result-filter-btn" data-filter="incorrect">
+                        Chỉ câu sai (<span th:text="${result.incorrectCount}">3</span>)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Danh sách các thẻ câu hỏi -->
+            <div class="result-question-list">
+                <article th:each="q : ${result.questionResults}"
+                         class="result-question-item"
+                         th:classappend="${q.correct == true ? 'status-correct' : (q.correct == false ? 'status-incorrect' : 'status-essay')}"
+                         th:attr="data-status=${q.correct == true ? 'correct' : (q.correct == false ? 'incorrect' : 'essay')}">
+
+                    <!-- Thanh đầu thẻ câu hỏi -->
+                    <div class="question-top-bar">
+                        <div class="question-number-badge">
+                            <span class="badge badge-draft" th:text="'Câu ' + ${q.questionIndex}">Câu 1</span>
+                            <span class="question-type-badge" th:text="${q.question.type.displayName}">Trắc nghiệm</span>
+                            <span class="text-secondary font-size-xs" th:text="'(' + ${q.sectionTitle} + ')'">(Phần 1)</span>
+                        </div>
+
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge badge-published" th:if="${q.correct == true}">✓ Đúng</span>
+                            <span class="badge badge-rejected" th:if="${q.correct == false}">✗ Chưa đúng</span>
+                            <span class="badge badge-normal text-accent" th:if="${q.correct == null}">✍️ Tự luận (Tự chấm)</span>
+
+                            <span class="font-weight-bold font-size-sm"
+                                  th:classappend="${q.correct == true ? 'text-success' : (q.correct == false ? 'text-danger' : 'text-accent')}"
+                                  th:text="'+' + ${q.pointsAwarded} + ' / ' + ${q.maxPoints} + ' đ'">
+                                +1.00 / 1.00 đ
+                            </span>
+                            <span class="badge badge-normal text-accent font-size-xs self-approved-badge"
+                                  th:if="${q.selfApproved}">Tự xác nhận</span>
+                        </div>
+                    </div>
+
+                    <!-- Đề bài câu hỏi -->
+                    <div class="question-prompts mb-3">
+                        <div class="prompt-ja-text" th:if="${q.question.promptJa != null && !q.question.promptJa.isBlank()}" th:text="${q.question.promptJa}">
+                            問題の文章がここに入ります。
+                        </div>
+                        <div class="prompt-vi-text" th:if="${q.question.promptVi != null && !q.question.promptVi.isBlank()}" th:text="${q.question.promptVi}">
+                            Dịch nghĩa đề bài.
+                        </div>
+                    </div>
+
+                    <!-- Trường hợp 1: Các dạng câu hỏi thông thường (MULTIPLE_CHOICE, TYPING, ORDERING, TRANSLATION) -->
+                    <div th:if="${q.question.type.name() != 'ESSAY'}" class="result-qa-details mb-2">
+                        <div class="qa-row mb-2">
+                            <span class="qa-label font-weight-bold text-secondary font-size-sm">Câu trả lời của bạn:</span>
+                            <span class="qa-value font-weight-bold"
+                                  th:classappend="${q.correct == true ? 'text-success' : 'text-danger'}"
+                                  th:text="${q.studentAnswerDisplay}">
+                                Phương án đã chọn
+                            </span>
+                        </div>
+
+                        <div class="qa-row mb-2" th:if="${q.gradingResult != null && q.gradingResult.sampleAnswer != null && !q.gradingResult.sampleAnswer.isBlank()}">
+                            <span class="qa-label font-weight-bold text-secondary font-size-sm">Đáp án đúng / tham khảo:</span>
+                            <span class="qa-value text-accent font-weight-bold" th:text="${q.gradingResult.sampleAnswer}">
+                                Đáp án chính xác
+                            </span>
+                        </div>
+
+                        <!-- Ghi chú chấm tự động tham khảo cho TRANSLATION hoặc nhận xét -->
+                        <div th:if="${q.gradingResult != null && q.gradingResult.feedback != null && !q.gradingResult.feedback.isBlank()}"
+                             class="alert alert-info font-size-xs p-2 mb-2"
+                             th:text="${q.gradingResult.feedback}">
+                            Độ tương đồng: 95.0%. Chấm tự động tham khảo.
+                        </div>
+
+                        <!-- Khu vực tự xác nhận điểm tối đa và hủy xác nhận cho câu hỏi dịch câu (TRANSLATION) -->
+                        <div th:if="${q.question.type.name() == 'TRANSLATION' && q.answerId != null}" class="self-approve-action-box mt-2">
+                            <form th:if="${!q.selfApproved}"
+                                  th:action="@{'/exams/attempt/' + ${attempt.id} + '/answer/' + ${q.answerId} + '/self-approve'}"
+                                  method="post" class="d-inline-block">
+                                <input type="hidden" name="_csrf" th:value="${_csrf}">
+                                <button type="submit" class="btn btn-sm btn-outline-primary font-size-xs">
+                                    ✓ Tự xác nhận
+                                </button>
+                            </form>
+                            <form th:if="${q.selfApproved}"
+                                  th:action="@{'/exams/attempt/' + ${attempt.id} + '/answer/' + ${q.answerId} + '/self-approve'}"
+                                  method="post" class="d-inline-block">
+                                <input type="hidden" name="_csrf" th:value="${_csrf}">
+                                <input type="hidden" name="action" value="cancel">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary font-size-xs">
+                                    ↺ Hủy xác nhận
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Trường hợp 2: Dạng câu hỏi tự luận (ESSAY - F45) -->
+                    <div th:if="${q.question.type.name() == 'ESSAY'}" class="essay-result-container mb-3">
+                        <div class="essay-comparison-grid">
+                            <div class="essay-box">
+                                <div class="essay-box-header">Bài làm của bạn:</div>
+                                <div class="font-size-sm white-space-pre-wrap" th:text="${q.studentAnswer != null && !q.studentAnswer.isBlank() ? q.studentAnswer : '(Chưa viết bài làm)'}">
+                                    Nội dung đoạn văn của thí sinh...
+                                </div>
+                            </div>
+                            <div class="essay-box">
+                                <div class="essay-box-header">Bài mẫu tham khảo (SAMPLE):</div>
+                                <div class="font-size-sm text-secondary white-space-pre-wrap" th:text="${q.gradingResult != null ? q.gradingResult.sampleAnswer : ''}">
+                                    Nội dung đoạn văn mẫu...
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Danh sách từ khóa bắt buộc (KEYWORD) -->
+                        <div th:if="${q.gradingResult != null && (!#lists.isEmpty(q.gradingResult.matchedKeywords) || !#lists.isEmpty(q.gradingResult.missingKeywords))}" class="mt-2">
+                            <div class="font-size-xs font-weight-bold text-secondary mb-1">Kiểm tra từ khóa yêu cầu:</div>
+                            <div class="keyword-badges-list">
+                                <span th:each="kw : ${q.gradingResult.matchedKeywords}" class="badge badge-published">
+                                    ✓ <span th:text="${kw}">từ khóa</span> (Có trong bài)
+                                </span>
+                                <span th:each="kw : ${q.gradingResult.missingKeywords}" class="badge badge-rejected">
+                                    ✗ <span th:text="${kw}">từ khóa</span> (Chưa có)
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Khung tự cho điểm bài luận -->
+                        <div class="self-grade-box">
+                            <form th:action="@{'/exams/attempt/' + ${attempt.id} + '/grade-essay'}" method="post" class="d-flex align-items-center flex-wrap gap-2">
+                                <input type="hidden" name="_csrf" th:value="${_csrf}">
+                                <input type="hidden" name="questionId" th:value="${q.questionId}">
+                                <label th:for="'points_' + ${q.questionId}" class="font-size-sm font-weight-bold text-accent m-0">
+                                    Tự chấm điểm câu này (từ 0.0 đến <span th:text="${q.maxPoints}">5.0</span> đ):
+                                </label>
+                                <input type="number"
+                                       th:id="'points_' + ${q.questionId}"
+                                       name="points"
+                                       class="form-control d-inline-block width-auto font-size-sm text-center"
+                                       min="0"
+                                       th:max="${q.maxPoints}"
+                                       step="0.25"
+                                       th:value="${q.pointsAwarded}"
+                                       required />
+                                <button type="submit" class="btn btn-primary font-size-sm">
+                                    💾 Lưu điểm tự chấm
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Lời giải thích / phân tích câu hỏi nếu có -->
+                    <div th:if="${q.question.explanation != null && !q.question.explanation.isBlank()}"
+                         class="explanation-box p-2 bg-light rounded font-size-xs text-secondary mt-2">
+                        <span class="font-weight-bold">💡 Giải thích chi tiết:</span>
+                        <span th:text="${q.question.explanation}">Giải thích câu hỏi...</span>
+                    </div>
+                </article>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>

@@ -1,0 +1,429 @@
+/*
+ * Kanji Practice Styles - Project Nihon (F22, F23)
+ * WCAG AA Contrast Compliant (>= 4.5:1)
+ */
+
+/* ==========================================================================
+   1. Mode Selection Cards (kanji-index)
+   ========================================================================== */
+
+.kanji-practice-card {
+    max-width: 850px;
+    margin: 0 auto;
+}
+
+.kanji-modes-title {
+    display: block;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+}
+
+.kanji-mode-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    margin-bottom: 1.5rem;
+}
+
+.kanji-mode-card {
+    display: block;
+    position: relative;
+    background-color: var(--bg-surface);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.15rem 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.kanji-mode-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.kanji-mode-card:hover {
+    border-color: var(--accent);
+    background-color: rgba(56, 189, 248, 0.05);
+}
+
+.kanji-mode-card.selected,
+.kanji-mode-card:has(input[type="radio"]:checked) {
+    border-color: var(--accent);
+    background-color: rgba(56, 189, 248, 0.1);
+    box-shadow: 0 0 0 1px var(--accent);
+}
+
+.mode-card-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.mode-icon {
+    font-size: 2rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.mode-info {
+    flex: 1;
+}
+
+.mode-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.mode-desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+}
+
+.btn-start-practice {
+    font-size: 1.05rem;
+    font-weight: 700;
+    padding: 0.75rem 1.75rem;
+}
+
+/* ==========================================================================
+   2. Practice Question Stage (kanji-question)
+   ========================================================================== */
+
+.kanji-stage {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 1.5rem 0;
+}
+
+.kanji-stage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.stage-badge-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.stage-mode-badge {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.badge-reading {
+    background-color: rgba(56, 189, 248, 0.15);
+    color: var(--accent);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.badge-write {
+    background-color: rgba(168, 85, 247, 0.15);
+    color: #d8b4fe;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.badge-choice {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #fcd34d;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.stage-retry-badge {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.stage-topic-name {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.kanji-prompt-card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+/* Cỡ chữ Kanji lớn (Yêu cầu F22, F23) */
+.kanji-large-display {
+    font-size: 5rem;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--accent);
+    font-family: "Noto Sans JP", sans-serif;
+    letter-spacing: 0.05em;
+    user-select: none;
+}
+
+.kanji-meaning-prompt {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.prompt-hanviet {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: #fcd34d;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.prompt-meaning {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* Gợi ý số lượng âm đọc cho Dạng 1 */
+.kanji-hint-container {
+    margin-bottom: 1.25rem;
+    text-align: right;
+}
+
+.hint-text {
+    margin-top: 0.5rem;
+    padding: 0.65rem 0.85rem;
+    background-color: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: var(--radius-sm);
+    color: #fcd34d;
+    font-size: 0.875rem;
+    text-align: left;
+}
+
+.kanji-input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.kanji-input {
+    font-size: 1.35rem;
+    padding: 0.85rem 1rem;
+    height: auto;
+    text-align: center;
+}
+
+.kanji-action-row {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.btn-submit-answer {
+    flex: 2;
+    padding: 0.85rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+/* Trắc nghiệm 4 lựa chọn (Dạng 3) */
+.kanji-choice-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.kanji-choice-btn {
+    background-color: var(--bg-surface);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.25rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    color: var(--text-primary);
+}
+
+.kanji-choice-btn:hover {
+    border-color: var(--accent);
+    background-color: rgba(56, 189, 248, 0.08);
+    transform: translateY(-1px);
+}
+
+.kanji-choice-btn.selected {
+    border-color: var(--accent);
+    background-color: var(--accent);
+    color: #0f172a;
+}
+
+.kanji-choice-btn.selected .choice-num {
+    background-color: #0f172a;
+    color: var(--accent);
+}
+
+.choice-num {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background-color: var(--border-color);
+    color: var(--text-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.choice-text {
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.choice-keyboard-hint {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.choice-keyboard-hint kbd {
+    background-color: var(--border-color);
+    color: var(--text-primary);
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-family: monospace;
+    font-weight: 700;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* ==========================================================================
+   3. Result Screen (kanji-result)
+   ========================================================================== */
+
+.kanji-result-detail {
+    display: flex;
+    gap: 2rem;
+    margin: 1.75rem 0;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    align-items: center;
+}
+
+.kanji-result-char-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding-right: 1.5rem;
+    border-right: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.result-char {
+    font-size: 4.5rem;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+}
+
+.result-fields-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.result-field-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.field-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+}
+
+.field-val {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.val-correct {
+    color: #86efac;
+}
+
+.val-wrong {
+    color: #fca5a5;
+    text-decoration: line-through;
+}
+
+.val-expected {
+    color: #38bdf8;
+    font-weight: 700;
+}
+
+.onyomi-text {
+    color: #fcd34d;
+}
+
+.kunyomi-text {
+    color: #86efac;
+}
+
+.btn-next-kanji {
+    font-size: 1.1rem;
+    font-weight: 700;
+    padding: 0.75rem 1.75rem;
+}
+
+@media (max-width: 768px) {
+    .kanji-choice-grid {
+        grid-template-columns: 1fr;
+    }
+    .kanji-result-detail {
+        flex-direction: column;
+        text-align: center;
+    }
+    .kanji-result-char-box {
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        padding-right: 0;
+        padding-bottom: 1rem;
+        width: 100%;
+    }
+    .kanji-large-display {
+        font-size: 4rem;
+    }
+}
+

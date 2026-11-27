@@ -35,6 +35,21 @@ public class VocabularyRowDto {
     @Builder.Default
     private List<Long> allIds = new ArrayList<>();
 
+    @Builder.Default
+    private List<ConstituentKanjiDto> constituentKanji = new ArrayList<>();
+
+    /**
+     * Chuỗi Hán Việt của các Kanji cấu thành (ví dụ: "NHẬT, BẢN").
+     */
+    public String getConstituentHanVietDisplay() {
+        if (constituentKanji == null || constituentKanji.isEmpty()) {
+            return "-";
+        }
+        return constituentKanji.stream()
+                .map(k -> (k.getHanViet() != null && !k.getHanViet().isBlank()) ? k.getHanViet() : k.getCharacter())
+                .collect(Collectors.joining(", "));
+    }
+
     /**
      * Chuỗi danh sách chủ đề cách nhau bởi dấu phẩy (ví dụ: "Chủ đề A, Chủ đề B").
      */
@@ -59,5 +74,19 @@ public class VocabularyRowDto {
      */
     public Topic getTopic() {
         return (topics != null && !topics.isEmpty()) ? topics.get(0) : null;
+    }
+
+    /**
+     * Chuỗi văn bản phục vụ phát âm tiếng Nhật qua Web Speech API.
+     */
+    public String getSpeechText() {
+        return com.nihon.service.SpeechHelper.resolveSpeechText(this.japaneseText, this.reading);
+    }
+
+    /**
+     * Chuỗi tiếng Nhật đã loại bỏ phần ngoặc cách đọc (nếu có).
+     */
+    public String getBaseJapaneseText() {
+        return com.nihon.service.FuriganaHelper.extractBaseText(this.japaneseText);
     }
 }

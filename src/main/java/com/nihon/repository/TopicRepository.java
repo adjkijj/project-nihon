@@ -25,6 +25,9 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
 
     long countByParentId(Long parentId);
 
+    @Query("SELECT t.parent.id, COUNT(t) FROM Topic t WHERE t.parent.id IN :parentIds GROUP BY t.parent.id")
+    List<Object[]> countByParentIdInGrouped(@Param("parentIds") java.util.Collection<Long> parentIds);
+
     Optional<Topic> findByNameIgnoreCase(String name);
 
     @Query("SELECT COUNT(t) > 0 FROM Topic t WHERE LOWER(t.name) = LOWER(:name) " +
@@ -47,4 +50,7 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Topic t SET t.importBatchId = :batchId WHERE t.id IN :ids")
     void assignImportBatchId(@Param("ids") List<Long> ids, @Param("batchId") Long batchId);
+
+    @Query("SELECT t FROM Topic t LEFT JOIN FETCH t.parent WHERE t.id = :id")
+    Optional<Topic> findByIdWithParent(@Param("id") Long id);
 }

@@ -1,0 +1,1047 @@
+/* =============================================================================
+   Project Nihon - Phòng thi và Giao diện làm bài trực tuyến (F42 - F48)
+   Tuân thủ nghiêm ngặt CSP: 100% không inline CSS, tương phản WCAG AA >= 4.5:1
+   Bảng màu: Slate / Zinc trung tính, nhấn Indigo (#4F46E5), Amber (#D97706)
+   ============================================================================= */
+
+/* --- Biến CSS dùng chung --- */
+:root {
+    --exam-bg: #F8FAFC;
+    --exam-card-bg: #FFFFFF;
+    --exam-text: #1E293B;
+    --exam-text-muted: #64748B;
+    --exam-border: #E2E8F0;
+    --exam-primary: #4F46E5;
+    --exam-primary-hover: #4338CA;
+    --exam-primary-light: #EEF2FF;
+    --exam-success: #16A34A;
+    --exam-success-light: #DCFCE7;
+    --exam-warning: #D97706;
+    --exam-warning-light: #FEF3C7;
+    --exam-danger: #DC2626;
+    --exam-danger-light: #FEE2E2;
+    --exam-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --exam-font-ja: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", "Noto Sans JP", sans-serif;
+}
+
+/* --- Khung phòng thi tổng thể --- */
+.exam-room-container {
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+/* --- Thanh trạng thái cố định (Sticky Top Bar) --- */
+.exam-sticky-bar {
+    position: sticky;
+    top: 60px;
+    z-index: 90;
+    background: #0F172A;
+    color: #F8FAFC;
+    padding: 0.75rem 1.25rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.15);
+}
+
+.exam-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+}
+
+.exam-bar-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #F8FAFC;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.exam-bar-meta {
+    font-size: 0.85rem;
+    color: #94A3B8;
+}
+
+.exam-bar-center {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Đồng hồ đếm ngược */
+.exam-timer-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #1E293B;
+    border: 1px solid #334155;
+    padding: 0.4rem 0.9rem;
+    border-radius: 8px;
+    font-family: var(--exam-font-mono);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #38BDF8;
+    letter-spacing: 0.05em;
+}
+
+.exam-timer-box.warning {
+    color: #FBBF24;
+    border-color: #F59E0B;
+}
+
+.exam-timer-box.danger {
+    color: #F87171;
+    border-color: #EF4444;
+    animation: timerPulse 1s infinite alternate;
+}
+
+@keyframes timerPulse {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0.85; transform: scale(1.02); }
+}
+
+.exam-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Chỉ báo trạng thái lưu nháp (F48) */
+.save-status-indicator {
+    font-size: 0.85rem;
+    color: #94A3B8;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+}
+
+.save-status-indicator.saved {
+    color: #4ADE80;
+}
+
+.save-status-indicator.saving {
+    color: #FBBF24;
+}
+
+.save-status-indicator.offline {
+    color: #F87171;
+}
+
+/* Nút bấm trên thanh điều khiển */
+.btn-exam-tool {
+    background: #1E293B;
+    color: #F8FAFC;
+    border: 1px solid #334155;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.btn-exam-tool:hover {
+    background: #334155;
+    color: #FFFFFF;
+}
+
+.btn-exam-tool.active {
+    background: var(--exam-primary);
+    border-color: var(--exam-primary);
+    color: #FFFFFF;
+}
+
+.btn-exam-finish {
+    background: var(--exam-primary);
+    color: #FFFFFF;
+    border: none;
+    padding: 0.45rem 1.1rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.btn-exam-finish:hover {
+    background: var(--exam-primary-hover);
+}
+
+/* --- Bố cục chính 2 cột: Nội dung đề & Bảng câu hỏi (Palette) --- */
+.exam-layout-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+/* --- Bảng điều hướng câu hỏi (Palette - F46) --- */
+.exam-palette-card {
+    background: var(--exam-card-bg);
+    border: 1px solid var(--exam-border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    position: sticky;
+    top: 140px;
+    max-height: calc(100vh - 160px);
+    overflow-y: auto;
+}
+
+.palette-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--exam-border);
+}
+
+.palette-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--exam-text);
+    margin: 0;
+}
+
+.palette-progress {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--exam-primary);
+}
+
+.palette-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.75rem;
+    color: var(--exam-text-muted);
+    margin-bottom: 1rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+.legend-dot.unanswered {
+    background: #F1F5F9;
+    border: 1px solid #CBD5E1;
+}
+
+.legend-dot.answered {
+    background: var(--exam-primary);
+}
+
+.legend-dot.review {
+    background: var(--exam-warning);
+}
+
+.palette-section-group {
+    margin-bottom: 1.25rem;
+}
+
+.palette-section-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--exam-text-muted);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.palette-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.45rem;
+}
+
+.palette-btn {
+    position: relative;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 1px solid #CBD5E1;
+    background: #F8FAFC;
+    color: var(--exam-text);
+}
+
+.palette-btn:hover {
+    border-color: var(--exam-primary);
+    transform: translateY(-1px);
+}
+
+.palette-btn.answered {
+    background: var(--exam-primary);
+    border-color: var(--exam-primary);
+    color: #FFFFFF;
+}
+
+.palette-btn.review {
+    border-color: var(--exam-warning);
+    background: var(--exam-warning-light);
+    color: var(--exam-warning);
+}
+
+.palette-btn.answered.review {
+    background: var(--exam-warning);
+    border-color: var(--exam-warning);
+    color: #FFFFFF;
+}
+
+.palette-btn.review::after {
+    content: "★";
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    font-size: 9px;
+    color: #D97706;
+}
+
+.palette-btn.answered.review::after {
+    color: #FFFFFF;
+}
+
+.palette-btn.active {
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.35);
+    border-color: var(--exam-primary);
+    font-weight: 800;
+}
+
+/* --- Khung câu hỏi chính --- */
+.exam-content-area {
+    min-width: 0;
+}
+
+/* Thanh chuyển chế độ xem: Từng câu / Cả phần */
+.view-mode-selector {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--exam-card-bg);
+    border: 1px solid var(--exam-border);
+    border-radius: 10px;
+    padding: 0.6rem 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.mode-pills {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.mode-pill {
+    padding: 0.35rem 0.85rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--exam-text-muted);
+    cursor: pointer;
+}
+
+.mode-pill.active {
+    background: var(--exam-primary-light);
+    color: var(--exam-primary);
+    border-color: rgba(79, 70, 229, 0.2);
+    font-weight: 600;
+}
+
+/* Thẻ phần thi */
+.exam-section-block {
+    margin-bottom: 2rem;
+}
+
+.exam-section-banner {
+    background: #F1F5F9;
+    border-left: 4px solid var(--exam-primary);
+    padding: 0.85rem 1.25rem;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 1rem;
+}
+
+.exam-section-banner-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--exam-text);
+    margin: 0 0 0.25rem 0;
+}
+
+.exam-section-banner-instructions {
+    font-size: 0.85rem;
+    color: var(--exam-text-muted);
+    margin: 0;
+}
+
+/* Thẻ từng câu hỏi */
+.exam-question-card {
+    background: var(--exam-card-bg);
+    border: 1px solid var(--exam-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.exam-question-card.active-question {
+    border-color: var(--exam-primary);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.08);
+}
+
+.question-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #F1F5F9;
+}
+
+.question-number-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--exam-text);
+}
+
+.question-type-badge {
+    background: #F1F5F9;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+}
+
+.question-points-badge {
+    color: var(--exam-text-muted);
+    font-size: 0.85rem;
+    margin-left: 0.5rem;
+}
+
+.question-actions-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-mark-review {
+    background: transparent;
+    border: 1px solid #CBD5E1;
+    color: #475569;
+    padding: 0.3rem 0.65rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.15s ease;
+}
+
+.btn-mark-review:hover {
+    border-color: var(--exam-warning);
+    color: var(--exam-warning);
+}
+
+.btn-mark-review.marked {
+    background: var(--exam-warning-light);
+    border-color: var(--exam-warning);
+    color: var(--exam-warning);
+    font-weight: 600;
+}
+
+/* Đề bài tiếng Nhật & tiếng Việt (F47) */
+.question-prompts {
+    margin-bottom: 1.25rem;
+}
+
+.prompt-ja-text {
+    font-family: var(--exam-font-ja);
+    font-size: 1.2rem;
+    font-weight: 600;
+    line-height: 1.7;
+    color: var(--exam-text);
+    margin-bottom: 0.5rem;
+}
+
+.prompt-vi-text {
+    font-size: 0.95rem;
+    color: #475569;
+    line-height: 1.5;
+    background: #F8FAFC;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    border-left: 3px solid #94A3B8;
+    margin-top: 0.35rem;
+    transition: all 0.2s ease;
+}
+
+/* F47: Ẩn bản dịch tiếng Việt khi chế độ ẩn dịch được bật */
+body.hide-translation .prompt-vi-text {
+    display: none !important;
+}
+
+/* --- Dạng 1: MULTIPLE_CHOICE --- */
+.choices-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.choice-option-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid var(--exam-border);
+    border-radius: 10px;
+    background: var(--exam-card-bg);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.choice-option-label:hover {
+    border-color: var(--exam-primary);
+    background: #F8FAFC;
+}
+
+.choice-option-label.selected {
+    border-color: var(--exam-primary);
+    background: var(--exam-primary-light);
+}
+
+.choice-index-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #F1F5F9;
+    color: #475569;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+}
+
+.choice-option-label.selected .choice-index-circle {
+    background: var(--exam-primary);
+    color: #FFFFFF;
+}
+
+.choice-text {
+    font-family: var(--exam-font-ja);
+    font-size: 1.05rem;
+    color: var(--exam-text);
+    flex-grow: 1;
+}
+
+.choice-radio-input {
+    display: none;
+}
+
+/* --- Dạng 2 & 4 & 5: TYPING, TRANSLATION, ESSAY --- */
+.text-answer-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid var(--exam-border);
+    border-radius: 8px;
+    font-family: var(--exam-font-ja);
+    font-size: 1.1rem;
+    color: var(--exam-text);
+    background: #F8FAFC;
+    transition: border-color 0.2s, background 0.2s;
+    box-sizing: border-box;
+}
+
+.text-answer-input:focus {
+    outline: none;
+    border-color: var(--exam-primary);
+    background: #FFFFFF;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.textarea-answer-input {
+    min-height: 120px;
+    resize: vertical;
+    line-height: 1.6;
+}
+
+.char-counter {
+    display: block;
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--exam-text-muted);
+    margin-top: 0.3rem;
+}
+
+/* --- Dạng 3: ORDERING (Sao JLPT) --- */
+.ordering-slots-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.ordering-slot {
+    min-width: 70px;
+    height: 42px;
+    border: 2px dashed #94A3B8;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.5rem;
+    font-family: var(--exam-font-ja);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--exam-text);
+    background: #F8FAFC;
+}
+
+.ordering-slot.star-slot {
+    border-color: var(--exam-warning);
+    background: var(--exam-warning-light);
+}
+
+.ordering-pieces-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.ordering-piece-btn {
+    border: 1.5px solid var(--exam-border);
+    background: #FFFFFF;
+    padding: 0.5rem 0.85rem;
+    border-radius: 8px;
+    font-family: var(--exam-font-ja);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.ordering-piece-btn:hover {
+    border-color: var(--exam-primary);
+    background: var(--exam-primary-light);
+}
+
+.ordering-piece-btn.used {
+    opacity: 0.5;
+    background: #F1F5F9;
+    border-style: dashed;
+    cursor: default;
+}
+
+.ordering-control-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Nút điều hướng chuyển câu ở chế độ từng câu (Single Mode) */
+.exam-layout-grid.mode-single .exam-question-card {
+    display: none;
+}
+
+.exam-layout-grid.mode-single .exam-question-card.active-single {
+    display: block;
+}
+
+.exam-layout-grid.mode-single .single-mode-nav-bar {
+    display: flex;
+}
+
+.exam-layout-grid.mode-section .single-mode-nav-bar {
+    display: none;
+}
+
+.single-mode-nav-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--exam-border);
+}
+
+.btn-nav-step {
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    color: var(--exam-text);
+    padding: 0.55rem 1.25rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.btn-nav-step:hover:not(:disabled) {
+    border-color: var(--exam-primary);
+    color: var(--exam-primary);
+    background: var(--exam-primary-light);
+}
+
+.btn-nav-step:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* --- Màn hình danh sách đề thi (Taker List) & Giới thiệu đề (Intro) --- */
+.exam-intro-card {
+    background: var(--exam-card-bg);
+    border: 1px solid var(--exam-border);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    max-width: 800px;
+    margin: 2rem auto;
+}
+
+.exam-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.exam-meta-item {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.exam-meta-label {
+    font-size: 0.8rem;
+    color: var(--exam-text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.exam-meta-val {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--exam-text);
+}
+
+/* --- Màn hình kết quả tóm tắt (Result) --- */
+.exam-result-card {
+    background: var(--exam-card-bg);
+    border: 1px solid var(--exam-border);
+    border-radius: 16px;
+    padding: 2.5rem 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    max-width: 720px;
+    margin: 2rem auto;
+    text-align: center;
+}
+
+.result-icon-success {
+    font-size: 3rem;
+    color: var(--exam-success);
+    margin-bottom: 0.75rem;
+}
+
+/* --- Responsive trên màn hình di động (< 768px) --- */
+@media (max-width: 768px) {
+    .exam-sticky-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+        top: 0;
+        border-radius: 0;
+        margin: -1rem -1rem 1rem -1rem;
+    }
+
+    .exam-bar-left, .exam-bar-center, .exam-bar-right {
+        justify-content: space-between;
+    }
+
+    .exam-layout-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .exam-palette-card {
+        position: static;
+        max-height: none;
+        order: 2;
+    }
+
+    .palette-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
+
+/* =============================================================================
+   Màn hình kết quả bài thi chi tiết (F40 - F45)
+   ============================================================================= */
+.result-header-card {
+    background: #FFFFFF;
+    border: 1px solid var(--exam-border);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.result-score-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #F1F5F9;
+}
+
+.result-main-score {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--exam-primary);
+}
+
+.result-stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.result-stat-card {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.result-stat-val {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--exam-text);
+}
+
+.result-stat-lbl {
+    font-size: 0.8rem;
+    color: var(--exam-text-muted);
+    margin-top: 0.25rem;
+}
+
+.section-scores-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.section-score-card {
+    background: #FFFFFF;
+    border: 1px solid var(--exam-border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    border-left: 4px solid var(--exam-primary);
+}
+
+.section-score-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--exam-text);
+}
+
+.result-filter-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.result-filter-btn {
+    padding: 0.5rem 1.25rem;
+    border-radius: 8px;
+    border: 1px solid var(--exam-border);
+    background: #FFFFFF;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    color: var(--exam-text-muted);
+    transition: all 0.2s;
+}
+
+.result-filter-btn.active {
+    background: var(--exam-primary);
+    border-color: var(--exam-primary);
+    color: #FFFFFF;
+}
+
+.result-question-item {
+    background: #FFFFFF;
+    border: 1px solid var(--exam-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.result-question-item.status-correct {
+    border-left: 5px solid var(--exam-success);
+}
+
+.result-question-item.status-incorrect {
+    border-left: 5px solid var(--exam-danger);
+}
+
+.result-question-item.status-essay {
+    border-left: 5px solid #8B5CF6;
+}
+
+.essay-comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin: 1rem 0;
+}
+
+@media (max-width: 768px) {
+    .essay-comparison-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.essay-box {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.essay-box-header {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--exam-text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.keyword-badges-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+}
+
+.self-grade-box {
+    background: #FDF4FF;
+    border: 1px dashed #C084FC;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+/* ==========================================================================
+   Huy hiệu xếp hạng kết quả bài thi Project Nihon (Grade Badges: S, A, B, C)
+   ========================================================================== */
+.exam-grade-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.grade-s, .badge-grade-s {
+    background: linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(245, 158, 11, 0.35));
+    color: #fef08a;
+    border: 1px solid rgba(234, 179, 8, 0.6);
+    box-shadow: 0 0 10px rgba(234, 179, 8, 0.2);
+}
+
+.grade-a, .badge-grade-a {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.5);
+}
+
+.grade-b, .badge-grade-b {
+    background-color: rgba(56, 189, 248, 0.2);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.5);
+}
+
+.grade-c, .badge-grade-c {
+    background-color: rgba(148, 163, 184, 0.2);
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.self-approved-badge {
+    background-color: rgba(234, 179, 8, 0.2);
+    color: #ca8a04;
+    border: 1px solid rgba(234, 179, 8, 0.5);
+    font-weight: 700;
+}
+
+/* ==========================================================================
+   Hiệu ứng pháo giấy ăn mừng (Confetti Canvas)
+   ========================================================================== */
+.confetti-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+

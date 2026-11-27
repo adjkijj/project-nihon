@@ -28,6 +28,9 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
 
     long countByTopicId(Long topicId);
 
+    @Query("SELECT v.topic.id, COUNT(v) FROM Vocabulary v WHERE v.topic.id IN :topicIds GROUP BY v.topic.id")
+    List<Object[]> countByTopicIdInGrouped(@Param("topicIds") java.util.Collection<Long> topicIds);
+
     List<Vocabulary> findTop10ByJapaneseTextContainingOrderBySourceLineAsc(String character);
 
     @Query("SELECT v FROM Vocabulary v WHERE v.topic.id = :topicId AND v.japaneseText LIKE CONCAT('%', :character, '%') ORDER BY v.id ASC")
@@ -35,6 +38,13 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
 
     @Query("SELECT v FROM Vocabulary v WHERE v.japaneseText LIKE CONCAT('%', :character, '%') ORDER BY v.id ASC")
     List<Vocabulary> findWordsByCharacter(@Param("character") String character);
+
+    @Query(value = "SELECT v FROM Vocabulary v JOIN FETCH v.topic t WHERE v.japaneseText LIKE CONCAT('%', :escapedKanji, '%') ESCAPE '\\'",
+           countQuery = "SELECT COUNT(v) FROM Vocabulary v WHERE v.japaneseText LIKE CONCAT('%', :escapedKanji, '%') ESCAPE '\\'")
+    Page<Vocabulary> findByJapaneseTextContainingKanji(@Param("escapedKanji") String escapedKanji, Pageable pageable);
+
+    @Query("SELECT v FROM Vocabulary v JOIN FETCH v.topic t WHERE v.japaneseText LIKE CONCAT('%', :escapedKanji, '%') ESCAPE '\\' ORDER BY v.japaneseText ASC, v.id ASC")
+    List<Vocabulary> findAllByJapaneseTextContainingKanji(@Param("escapedKanji") String escapedKanji);
 
     @Query("SELECT v FROM Vocabulary v WHERE " +
            "(:topicId IS NULL OR v.topic.id = :topicId) AND " +
@@ -67,4 +77,7 @@ public interface VocabularyRepository extends JpaRepository<Vocabulary, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Vocabulary v SET v.importBatchId = :batchId, v.updatedAt = v.createdAt WHERE v.id IN :ids")
     void assignImportBatchId(@Param("ids") List<Long> ids, @Param("batchId") Long batchId);
+
+    @Query("SELECT v FROM Vocabulary v JOIN FETCH v.topic t WHERE v.topic.id = :topicId ORDER BY v.id ASC")
+    List<Vocabulary> findByTopicIdWithTopic(@Param("topicId") Long topicId);
 }

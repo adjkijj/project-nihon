@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch sử học tập - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/history.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('history')}"></header>
+
+    <main class="history-page">
+        <h1 class="history-title">Lịch sử học tập</h1>
+
+        <div th:if="${historyMessage}" class="history-flash" role="status" th:text="${historyMessage}"></div>
+
+        <div th:unless="${learnerAvailable}" class="history-notice" role="alert">
+            <strong>Trình duyệt đang chặn cookie.</strong>
+            Lịch sử học tập cần một cookie ẩn danh để nhận ra thiết bị của bạn. Hãy bật cookie cho trang này
+            rồi tải lại; các tính năng học khác vẫn hoạt động bình thường.
+        </div>
+
+        <section class="history-summary" aria-label="Tổng quan">
+            <div class="summary-card">
+                <span class="summary-label">Tổng số câu</span>
+                <span class="summary-value" th:text="${summary.totalQuestions}">0</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-label">Độ chính xác</span>
+                <span class="summary-value"><span th:text="${summary.accuracyPercent}">0</span>%</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-label">Thời gian học</span>
+                <span class="summary-value"><span th:text="${summary.studyMinutes}">0</span> phút</span>
+            </div>
+        </section>
+
+        <form class="history-filters" method="get" th:action="@{/history}">
+            <div class="filter-field">
+                <label for="filterMode">Chế độ</label>
+                <select id="filterMode" name="mode">
+                    <option value="ALL" th:selected="${mode == 'ALL'}">Tất cả</option>
+                    <option value="JA_VI" th:selected="${mode == 'JA_VI'}">Nhật → Việt</option>
+                    <option value="VI_JA" th:selected="${mode == 'VI_JA'}">Việt → Nhật</option>
+                    <option value="MC_JA_VI" th:selected="${mode == 'MC_JA_VI'}">Trắc nghiệm Nhật → Việt</option>
+                    <option value="MC_VI_JA" th:selected="${mode == 'MC_VI_JA'}">Trắc nghiệm Việt → Nhật</option>
+                    <option value="KANJI_READING" th:selected="${mode == 'KANJI_READING'}">Kanji: cách đọc</option>
+                    <option value="KANJI_WRITE" th:selected="${mode == 'KANJI_WRITE'}">Kanji: viết</option>
+                    <option value="KANJI_CHOICE" th:selected="${mode == 'KANJI_CHOICE'}">Kanji: trắc nghiệm</option>
+                    <option value="TIMED_JA_VI" th:selected="${mode == 'TIMED_JA_VI'}">Bấm giờ Nhật → Việt</option>
+                    <option value="TIMED_VI_JA" th:selected="${mode == 'TIMED_VI_JA'}">Bấm giờ Việt → Nhật</option>
+                    <option value="TIMED_KANJI_READING" th:selected="${mode == 'TIMED_KANJI_READING'}">Bấm giờ Kanji</option>
+                    <option value="TIMED_CHOICE" th:selected="${mode == 'TIMED_CHOICE'}">Bấm giờ trắc nghiệm</option>
+                    <option value="TOPIC_TEST" th:selected="${mode == 'TOPIC_TEST'}">Kiểm tra cuối bài</option>
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="filterRange">Khoảng thời gian</label>
+                <select id="filterRange" name="range">
+                    <option value="7D" th:selected="${range == '7D'}">7 ngày qua</option>
+                    <option value="30D" th:selected="${range == '30D'}">30 ngày qua</option>
+                    <option value="ALL" th:selected="${range == 'ALL'}">Tất cả</option>
+                </select>
+            </div>
+            <button type="submit" class="history-btn">Lọc</button>
+        </form>
+
+        <section class="history-chart-card" aria-labelledby="chartTitle">
+            <h2 id="chartTitle">Độ chính xác theo tuần</h2>
+            <div th:if="${#lists.isEmpty(weeklyBars)}" class="history-empty-inline">Chưa có dữ liệu để vẽ biểu đồ.</div>
+            <div th:unless="${#lists.isEmpty(weeklyBars)}">
+                <svg class="history-chart" viewBox="0 0 320 160" role="img"
+                    aria-label="Biểu đồ cột độ chính xác theo 8 tuần gần nhất. Xem bảng bên dưới để biết số liệu chi tiết.">
+                    <line x1="5" y1="130" x2="315" y2="130" class="chart-axis"></line>
+                    <line x1="5" y1="10" x2="315" y2="10" class="chart-grid"></line>
+                    <line x1="5" y1="70" x2="315" y2="70" class="chart-grid"></line>
+                    <th:block th:each="b, it : ${weeklyBars}">
+                        <rect class="chart-bar" rx="3" width="30"
+                            th:attr="x=${10 + it.index * 38},y=${130 - b.accuracyPercent * 1.2},height=${b.accuracyPercent * 1.2}"></rect>
+                        <text class="chart-label" text-anchor="middle" th:attr="x=${25 + it.index * 38}" y="148"
+                            th:text="${b.label}"></text>
+                    </th:block>
+                </svg>
+                <table class="history-table chart-table">
+                    <caption>Số liệu độ chính xác theo tuần (tuần bắt đầu từ ngày)</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Tuần</th>
+                            <th scope="col">Số câu</th>
+                            <th scope="col">Chính xác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="b : ${weeklyBars}">
+                            <th scope="row" th:text="${b.label}">01/01</th>
+                            <td th:text="${b.totalQuestions}">0</td>
+                            <td><span th:text="${b.accuracyPercent}">0</span>%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="history-list-card" aria-labelledby="listTitle">
+            <h2 id="listTitle">Các buổi học</h2>
+
+            <div th:if="${#lists.isEmpty(sessions)}" class="history-empty">
+                <p>Chưa có buổi học nào được lưu.</p>
+                <p class="history-hint">Hoàn thành một bài luyện tập rồi bấm “Kết thúc buổi học” để lưu kết quả vào đây.</p>
+                <a th:href="@{/practice}" class="history-btn">Bắt đầu luyện tập</a>
+            </div>
+
+            <div th:unless="${#lists.isEmpty(sessions)}" class="table-scroll">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Thời điểm</th>
+                            <th scope="col">Chế độ</th>
+                            <th scope="col">Số câu</th>
+                            <th scope="col">Đúng</th>
+                            <th scope="col">Chính xác</th>
+                            <th scope="col">Thời gian</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="s : ${sessions}">
+                            <td data-label="Thời điểm" th:text="${#temporals.format(s.completedAt, 'dd/MM/yyyy HH:mm')}">01/01/2026 10:00</td>
+                            <td data-label="Chế độ" th:text="${s.modeLabel}">Nhật → Việt</td>
+                            <td data-label="Số câu" th:text="${s.totalQuestions}">10</td>
+                            <td data-label="Đúng" th:text="${s.correctCount}">8</td>
+                            <td data-label="Chính xác"><span th:text="${s.accuracyPercent}">80</span>%</td>
+                            <td data-label="Thời gian"><span th:text="${s.durationSeconds / 60}">1</span> phút <span th:text="${s.durationSeconds % 60}">0</span> giây</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <nav th:if="${totalPages > 1}" class="history-pagination" aria-label="Phân trang">
+                <a th:if="${hasPrev}" class="history-btn history-btn-ghost"
+                    th:href="@{/history(mode=${mode},range=${range},page=${page - 1})}" rel="prev">← Trước</a>
+                <span class="page-indicator">Trang <span th:text="${page}">1</span> / <span th:text="${totalPages}">1</span></span>
+                <a th:if="${hasNext}" class="history-btn history-btn-ghost"
+                    th:href="@{/history(mode=${mode},range=${range},page=${page + 1})}" rel="next">Sau →</a>
+            </nav>
+        </section>
+
+        <section class="history-list-card" aria-labelledby="examListTitle">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 id="examListTitle" class="m-0">Bài thi đã làm</h2>
+                <form th:if="${!#lists.isEmpty(examAttempts)}" th:action="@{/history/exams/delete-all}" method="post"
+                      data-confirm="Bạn có chắc chắn muốn xóa toàn bộ lịch sử bài thi của mình?">
+                    <input type="hidden" name="_csrf" th:value="${_csrf}">
+                    <button type="submit" class="history-btn history-btn-danger font-size-sm">Xóa tất cả bài thi</button>
+                </form>
+            </div>
+
+            <div th:if="${#lists.isEmpty(examAttempts)}" class="history-empty">
+                <p>Bạn chưa nộp bài thi nào.</p>
+                <a th:href="@{/exams}" class="history-btn">Xem danh sách đề thi</a>
+            </div>
+
+            <div th:unless="${#lists.isEmpty(examAttempts)}" class="table-scroll">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Thời điểm nộp</th>
+                            <th scope="col">Đề thi</th>
+                            <th scope="col">Điểm số</th>
+                            <th scope="col">Thời gian</th>
+                            <th scope="col">Trạng thái</th>
+                            <th scope="col">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="ea : ${examAttempts}">
+                            <td data-label="Thời điểm nộp" th:text="${#temporals.format(ea.submittedAt, 'dd/MM/yyyy HH:mm')}">01/01/2026 10:00</td>
+                            <td data-label="Đề thi" th:text="${ea.paper != null ? ea.paper.title : 'Đề thi đã hoàn tất'}">JLPT N5</td>
+                            <td data-label="Điểm số">
+                                <strong th:text="${ea.totalPoints} + ' / ' + ${ea.maxPoints}">25.00 / 30.00</strong>
+                            </td>
+                            <td data-label="Thời gian">
+                                <span th:text="${ea.durationSeconds / 60}">15</span> phút <span th:text="${ea.durationSeconds % 60}">30</span> giây
+                            </td>
+                            <td data-label="Trạng thái">
+                                <span th:if="${ea.status.name() == 'FINISHED'}" class="badge badge-published">Đã nộp</span>
+                                <span th:if="${ea.status.name() == 'EXPIRED'}" class="badge badge-rejected">Hết giờ</span>
+                            </td>
+                            <td data-label="Thao tác" class="action-cell">
+                                <div class="d-flex gap-2">
+                                    <a th:href="@{'/exams/attempt/' + ${ea.id} + '/result'}" class="history-btn history-btn-ghost font-size-sm">Xem kết quả</a>
+                                    <form th:action="@{'/history/exams/' + ${ea.id} + '/delete'}" method="post" class="d-inline"
+                                          data-confirm="Bạn có chắc chắn muốn xóa kết quả bài thi này khỏi lịch sử?">
+                                        <input type="hidden" name="_csrf" th:value="${_csrf}">
+                                        <button type="submit" class="history-btn history-btn-danger font-size-sm">Xóa</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="history-privacy" aria-labelledby="privacyTitle">
+            <h2 id="privacyTitle">Quyền riêng tư của bạn</h2>
+            <ul>
+                <li>Ứng dụng không yêu cầu đăng nhập. Thiết bị của bạn được nhận diện bằng một mã ngẫu nhiên lưu trong cookie <code>nihon_learner</code> (HttpOnly, 365 ngày).</li>
+                <li>Chúng tôi chỉ lưu tổng số câu, số câu đúng, thời lượng và chế độ học. Không lưu tên, email, địa chỉ IP hay nội dung câu trả lời.</li>
+                <li>Buổi học cũ hơn 180 ngày sẽ được tự động xóa.</li>
+                <li>Xóa cookie hoặc dùng thiết bị khác đồng nghĩa với việc không thấy lịch sử này nữa. Bạn có thể xóa toàn bộ dữ liệu bất cứ lúc nào bên dưới.</li>
+            </ul>
+            <form th:action="@{/history/delete-all}" method="post"
+                data-confirm="Bạn có chắc chắn muốn xóa toàn bộ lịch sử học tập? Thao tác này không thể hoàn tác.">
+                <input type="hidden" name="_csrf" th:value="${_csrf}">
+                <button type="submit" class="history-btn history-btn-danger">Xóa toàn bộ lịch sử của tôi</button>
+            </form>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon.</p>
+    </footer>
+</body>
+
+</html>

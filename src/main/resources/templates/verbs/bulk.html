@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thêm Động từ Hàng loạt - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/verbs.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('verbs')}"></header>
+
+    <main class="verbs-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="page-title">
+                <h1><span class="title-badge">📋</span> Thêm Động từ Hàng loạt</h1>
+                <p>Nhập danh sách dạng thể ます kèm nghĩa tiếng Việt, hệ thống sẽ tự động suy luận nhóm và thể từ điển</p>
+            </div>
+            <div class="action-buttons">
+                <a th:href="@{/verbs}" class="btn btn-secondary">← Danh sách động từ</a>
+                <a th:href="@{/verbs/new}" class="btn btn-outline">+ Thêm từng từ</a>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        <div th:if="${errorMessage}" class="alert alert-error" role="alert">
+            <span class="alert-icon">⚠️</span>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi khi xử lý dữ liệu hàng loạt.</span>
+        </div>
+
+        <div class="bulk-layout">
+            <!-- Form Input Panel -->
+            <section class="bulk-card" aria-label="Khu vực nhập dữ liệu">
+                <div class="bulk-instructions">
+                    <h3>💡 Hướng dẫn định dạng dữ liệu (Tối đa 100 dòng)</h3>
+                    <ul>
+                        <li>Mỗi dòng đại diện cho một động từ theo định dạng: <code>ひらがなます,nghĩa tiếng Việt</code></li>
+                        <li>Động từ phải viết bằng thể <strong>ます (Hiragana)</strong>.</li>
+                        <li>Hệ thống tự động suy luận nhóm ngữ pháp và thể từ điển tương ứng (nguyên tắc đuôi <em>e-dan</em> -&gt; Nhóm 2, <em>i-dan</em> -&gt; Nhóm 1 hoặc kiểm tra ngoại lệ, <em>します/きます</em> -&gt; Nhóm 3).</li>
+                        <li>Dòng trống sẽ được tự động bỏ qua; các dòng bị lỗi sẽ không ảnh hưởng đến các dòng hợp lệ khác.</li>
+                    </ul>
+                    <div class="example-box">のみます,Uống
+たべます,Ăn
+いきます,Đi
+きます,Đến
+べんきょうします,Học bài</div>
+                </div>
+
+                <form th:action="@{/verbs/bulk}" th:object="${bulkForm}" method="post" class="verb-form">
+                    <input type="hidden" name="_csrf" th:value="${_csrf}">
+
+                    <!-- Topic Selection (Optional) -->
+                    <div class="form-field-group">
+                        <label for="topicId">Chủ đề bài học (Áp dụng chung cho danh sách này)</label>
+                        <select id="topicId" th:field="*{topicId}" class="form-control"
+                                th:classappend="${#fields.hasErrors('topicId')} ? 'is-invalid' : ''">
+                            <option value="">-- Không chọn chủ đề (Chưa phân loại) --</option>
+                            <option th:each="t : ${topics}"
+                                    th:value="${t.id}"
+                                    th:text="${t.parent != null ? '↳ ' + t.name : t.name}">
+                                Bài 1
+                            </option>
+                        </select>
+                        <div class="field-hint">Nếu chọn, toàn bộ các động từ hợp lệ trong đợt thêm này sẽ được gán vào chủ đề đã chọn.</div>
+                        <div th:if="${#fields.hasErrors('topicId')}" th:errors="*{topicId}" class="field-error"></div>
+                    </div>
+
+                    <!-- Textarea Data -->
+                    <div class="form-field-group">
+                        <label for="text">Dữ liệu động từ (Mỗi dòng một từ) <span class="required">*</span></label>
+                        <textarea id="text" th:field="*{text}" class="bulk-textarea"
+                                  placeholder="のみます,Uống&#10;たべます,Ăn&#10;いきます,Đi&#10;きます,Đến&#10;べんきょうします,Học bài"
+                                  rows="10"
+                                  required
+                                  th:classappend="${#fields.hasErrors('text')} ? 'is-invalid' : ''"></textarea>
+                        <div class="field-hint">Tối đa 100 dòng cho mỗi lần gửi dữ liệu.</div>
+                        <div th:if="${#fields.hasErrors('text')}" th:errors="*{text}" class="field-error"></div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="form-actions">
+                        <a th:href="@{/verbs}" class="btn btn-secondary">Hủy bỏ</a>
+                        <button type="submit" class="btn btn-primary">🚀 Bắt đầu thêm hàng loạt</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Results Section (when submitted) -->
+            <section th:if="${results != null and !results.empty}" class="bulk-results-card" aria-label="Kết quả xử lý hàng loạt">
+                <div class="section-header">
+                    <h2><span>📊</span> Kết quả thêm hàng loạt</h2>
+                    <p>Chi tiết trạng thái từng dòng đã được phân tích</p>
+                </div>
+
+                <div class="results-summary-bar">
+                    <div class="result-stat-item">
+                        <span>Tổng số dòng:</span>
+                        <strong th:text="${totalCount}">0</strong>
+                    </div>
+                    <div class="result-stat-item">
+                        <span>Thành công:</span>
+                        <strong class="text-success" th:text="${successCount}">0</strong>
+                    </div>
+                    <div class="result-stat-item">
+                        <span>Không thành công:</span>
+                        <strong class="text-danger" th:text="${totalCount - successCount}">0</strong>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="verb-table" aria-label="Bảng kết quả xử lý từng dòng">
+                        <thead>
+                            <tr>
+                                <th class="col-actions">Dòng #</th>
+                                <th class="col-dict">Dữ liệu gốc</th>
+                                <th class="col-group">Trạng thái</th>
+                                <th class="col-meaning">Động từ tạo thành / Chi tiết</th>
+                                <th class="col-masu">Lý do (nếu lỗi)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="r : ${results}">
+                                <td>
+                                    <strong th:text="${r.lineNumber}">1</strong>
+                                </td>
+                                <td>
+                                    <code class="jp-reading" th:text="${r.line}">のみます,Uống</code>
+                                </td>
+                                <td>
+                                    <span th:if="${r.success}" class="status-badge status-success">✓ Thành công</span>
+                                    <span th:unless="${r.success}" class="status-badge status-error">✕ Thất bại</span>
+                                </td>
+                                <td>
+                                    <div th:if="${r.success and r.verb != null}">
+                                        <a th:href="@{'/verbs/' + ${r.verb.id}}" class="jp-reading"
+                                           th:text="${r.verb.dictionaryForm}">のむ</a>
+                                        (<span class="jp-masu" th:text="${r.verb.masuForm}">のみます</span>) -
+                                        <span class="verb-meaning-text" th:text="${r.verb.meaningVi}">Uống</span>
+                                        <span th:if="${r.verb.verbGroup == 1}" class="verb-group-badge badge-group-1">Nhóm 1</span>
+                                        <span th:if="${r.verb.verbGroup == 2}" class="verb-group-badge badge-group-2">Nhóm 2</span>
+                                        <span th:if="${r.verb.verbGroup == 3}" class="verb-group-badge badge-group-3">Nhóm 3</span>
+                                    </div>
+                                    <div th:unless="${r.success and r.verb != null}" class="text-muted">
+                                        -
+                                    </div>
+                                </td>
+                                <td>
+                                    <span th:if="${!r.success}" class="text-danger" th:text="${r.message}">Lý do lỗi</span>
+                                    <span th:if="${r.success}" class="text-success" th:text="${r.message}">Đã lưu</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="form-actions">
+                    <a th:href="@{/verbs}" class="btn btn-primary">Xem toàn bộ danh sách động từ →</a>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Phân loại và chia động từ tiếng Nhật tự động.</p>
+        <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
+    </footer>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+</body>
+</html>

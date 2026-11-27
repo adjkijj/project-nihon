@@ -6,25 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lý từ vựng - Project Nihon</title>
     <link rel="stylesheet" th:href="@{/css/vocabulary-list.css}">
+    <link rel="stylesheet" th:href="@{/css/kanji-stroke.css}">
     <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
     <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/kanji-stroke-player.js}" defer></script>
+    <script th:src="@{/js/vocabulary-meaning-toggle.js}" defer></script>
 </head>
 
 <body>
-    <header>
-        <a href="/" class="brand">
-            <span class="brand-badge">日</span>
-            <span>Project Nihon</span>
-        </a>
-        <nav class="u-7dbd1ca1">
-            <a href="/">Trang chủ</a>
-            <a href="/vocabulary" class="active">Từ vựng</a>
-            <a href="/topics">Chủ đề</a>
-            <a href="/kanji">Kanji</a>
-            <a href="/practice">Luyện tập</a>
-            <a href="/stats">Thống kê</a>
-        </nav>
-    </header>
+    <header th:replace="~{fragments/navbar :: headerNav('vocabulary')}"></header>
 
     <main>
         <div class="page-header">
@@ -32,7 +26,10 @@
                 <h1>Quản lý từ vựng</h1>
                 <p>Xem, tìm kiếm, lọc và quản lý kho từ vựng tiếng Nhật</p>
             </div>
-            <a href="/vocabulary/new" class="btn btn-primary">+ Thêm từ mới</a>
+            <div class="action-buttons">
+                <a th:href="@{/flashcards(topicId=${selectedTopicId})}" class="btn btn-secondary" title="Học từ vựng qua thẻ lật Flashcards">🎴 Học thẻ</a>
+                <a href="/vocabulary/new" class="btn btn-primary">+ Thêm từ mới</a>
+            </div>
         </div>
 
         <div th:if="${successMessage}" class="alert alert-success">
@@ -52,6 +49,9 @@
 
         <section class="filter-panel">
             <form th:action="@{/vocabulary}" method="get" class="filter-form">
+                <input type="hidden" name="filter" th:value="${filter}" th:if="${filter != null and filter != 'ALL'}">
+                <input type="hidden" name="view" th:value="${view}" th:if="${view != null and view != 'COMPACT'}">
+
                 <div class="form-group">
                     <label for="keyword">Tìm kiếm (Tiếng Nhật, Cách đọc, Nghĩa)</label>
                     <input type="text" id="keyword" name="keyword" th:value="${keyword}" class="form-control"
@@ -70,9 +70,77 @@
                 </div>
 
                 <button type="submit" class="btn btn-primary">Tìm kiếm</button>
-                <a href="/vocabulary" class="btn btn-secondary">Đặt lại</a>
+                <a th:href="@{/vocabulary(view=${view != null and view != 'COMPACT' ? view : null})}" class="btn btn-secondary">Đặt lại</a>
             </form>
+
+            <!-- Thanh bộ lọc nhanh -->
+            <div class="quick-filter-bar">
+                <span class="quick-filter-title">Lọc nhanh:</span>
+                <div class="quick-filter-tabs">
+                    <a th:href="@{/vocabulary(topicId=${selectedTopicId}, keyword=${keyword}, view=${view}, filter='ALL')}"
+                       class="quick-filter-tab"
+                       th:classappend="${filter == null or filter == 'ALL' ? 'active' : ''}">Tất cả</a>
+                    <a th:href="@{/vocabulary(topicId=${selectedTopicId}, keyword=${keyword}, view=${view}, filter='HAS_KANJI')}"
+                       class="quick-filter-tab"
+                       th:classappend="${filter == 'HAS_KANJI' ? 'active' : ''}">Chỉ từ có Kanji</a>
+                    <a th:href="@{/vocabulary(topicId=${selectedTopicId}, keyword=${keyword}, view=${view}, filter='NO_READING')}"
+                       class="quick-filter-tab"
+                       th:classappend="${filter == 'NO_READING' ? 'active' : ''}">Chỉ từ chưa có cách đọc</a>
+                    <a th:href="@{/vocabulary(topicId=${selectedTopicId}, keyword=${keyword}, view=${view}, filter='NO_MEANING')}"
+                       class="quick-filter-tab"
+                       th:classappend="${filter == 'NO_MEANING' ? 'active' : ''}">Chỉ từ chưa có nghĩa</a>
+                </div>
+            </div>
+
+            <div class="export-panel">
+                <form th:action="@{/vocabulary/export-text}" method="get" class="export-form">
+                    <input type="hidden" name="topicId" th:value="${selectedTopicId}" th:if="${selectedTopicId != null}">
+                    <input type="hidden" name="keyword" th:value="${keyword}" th:if="${keyword != null}">
+                    <div class="export-controls">
+                        <label for="export-format" class="export-label">Định dạng xuất:</label>
+                        <select id="export-format" name="format" class="form-control export-select">
+                            <option value="TAB" selected>TAB (Phân cách tab cho Quizlet / Anki)</option>
+                            <option value="COLON">COLON (tiếng Nhật (cách đọc) : nghĩa)</option>
+                        </select>
+                        <button type="submit" class="btn btn-secondary" id="btn-export-text">Xuất cho Quizlet/Anki</button>
+                    </div>
+                </form>
+                <div class="export-direct-links">
+                    <span class="export-hint">Tải nhanh:</span>
+                    <a th:href="@{/vocabulary/export-text(topicId=${selectedTopicId}, keyword=${keyword}, format='TAB')}" class="export-link">Tệp TAB</a>
+                    <span class="export-divider">|</span>
+                    <a th:href="@{/vocabulary/export-text(topicId=${selectedTopicId}, keyword=${keyword}, format='COLON')}" class="export-link">Tệp COLON</a>
+                </div>
+                <p class="export-note">Tệp dùng để dán vào Quizlet hoặc nhập vào Anki.</p>
+            </div>
         </section>
+
+        <!-- Thống kê kết quả và Chuyển chế độ xem -->
+        <div class="stats-summary" th:if="${vocabPage != null}">
+            <div class="stats-count">
+                Tìm thấy <strong th:text="${vocabPage.totalElements}">0</strong> kết quả
+                (hiển thị trang <strong th:text="${vocabPage.number + 1}">1</strong> / <strong th:text="${vocabPage.totalPages > 0 ? vocabPage.totalPages : 1}">1</strong>)
+                <span th:if="${(keyword != null and !keyword.isBlank()) or selectedTopicId != null or (filter != null and filter != 'ALL')}">
+                    — đang lọc kết quả
+                </span>
+            </div>
+            <div class="view-mode-toggle-group" role="toolbar" aria-label="Thanh công cụ chế độ xem và hiển thị">
+                <span class="view-label">Chế độ xem:</span>
+                <a th:href="@{/vocabulary(topicId=${selectedTopicId}, keyword=${keyword}, filter=${filter}, view='COMPACT')}"
+                   id="view-compact-btn"
+                   class="view-toggle-btn"
+                   th:classappend="${view != 'FULL' ? 'active' : ''}">Thu gọn</a>
+                <a th:href="@{/vocabulary(topicId=${selectedTopicId}, keyword=${keyword}, filter=${filter}, view='FULL')}"
+                   id="view-full-btn"
+                   class="view-toggle-btn"
+                   th:classappend="${view == 'FULL' ? 'active' : ''}">Bảng đầy đủ</a>
+                <button type="button"
+                        id="btn-hide-meaning"
+                        class="view-toggle-btn hide-meaning-btn btn-toggle-meaning"
+                        aria-pressed="false"
+                        title="Bật/tắt ẩn nghĩa tiếng Việt để tự kiểm tra">Ẩn nghĩa</button>
+            </div>
+        </div>
 
         <section class="table-container">
             <div class="bulk-actions-bar" th:if="${!vocabPage.empty}">
@@ -99,17 +167,18 @@
                 </form>
             </div>
 
-            <table>
+            <table id="vocab-table">
                 <thead>
                     <tr>
                         <th class="col-checkbox">
                             <input type="checkbox" id="select-all-vocab" aria-label="Chọn tất cả từ vựng trên trang">
                         </th>
-                        <th class="u-width-21pct">Tiếng Nhật</th>
-                        <th class="u-width-14pct">Cách đọc</th>
-                        <th class="u-width-14pct">Romaji</th>
-                        <th class="u-width-17pct">Nghĩa tiếng Việt</th>
-                        <th class="u-width-19pct">Chủ đề</th>
+                        <th th:class="${view == 'FULL' ? 'u-width-18pct' : 'u-width-21pct'}">Tiếng Nhật</th>
+                        <th th:class="${view == 'FULL' ? 'u-width-12pct' : 'u-width-14pct'}">Cách đọc</th>
+                        <th th:class="${view == 'FULL' ? 'u-width-12pct' : 'u-width-14pct'}">Romaji</th>
+                        <th th:if="${view == 'FULL'}" class="u-width-16pct">Hán Việt</th>
+                        <th th:class="${view == 'FULL' ? 'u-width-15pct' : 'u-width-17pct'}">Nghĩa tiếng Việt</th>
+                        <th th:class="${view == 'FULL' ? 'u-width-14pct' : 'u-width-19pct'}">Chủ đề</th>
                         <th class="u-width-15pct-text-align-right">Thao tác</th>
                     </tr>
                 </thead>
@@ -122,14 +191,41 @@
                         </td>
                         <td>
                             <a th:href="@{'/vocabulary/' + ${v.id}}" class="jp-text vocab-detail-link"
-                                th:text="${v.japaneseText}">私（わたし）</a>
+                               th:title="${v.japaneseText}">
+                                <th:block th:replace="~{fragments/furigana :: rubyWord(${v.japaneseText}, ${v.reading})}"></th:block>
+                            </a>
+                            <th:block th:replace="~{fragments/speech :: speakerBtn(${v.speechText})}"></th:block>
+                            <div th:if="${view != 'FULL' and v.constituentKanji != null and !v.constituentKanji.empty}" class="constituent-kanji-wrap u-margin-top-0-25rem">
+                                <span th:each="k : ${v.constituentKanji}" class="constituent-kanji-badge">
+                                    <span class="constituent-char" th:text="${k.character}">日</span>
+                                    <button type="button"
+                                            class="btn-stroke-view btn-stroke-view-sm"
+                                            th:attr="data-kanji=${k.character}, data-hanviet=${k.displayHanViet}, data-stroke-url=${k.strokeFileName != null ? '/kanjivg/' + k.strokeFileName : ''}"
+                                            title="Xem thứ tự nét viết">Xem nét</button>
+                                </span>
+                            </div>
                         </td>
                         <td>
                             <span th:if="${v.reading != null}" class="reading-badge" th:text="${v.reading}">わたし</span>
                             <span class="u-color-var-text-muted-font-size-0-8rem" th:if="${v.reading == null}">—</span>
                         </td>
                         <td th:text="${(v.romaji != null && !v.romaji.isBlank()) ? v.romaji : '-'}">watashi</td>
-                        <td th:text="${(v.meaningVi != null && !v.meaningVi.isBlank()) ? v.meaningVi : '-'}">Tôi</td>
+                        <td th:if="${view == 'FULL'}" class="col-hanviet">
+                            <div th:if="${v.constituentKanji != null and !v.constituentKanji.empty}" class="constituent-kanji-wrap">
+                                <span th:each="k : ${v.constituentKanji}" class="constituent-kanji-badge">
+                                    <a th:if="${k.kanjiId != null}" th:href="@{'/kanji/' + ${k.kanjiId}}"
+                                       class="constituent-char kanji-link" th:text="${k.character}" th:title="${'Xem Kanji ' + k.character}">日</a>
+                                    <span th:if="${k.kanjiId == null}" class="constituent-char" th:text="${k.character}">日</span>
+                                    <span class="constituent-hanviet" th:text="${k.displayHanViet}">NHẬT</span>
+                                    <button type="button"
+                                            class="btn-stroke-view btn-stroke-view-sm"
+                                            th:attr="data-kanji=${k.character}, data-hanviet=${k.displayHanViet}, data-stroke-url=${k.strokeFileName != null ? '/kanjivg/' + k.strokeFileName : ''}"
+                                            title="Xem thứ tự nét viết">Xem nét</button>
+                                </span>
+                            </div>
+                            <span th:if="${v.constituentKanji == null or v.constituentKanji.empty}" class="u-color-var-text-muted-font-size-0-8rem">—</span>
+                        </td>
+                        <td class="meaning-cell" tabindex="0" th:text="${(v.meaningVi != null && !v.meaningVi.isBlank()) ? v.meaningVi : '-'}">Tôi</td>
                         <td>
                             <div class="topic-list">
                                 <span th:each="t : ${v.topics}" class="topic-badge" th:text="${t.name}"
@@ -153,7 +249,7 @@
                         </td>
                     </tr>
                     <tr th:if="${vocabPage.empty}">
-                        <td colspan="7" class="empty-state">
+                        <td th:attr="colspan=${view == 'FULL' ? 8 : 7}" class="empty-state">
                             Không tìm thấy từ vựng nào khớp với điều kiện tìm kiếm.
                         </td>
                     </tr>
@@ -169,15 +265,17 @@
                 </div>
                 <div class="page-links">
                     <a th:if="${vocabPage.hasPrevious()}"
-                        th:href="@{/vocabulary(page=${vocabPage.number - 1}, topicId=${selectedTopicId}, keyword=${keyword})}"
+                        th:href="@{/vocabulary(page=${vocabPage.number - 1}, topicId=${selectedTopicId}, keyword=${keyword}, filter=${filter}, view=${view})}"
                         class="btn btn-secondary u-padding-0-35rem-0-8rem-font-size-0-825rem">← Trang trước</a>
                     <a th:if="${vocabPage.hasNext()}"
-                        th:href="@{/vocabulary(page=${vocabPage.number + 1}, topicId=${selectedTopicId}, keyword=${keyword})}"
+                        th:href="@{/vocabulary(page=${vocabPage.number + 1}, topicId=${selectedTopicId}, keyword=${keyword}, filter=${filter}, view=${view})}"
                         class="btn btn-secondary u-padding-0-35rem-0-8rem-font-size-0-825rem">Trang sau →</a>
                 </div>
             </div>
         </section>
     </main>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+    <th:block th:replace="~{fragments/speech :: scripts}"></th:block>
 </body>
 
 </html>

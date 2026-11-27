@@ -99,4 +99,11 @@ public class Vocabulary {
             updatedAt = now;
         }
     }
+
+    /**
+     * Chuỗi văn bản phục vụ phát âm tiếng Nhật qua Web Speech API.
+     */
+    public String getSpeechText() {
+        return com.nihon.service.SpeechHelper.resolveSpeechText(this.japaneseText, this.reading);
+    }
 }

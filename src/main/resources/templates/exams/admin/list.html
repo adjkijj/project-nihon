@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Đề thi - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/exams-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+    <script th:src="@{/js/exams-admin.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('exams')}"></header>
+
+    <main class="exam-admin-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="page-title">
+                <h1><span class="title-badge">考</span> Quản lý Đề thi</h1>
+                <p>Ngân hàng đề thi tiếng Nhật - Tạo thủ công hoặc nhập hàng loạt từ Excel</p>
+            </div>
+            <div class="action-buttons">
+                <a th:href="@{/exams/admin/new}" class="btn btn-primary" title="Tạo đề thi mới">+ Tạo đề mới</a>
+                <a th:href="@{/exams/admin/import}" class="btn btn-secondary" title="Nhập đề thi từ file Excel">📥 Nhập Excel</a>
+                <a th:href="@{/exams/admin/template}" class="btn btn-outline" title="Tải file Excel mẫu">📑 Tải file mẫu</a>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success" role="status">
+            <span class="alert-icon">✓</span>
+            <span th:text="${successMessage}">Thao tác thành công!</span>
+        </div>
+
+        <div th:if="${errorMessage}" class="alert alert-error" role="alert">
+            <span class="alert-icon">⚠️</span>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi.</span>
+        </div>
+
+        <!-- Filter Panel -->
+        <section class="filter-panel" aria-label="Bộ lọc đề thi">
+            <form th:action="@{/exams/admin}" method="get" class="filter-form">
+                <div class="form-group">
+                    <label for="keyword">Từ khóa tìm kiếm</label>
+                    <input type="text" id="keyword" name="keyword" th:value="${keyword}"
+                           class="form-control"
+                           placeholder="Mã đề, tên đề hoặc mô tả...">
+                </div>
+
+                <div class="form-group">
+                    <label for="category">Phân loại đề</label>
+                    <select id="category" name="category" class="form-control">
+                        <option value="">-- Tất cả phân loại --</option>
+                        <option th:each="cat : ${categories}"
+                                th:value="${cat.name()}"
+                                th:text="${cat.displayName}"
+                                th:selected="${cat.name() == selectedCategory}">Giữa kỳ</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="published">Trạng thái xuất bản</label>
+                    <select id="published" name="published" class="form-control">
+                        <option value="" th:selected="${selectedPublished == null}">-- Tất cả trạng thái --</option>
+                        <option value="true" th:selected="${selectedPublished == true}">Đã xuất bản</option>
+                        <option value="false" th:selected="${selectedPublished == false}">Bản nháp</option>
+                    </select>
+                </div>
+
+                <div class="action-buttons">
+                    <button type="submit" class="btn btn-primary">🔍 Tìm kiếm</button>
+                    <a th:href="@{/exams/admin}" class="btn btn-secondary">Đặt lại</a>
+                </div>
+            </form>
+        </section>
+
+        <!-- Exam List Table -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <span>📋</span>
+                    <span>Danh sách đề thi</span>
+                    <span class="badge badge-draft" th:text="${examsPage.totalElements} + ' đề'">0 đề</span>
+                </h2>
+            </div>
+
+            <div class="table-responsive" th:if="${!examsPage.content.isEmpty()}">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Mã đề</th>
+                            <th scope="col">Tên đề thi</th>
+                            <th scope="col">Phân loại</th>
+                            <th scope="col">Chủ đề</th>
+                            <th scope="col">Thời lượng</th>
+                            <th scope="col">Câu hỏi</th>
+                            <th scope="col">Điểm</th>
+                            <th scope="col">Trạng thái</th>
+                            <th scope="col">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="paper : ${examsPage.content}">
+                            <td>
+                                <strong th:text="${paper.code}">N5-MIDTERM</strong>
+                            </td>
+                            <td>
+                                <a th:href="@{/exams/admin/{id}(id=${paper.id})}"
+                                   class="text-accent font-weight-bold"
+                                   th:text="${paper.title}">Đề thi giữa kỳ tiếng Nhật N5</a>
+                            </td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${paper.category.name() == 'MIDTERM' ? 'badge-midterm' : (paper.category.name() == 'MOCK' ? 'badge-mock' : (paper.category.name() == 'QUICK_TEST' ? 'badge-quick-test' : 'badge-review'))}"
+                                      th:text="${paper.category.displayName}">Giữa kỳ</span>
+                            </td>
+                            <td th:text="${paper.topic != null ? paper.topic.name : '—'}">Chủ đề</td>
+                            <td><span th:text="${paper.durationMinutes}">60</span>'</td>
+                            <td><span th:text="${paper.totalQuestions}">20</span></td>
+                            <td><span th:text="${paper.totalPoints}">25.0</span></td>
+                            <td>
+                                <span th:if="${paper.published}" class="badge badge-published">Đã xuất bản</span>
+                                <span th:unless="${paper.published}" class="badge badge-draft">Bản nháp</span>
+                            </td>
+                            <td>
+                                <div class="cell-actions">
+                                    <a th:href="@{/exams/admin/{id}(id=${paper.id})}"
+                                       class="btn btn-secondary btn-sm"
+                                       title="Chi tiết & cấu trúc câu hỏi">Chi tiết</a>
+                                    <a th:href="@{/exams/admin/{id}/preview(id=${paper.id})}"
+                                       class="btn btn-outline btn-sm"
+                                       title="Xem trước bài thi hoàn chỉnh">Xem trước</a>
+                                    <a th:href="@{/exams/admin/{id}/edit(id=${paper.id})}"
+                                       class="btn btn-secondary btn-sm"
+                                       title="Chỉnh sửa thông tin đề">Sửa</a>
+                                    <a th:href="@{/exams/admin/{id}/export(id=${paper.id})}"
+                                       class="btn btn-outline btn-sm"
+                                       title="Xuất đề ra Excel">Xuất</a>
+                                    <form th:action="@{/exams/admin/{id}/delete(id=${paper.id})}"
+                                          method="post"
+                                          data-confirm="Bạn có chắc chắn muốn xóa đề thi này không? Hành động này sẽ xóa toàn bộ phần thi và câu hỏi liên quan.">
+                                        <button type="submit" class="btn btn-danger btn-sm" title="Xóa đề thi">Xóa</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div th:if="${examsPage.content.isEmpty()}" class="p-4 text-center text-muted">
+                <p>Không tìm thấy đề thi nào phù hợp với điều kiện tìm kiếm.</p>
+                <div class="mt-3">
+                    <a th:href="@{/exams/admin/new}" class="btn btn-primary">+ Tạo đề thi mới</a>
+                    <a th:href="@{/exams/admin/import}" class="btn btn-secondary ml-2">📥 Nhập từ Excel</a>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <nav th:if="${examsPage.totalPages > 1}" aria-label="Phân trang đề thi" class="pagination">
+                <a class="pagination-item"
+                   th:classappend="${examsPage.first} ? 'disabled' : ''"
+                   th:href="@{/exams/admin(category=${selectedCategory}, published=${selectedPublished}, keyword=${keyword}, page=${examsPage.number - 1})}">&laquo;</a>
+
+                <th:block th:each="pageNum : ${#numbers.sequence(0, examsPage.totalPages - 1)}">
+                    <a class="pagination-item"
+                       th:classappend="${pageNum == examsPage.number} ? 'active' : ''"
+                       th:href="@{/exams/admin(category=${selectedCategory}, published=${selectedPublished}, keyword=${keyword}, page=${pageNum})}"
+                       th:text="${pageNum + 1}">1</a>
+                </th:block>
+
+                <a class="pagination-item"
+                   th:classappend="${examsPage.last} ? 'disabled' : ''"
+                   th:href="@{/exams/admin(category=${selectedCategory}, published=${selectedPublished}, keyword=${keyword}, page=${examsPage.number + 1})}">&raquo;</a>
+            </nav>
+        </div>
+    </main>
+</body>
+</html>
+

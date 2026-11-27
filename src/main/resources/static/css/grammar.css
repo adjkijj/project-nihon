@@ -1,0 +1,605 @@
+/* ==========================================================================
+   Project Nihon - Grammar & Supplement Styles (F30-F32)
+   Calibrated for high agency, clean typography, WCAG AA compliance and strict CSP
+   ========================================================================== */
+
+/* Formula Card */
+.grammar-formula-box {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-left: 4px solid #2563eb;
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0;
+    font-size: 1.05rem;
+}
+
+.grammar-formula-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #475569;
+    margin-bottom: 0.35rem;
+}
+
+.grammar-formula-content {
+    font-family: inherit;
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 1.1rem;
+}
+
+/* Badges */
+.badge-grammar {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    display: inline-block;
+}
+
+.badge-supplement {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    display: inline-block;
+}
+
+/* Explanation Content (safe pre-wrap text without th:utext) */
+.grammar-explanation-body {
+    line-height: 1.65;
+    color: #334155;
+    font-size: 0.95rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.grammar-explanation-body p {
+    margin-bottom: 0.6rem;
+}
+
+.grammar-explanation-body ul {
+    margin: 0.4rem 0 0.8rem 1.5rem;
+    padding-left: 0.5rem;
+    list-style-type: disc;
+}
+
+.grammar-explanation-body li {
+    margin-bottom: 0.35rem;
+}
+
+/* Example Items */
+.grammar-example-item {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.9rem 1.1rem;
+    margin-bottom: 0.75rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.grammar-example-item:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.grammar-jp-text {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
+}
+
+.grammar-reading-text {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-bottom: 0.35rem;
+}
+
+.grammar-meaning-text {
+    font-size: 0.95rem;
+    color: #334155;
+}
+
+/* Quiz Preview Cards */
+.grammar-quiz-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.grammar-quiz-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.grammar-quiz-prompt {
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: #0f172a;
+    margin-bottom: 1rem;
+}
+
+.grammar-choices-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+}
+
+.grammar-choice-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 0.9rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #f8fafc;
+    font-size: 0.95rem;
+    color: #1e293b;
+    cursor: default;
+    transition: all 0.15s ease;
+}
+
+.grammar-choice-btn.correct-choice {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+    color: #065f46;
+    font-weight: 600;
+}
+
+.grammar-choice-index {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.grammar-choice-btn.correct-choice .grammar-choice-index {
+    background: #10b981;
+    color: #ffffff;
+}
+
+.grammar-quiz-expl {
+    background: #f1f5f9;
+    border-left: 3px solid #64748b;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.85rem;
+    color: #475569;
+    border-radius: 0 4px 4px 0;
+    margin-top: 0.5rem;
+}
+
+/* Quick Action Toolbar */
+.grammar-action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.grammar-search-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    background: #f8fafc;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    margin-bottom: 1.25rem;
+}
+
+/* Order Controls */
+.order-controls {
+    display: inline-flex;
+    gap: 0.25rem;
+}
+
+.btn-arrow {
+    padding: 0.15rem 0.45rem;
+    font-size: 0.75rem;
+    line-height: 1;
+    border-radius: 3px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    cursor: pointer;
+}
+
+.btn-arrow:hover {
+    background: #f1f5f9;
+}
+
+/* ==========================================================================
+   Learner UI: Progress Bar & Header Stats (F30)
+   ========================================================================== */
+.grammar-progress-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.grammar-progress-track {
+    background: #e2e8f0;
+    border-radius: 9999px;
+    height: 12px;
+    overflow: hidden;
+    margin-top: 0.6rem;
+}
+
+.grammar-progress-fill {
+    background: linear-gradient(90deg, #3b82f6, #10b981);
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.4s ease;
+}
+
+/* Category Tabs (F35) */
+.grammar-nav-tabs {
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 1.25rem;
+}
+
+.grammar-tab-link {
+    padding: 0.6rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #64748b;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    text-decoration: none;
+    transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.grammar-tab-link:hover {
+    color: #1e293b;
+}
+
+.grammar-tab-link.active {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+}
+
+/* ==========================================================================
+   Accordion Component (F30) - Single expanded item policy
+   ========================================================================== */
+.grammar-accordion {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    margin-bottom: 1.5rem;
+}
+
+.grammar-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.grammar-card.is-learned {
+    border-color: #86efac;
+    background: #f0fdf4;
+}
+
+.grammar-card summary {
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+}
+
+.grammar-card summary::-webkit-details-marker {
+    display: none;
+}
+
+.grammar-card-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    gap: 1rem;
+    background: inherit;
+}
+
+.grammar-card-summary:hover {
+    background: rgba(0, 0, 0, 0.015);
+}
+
+.grammar-card-title-group {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    flex-grow: 1;
+}
+
+.grammar-card-body {
+    padding: 1.25rem;
+    border-top: 1px solid #e2e8f0;
+    background: #ffffff;
+}
+
+/* Progress Toggle Button */
+.btn-progress-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-progress-toggle:hover {
+    border-color: #94a3b8;
+    background: #f8fafc;
+}
+
+.btn-progress-toggle.learned {
+    background: #10b981;
+    border-color: #059669;
+    color: #ffffff;
+}
+
+.btn-progress-toggle.learned:hover {
+    background: #059669;
+}
+
+/* ==========================================================================
+   F34: Tra nhanh thể động từ (Verb Lab widget)
+   ========================================================================== */
+.grammar-verb-lab-box {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.grammar-verb-lab-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1.25rem;
+    background: #f1f5f9;
+    cursor: pointer;
+    font-weight: 600;
+    color: #1e293b;
+    border: none;
+    width: 100%;
+    text-align: left;
+}
+
+.grammar-verb-lab-content {
+    padding: 1.25rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.verb-lab-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.verb-form-tile {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.75rem;
+}
+
+.verb-form-tile-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
+}
+
+.verb-form-tile-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+/* ==========================================================================
+   F32: Trắc nghiệm mini ngay tại thẻ
+   ========================================================================== */
+.grammar-mini-quiz-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-top: 1.25rem;
+}
+
+.mini-quiz-question-item {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.mini-quiz-prompt {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #0f172a;
+    margin-bottom: 0.75rem;
+}
+
+.mini-quiz-choices {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+}
+
+.mini-quiz-choice-label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    font-size: 0.95rem;
+}
+
+.mini-quiz-choice-label:hover {
+    background: #f1f5f9;
+}
+
+.mini-quiz-choice-label.choice-correct {
+    background: #dcfce7;
+    border-color: #86efac;
+    color: #166534;
+    font-weight: 600;
+}
+
+.mini-quiz-choice-label.choice-wrong {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #991b1b;
+}
+
+.quiz-feedback-box {
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+/* ==========================================================================
+   F33: Đấu trường phản xạ ngữ pháp (Arena)
+   ========================================================================== */
+.arena-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    background: #ffffff;
+    padding: 1rem 1.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.arena-streak-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.85rem;
+    border-radius: 9999px;
+    background: #fef3c7;
+    color: #b45309;
+    font-weight: 700;
+    font-size: 0.95rem;
+    border: 1px solid #fde68a;
+}
+
+.arena-timer-box {
+    font-size: 1.25rem;
+    font-weight: 700;
+    font-family: monospace;
+    color: #dc2626;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.arena-question-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.arena-prompt {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+}
+
+.arena-choices-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.85rem;
+    margin-bottom: 1.5rem;
+}
+
+.arena-choice-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1e293b;
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    transition: all 0.15s ease;
+}
+
+.arena-choice-btn:hover:not(:disabled) {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    color: #1d4ed8;
+    transform: translateY(-1px);
+}
+
+.arena-choice-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #475569;
+}
+
+

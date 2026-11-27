@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luyện tập trắc nghiệm 4 lựa chọn - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/practice-index.css}">
+    <link rel="stylesheet" th:href="@{/css/practice-choice.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('practice')}"></header>
+
+    <main>
+        <!-- Mode Switcher -->
+        <div class="mode-switcher">
+            <a href="/practice" class="mode-tab">🇯🇵 → 🇻🇳 Nhật → Việt</a>
+            <a href="/practice/vi-ja" class="mode-tab">🇻🇳 → 🇯🇵 Việt → Nhật</a>
+            <a href="/practice/choice" class="mode-tab active">🎯 Trắc nghiệm 4 lựa chọn</a>
+        </div>
+
+        <div th:if="${errorMessage}" class="alert-error">
+            <span>⚠️</span>
+            <span th:text="${errorMessage}">Đã xảy ra lỗi.</span>
+        </div>
+
+        <div class="choice-config-panel">
+            <div class="card-header">
+                <h1><span>🎯</span> Luyện Tập Trắc Nghiệm 4 Lựa Chọn</h1>
+                <p>Kiểm tra phản xạ từ vựng nhanh qua 4 đáp án; bấm phím 1 đến 4 hoặc nhấn chọn để trả lời tức thì.</p>
+            </div>
+
+            <div class="rule-box">
+                <h3><span>📋</span> Quy tắc làm bài</h3>
+                <ul>
+                    <li>Mỗi câu hỏi có <strong>1 đáp án đúng</strong> và <strong>3 đáp án nhiễu</strong> được sinh ngẫu nhiên từ kho từ vựng.</li>
+                    <li>Sử dụng phím tắt <kbd>1</kbd>, <kbd>2</kbd>, <kbd>3</kbd>, <kbd>4</kbd> hoặc click vào nút để chọn đáp án.</li>
+                    <li>Kết quả được chấm điểm tức thì trên máy chủ, bảo mật và ghi nhận vào tiến độ phiên học.</li>
+                </ul>
+            </div>
+
+            <form th:action="@{/practice/choice/question}" method="get" class="choice-config-form">
+                <!-- Chọn hướng câu hỏi -->
+                <div class="form-group">
+                    <label class="toolbar-label">Hướng câu hỏi trắc nghiệm:</label>
+                    <div class="direction-radio-group">
+                        <label class="direction-card-label" th:classappend="${selectedDirection == 'JA_VI'} ? 'is-selected'">
+                            <input type="radio" name="direction" value="JA_VI" th:checked="${selectedDirection == 'JA_VI'}">
+                            <span class="direction-title">🇯🇵 → 🇻🇳 Nhật → Việt</span>
+                            <span class="direction-desc">Đề bài hiện từ tiếng Nhật, chọn nghĩa tiếng Việt đúng.</span>
+                        </label>
+                        <label class="direction-card-label" th:classappend="${selectedDirection == 'VI_JA'} ? 'is-selected'">
+                            <input type="radio" name="direction" value="VI_JA" th:checked="${selectedDirection == 'VI_JA'}">
+                            <span class="direction-title">🇻🇳 → 🇯🇵 Việt → Nhật</span>
+                            <span class="direction-desc">Đề bài hiện nghĩa tiếng Việt, chọn từ tiếng Nhật tương ứng.</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Chọn chủ đề -->
+                <div class="form-group">
+                    <label for="topicId">Chọn chủ đề bài học</label>
+                    <select id="topicId" name="topicId" class="form-control">
+                        <option value="">-- Tất cả chủ đề (Ngẫu nhiên toàn bộ từ vựng) --</option>
+                        <option th:each="t : ${topics}"
+                                th:value="${t.id}"
+                                th:text="${t.parent != null ? '↳ ' + t.name : t.name}"
+                                th:selected="${selectedTopicId != null and selectedTopicId == t.id}">
+                            Chủ đề 1
+                        </option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Bắt đầu làm trắc nghiệm →</button>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Project Nihon. Chế độ luyện tập trắc nghiệm 4 lựa chọn.</p>
+        <p class="footer-cookie-note">Trang web dùng một cookie ẩn danh (nihon_learner) để lưu lịch sử học trên trình duyệt này. Không lưu tên, email hay IP. <a href="/history">Xem / xoá lịch sử</a>.</p>
+    </footer>
+
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+    <script th:src="@{/js/practice-choice.js}" defer></script>
+</body>
+</html>
+

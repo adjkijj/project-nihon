@@ -38,7 +38,14 @@ class MigrationSchemaTest {
                 (rs, rowNum) -> rs.getString("TABLE_NAME").toLowerCase()
         );
 
-        assertThat(tables).contains("topic", "vocabulary", "kanji_entry", "import_audit_log");
+        assertThat(tables).contains(
+                "topic", "vocabulary", "kanji_entry", "import_audit_log",
+                "study_session", "study_answer", "verb",
+                "exam_paper", "exam_section", "exam_question", "exam_choice", "exam_answer_key",
+                "exam_attempt", "exam_attempt_answer",
+                "grammar_topic", "grammar_example", "grammar_quiz_question", "grammar_quiz_choice",
+                "grammar_progress"
+        );
         assertThat(tables).doesNotContain("kanji_word");
 
         // 3. Thực hiện thêm và đọc dữ liệu thông qua SQL tham số hóa (PreparedStatement)
@@ -65,12 +72,60 @@ class MigrationSchemaTest {
         Long kanjiId = jdbcTemplate.queryForObject("SELECT id FROM kanji_entry WHERE kanji_character = ?", Long.class, "日");
         assertThat(kanjiId).isNotNull();
 
+        // 3.2. Thêm dữ liệu vào các bảng mới: verb, study_session, exam_paper, grammar_topic
+        jdbcTemplate.update(
+                "INSERT INTO verb (dictionary_form, masu_form, kanji_text, verb_group, meaning_vi, created_at, updated_at) " +
+                "VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                "のむ", "のみます", "飲む", 1, "Uống"
+        );
+        Integer verbCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM verb WHERE dictionary_form = ?", Integer.class, "のむ");
+        assertThat(verbCount).isEqualTo(1);
+
+        jdbcTemplate.update(
+                "INSERT INTO study_session (learner_id, mode, topic_id, total_questions, correct_count, duration_seconds, completed_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
+                "00000000-0000-0000-0000-000000000001", "PRACTICE_JA_VI", topicId, 10, 9, 45
+        );
+        Integer sessionCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM study_session WHERE learner_id = ?", Integer.class, "00000000-0000-0000-0000-000000000001");
+        assertThat(sessionCount).isEqualTo(1);
+
+        jdbcTemplate.update(
+                "INSERT INTO exam_paper (code, title, duration_minutes, category, published, created_at, updated_at) " +
+                "VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                "EXAM-TEST-01", "Đề thi thử nghiệm", 30, "MOCK", true
+        );
+        Integer examCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM exam_paper WHERE code = ?", Integer.class, "EXAM-TEST-01");
+        assertThat(examCount).isEqualTo(1);
+
+        jdbcTemplate.update(
+                "INSERT INTO grammar_topic (code, title, category, formula, explanation, sort_order, created_at, updated_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                "GRAM-TEST-01", "Cấu trúc から", "GRAMMAR", "A から B", "Giải thích vì...", 1
+        );
+        Long grammarId = jdbcTemplate.queryForObject("SELECT id FROM grammar_topic WHERE code = ?", Long.class, "GRAM-TEST-01");
+        assertThat(grammarId).isNotNull();
+
+        jdbcTemplate.update(
+                "INSERT INTO grammar_progress (learner_id, grammar_id, learned_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
+                "00000000-0000-0000-0000-000000000001", grammarId
+        );
+        Integer progressCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM grammar_progress WHERE learner_id = ?", Integer.class, "00000000-0000-0000-0000-000000000001");
+        assertThat(progressCount).isEqualTo(1);
+
         // 4. Chạy lại migration schema.sql lần 2 trên DB đã có dữ liệu -> Phải thành công không lỗi (Idempotent)
         populator.execute(ds);
 
         // Dữ liệu cũ vẫn được bảo toàn nguyên vẹn
         Integer vocabCountAfter = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM vocabulary", Integer.class);
         assertThat(vocabCountAfter).isEqualTo(1);
+        Integer verbCountAfter = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM verb", Integer.class);
+        assertThat(verbCountAfter).isEqualTo(1);
+        Integer examCountAfter = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM exam_paper", Integer.class);
+        assertThat(examCountAfter).isEqualTo(1);
+        Integer grammarCountAfter = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM grammar_topic", Integer.class);
+        assertThat(grammarCountAfter).isEqualTo(1);
+        Integer progressCountAfter = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM grammar_progress", Integer.class);
+        assertThat(progressCountAfter).isEqualTo(1);
     }
 
     @Test

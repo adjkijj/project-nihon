@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Giới thiệu: ' + ${paper.title} + ' - Project Nihon'">Giới thiệu đề thi - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/exams-admin.css}">
+    <link rel="stylesheet" th:href="@{/css/exam.css}">
+    <th:block th:replace="~{fragments/navbar :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <th:block th:replace="~{fragments/navbar :: scripts}"></th:block>
+</head>
+<body>
+    <th:block th:replace="~{fragments/navbar :: headerNav('exams')}"></th:block>
+
+    <main class="container">
+        <!-- Breadcrumbs -->
+        <nav class="breadcrumb-nav mt-3 mb-3" aria-label="Điều hướng liên kết">
+            <a th:href="@{/exams}">Đề thi</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current" th:text="${paper.title}">Đề thi thử JLPT N5</span>
+        </nav>
+
+        <div th:if="${errorMessage}" class="alert alert-danger mb-4" th:text="${errorMessage}">
+            Thông báo lỗi
+        </div>
+
+        <div class="exam-intro-card">
+            <div class="text-center mb-4">
+                <span class="badge badge-published mb-2" th:text="${paper.category.displayName}">Thi thử</span>
+                <h1 class="page-title h2" th:text="${paper.title}">Đề thi thử JLPT N5 - Đề số 1</h1>
+                <p class="text-secondary font-size-md"
+                   th:text="${paper.description != null && !paper.description.isBlank() ? paper.description : 'Đề thi thực hành tiếng Nhật gồm nhiều phần thi và dạng câu hỏi đa dạng.'}">
+                    Mô tả chi tiết đề thi...
+                </p>
+                <div class="mt-2">
+                    <span class="badge badge-draft mr-2">Mã đề: <strong th:text="${paper.code}">N5-01</strong></span>
+                    <span class="badge badge-draft" th:if="${paper.shuffleChoices}">Xáo trộn trắc nghiệm: Có</span>
+                </div>
+            </div>
+
+            <!-- Các chỉ số chính -->
+            <div class="exam-meta-grid">
+                <div class="exam-meta-item">
+                    <div class="exam-meta-label">Thời gian làm bài</div>
+                    <div class="exam-meta-val" th:text="${paper.durationMinutes} + ' phút'">50 phút</div>
+                </div>
+                <div class="exam-meta-item">
+                    <div class="exam-meta-label">Số phần thi</div>
+                    <div class="exam-meta-val" th:text="${paper.sections.size()}">2</div>
+                </div>
+                <div class="exam-meta-item">
+                    <div class="exam-meta-label">Tổng số câu hỏi</div>
+                    <div class="exam-meta-val" th:text="${paper.totalQuestions}">30</div>
+                </div>
+                <div class="exam-meta-item">
+                    <div class="exam-meta-label">Tổng điểm</div>
+                    <div class="exam-meta-val" th:text="${paper.totalPoints} + ' đ'">100 đ</div>
+                </div>
+            </div>
+
+            <!-- Danh sách các phần thi -->
+            <div class="mt-4 mb-4">
+                <h3 class="h5 mb-3 font-weight-bold">📋 Cấu trúc bài thi:</h3>
+                <div class="card p-3 mb-2" th:each="sec, sStat : ${paper.sections}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <strong class="text-primary font-weight-bold">
+                            <span th:text="'Phần ' + ${sStat.count} + ': ' + ${sec.title}">Phần 1: Kiến thức ngôn ngữ</span>
+                        </strong>
+                        <span class="badge badge-draft" th:text="${sec.questions.size()} + ' câu'">15 câu</span>
+                    </div>
+                    <div class="text-secondary font-size-sm mt-1"
+                         th:if="${sec.instructions != null && !sec.instructions.isBlank()}"
+                         th:text="${sec.instructions}">
+                        Hướng dẫn làm bài phần này...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quy chế và Lưu ý phòng thi -->
+            <div class="alert alert-warning mb-4">
+                <h4 class="h6 font-weight-bold mb-2">⚠️ Quy chế và lưu ý quan trọng:</h4>
+                <ul class="mb-0 font-size-sm pl-3">
+                    <li>Thời gian làm bài do <strong>máy chủ đếm ngược chính xác</strong>. Khi hết giờ, bài làm sẽ tự động được thu hồi và nộp.</li>
+                    <li>Hệ thống <strong>tự động lưu nháp câu trả lời</strong> sau mỗi lần thao tác (ngay cả khi tải lại trang hoặc đóng tab đột ngột).</li>
+                    <li>Sử dụng bảng số câu hỏi ở góc phải để đánh dấu xem lại hoặc chuyển nhanh giữa các câu.</li>
+                    <li>Phím tắt: dùng <strong>mũi tên trái/phải</strong> để chuyển câu, phím <strong>1, 2, 3, 4</strong> để chọn đáp án trắc nghiệm nhanh.</li>
+                </ul>
+            </div>
+
+            <!-- Nút Bắt đầu thi -->
+            <form th:action="@{/exams/{code}/start(code=${paper.code})}" method="post">
+                <input type="hidden" name="_csrf" th:value="${_csrf}" />
+                <div class="d-flex justify-content-center gap-3">
+                    <a th:href="@{/exams}" class="btn btn-secondary">Quay lại danh sách</a>
+                    <button type="submit" class="btn btn-primary font-size-md px-4 py-2">
+                        <span>🚀</span>
+                        <span>Bắt đầu làm bài thi ngay</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+</body>
+</html>

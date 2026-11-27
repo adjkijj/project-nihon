@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${'Cẩm nang bài học: ' + topic.name + ' - Project Nihon'}">Cẩm nang bài học - Project Nihon</title>
+    <link rel="stylesheet" th:href="@{/css/topics-list.css}">
+    <link rel="stylesheet" th:href="@{/css/utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/ui-enhance.css}">
+    <th:block th:replace="~{fragments/furigana :: headAssets}"></th:block>
+    <th:block th:replace="~{fragments/speech :: headAssets}"></th:block>
+    <script th:src="@{/js/app.js}" defer></script>
+    <script th:src="@{/js/ui-enhance.js}" defer></script>
+</head>
+<body>
+    <header th:replace="~{fragments/navbar :: headerNav('topics')}"></header>
+
+    <main class="hub-container">
+        <!-- Breadcrumb & Header -->
+        <div class="page-header">
+            <div class="page-title">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge-topic-type">🌟 Cẩm nang All-in-One (F12)</span>
+                    <span th:if="${topic.kanjiSection}" class="badge-kanji">Chuyên đề Kanji</span>
+                    <span th:if="${!topic.kanjiSection}" class="badge-normal">Bài học chuẩn</span>
+                </div>
+                <h1 th:text="${topic.name}">Tên bài học</h1>
+                <p>Tổng hợp toàn diện: Từ vựng, Chữ Hán, Ngữ pháp, Động từ và Đề thi phục vụ học tập & ôn luyện</p>
+            </div>
+            <div class="actions-cell">
+                <a th:href="@{/topics}" class="btn btn-secondary">← Danh sách chủ đề</a>
+                <a th:href="@{'/topics/' + ${topic.id}}" class="btn btn-secondary">⚙️ Quản lý chủ đề</a>
+            </div>
+        </div>
+
+        <!-- Thống kê nhanh dữ liệu bài học -->
+        <section class="detail-card mb-4" aria-label="Thống kê bài học">
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <span class="detail-label">Chủ đề cha</span>
+                    <span class="detail-value">
+                        <a th:if="${topic.parent != null}"
+                           th:href="@{'/topics/' + ${topic.parent.id} + '/hub'}"
+                           class="topic-link"
+                           th:text="${topic.parent.name}">Chủ đề cha</a>
+                        <span th:if="${topic.parent == null}" class="text-secondary font-size-xs">(Chủ đề gốc)</span>
+                    </span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Từ vựng</span>
+                    <strong class="detail-value" th:text="${hub.vocabularyCount}">0</strong>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Chữ Hán Kanji</span>
+                    <strong class="detail-value" th:text="${hub.kanjiCount}">0</strong>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Ngữ pháp</span>
+                    <strong class="detail-value" th:text="${hub.grammarCount}">0</strong>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Động từ (5 thể)</span>
+                    <strong class="detail-value" th:text="${hub.verbCount}">0</strong>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Đề thi liên quan</span>
+                    <strong class="detail-value" th:text="${hub.examCount}">0</strong>
+                </div>
+            </div>
+        </section>
+
+        <!-- Trung tâm Luyện tập & Đấu trường liên kết -->
+        <section class="table-container mb-4" aria-label="Trung tâm luyện tập">
+            <div class="section-heading">
+                <h2>🚀 Trung tâm Luyện tập & Kiểm tra phản xạ</h2>
+            </div>
+            <div class="p-3 d-flex flex-wrap gap-2">
+                <a th:href="@{${hub.flashcardUrl}}" class="btn btn-primary" title="Lật thẻ ghi nhớ 3D">
+                    🎴 Học Thẻ Flashcard
+                </a>
+                <a th:href="@{${hub.quizChoiceUrl}}" class="btn btn-secondary" title="Trắc nghiệm 4 lựa chọn">
+                    🎯 Trắc nghiệm 4 lựa chọn
+                </a>
+                <a th:href="@{${hub.quizTypingJaViUrl}}" class="btn btn-secondary" title="Gõ nghĩa tiếng Việt từ tiếng Nhật">
+                    🇯🇵 ➔ 🇻🇳 Luyện gõ Nhật - Việt
+                </a>
+                <a th:href="@{${hub.quizTypingViJaUrl}}" class="btn btn-secondary" title="Gõ tiếng Nhật từ tiếng Việt">
+                    🇻🇳 ➔ 🇯🇵 Luyện gõ Việt - Nhật
+                </a>
+                <a th:href="@{${hub.quizTimedUrl}}" class="btn btn-secondary" title="Luyện gõ tốc độ phản xạ">
+                    ⏱️ Gõ phản xạ tính giờ
+                </a>
+                <a th:if="${hub.verbCount > 0}" th:href="@{${hub.quizVerbUrl}}" class="btn btn-secondary" title="Luyện chia 11 thể động từ">
+                    ⚡ Luyện chia động từ
+                </a>
+                <a th:if="${hub.grammarCount > 0}" th:href="@{${hub.grammarArenaUrl}}" class="btn btn-secondary" title="Đấu trường phản xạ ngữ pháp">
+                    ⚔️ Đấu trường ngữ pháp
+                </a>
+                <a th:href="@{${hub.topicTestUrl}}" class="btn btn-warning" title="Làm bài kiểm tra đánh giá toàn diện">
+                    📝 Kiểm tra cuối bài
+                </a>
+            </div>
+        </section>
+
+        <!-- 1. Danh sách Từ vựng -->
+        <section class="table-container mb-4" id="section-vocabulary" aria-label="Từ vựng">
+            <div class="section-heading d-flex justify-content-between align-items-center">
+                <h2>📚 Danh sách Từ vựng (<span th:text="${hub.vocabularyCount}">0</span>)</h2>
+                <a th:href="@{/vocabulary(topicId=${topic.id})}" class="btn btn-sm btn-secondary">Xem tại Từ điển Từ vựng →</a>
+            </div>
+            <div th:if="${vocabularyList == null or vocabularyList.isEmpty()}" class="empty-state">
+                Chủ đề này chưa có từ vựng nào trong hệ thống.
+            </div>
+            <div th:unless="${vocabularyList == null or vocabularyList.isEmpty()}" class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="u-width-50px">STT</th>
+                            <th>Tiếng Nhật</th>
+                            <th>Cách đọc (Reading)</th>
+                            <th>Romaji</th>
+                            <th>Nghĩa tiếng Việt</th>
+                            <th class="u-width-60px text-center">Phát âm</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="v, stat : ${vocabularyList}">
+                            <td th:text="${stat.count}">1</td>
+                            <td>
+                                <strong class="jp-text font-size-lg" th:text="${v.japaneseText}">Từ</strong>
+                            </td>
+                            <td class="jp-reading" th:text="${v.reading != null and !v.reading.isEmpty() ? v.reading : '-'}">Cách đọc</td>
+                            <td class="text-secondary font-size-sm" th:text="${v.romaji != null and !v.romaji.isEmpty() ? v.romaji : '-'}">Romaji</td>
+                            <td th:text="${v.meaningVi}">Nghĩa tiếng Việt</td>
+                            <td class="text-center">
+                                <th:block th:replace="~{fragments/speech :: speakerBtnDirect(speechText=${v.japaneseText})}"></th:block>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 2. Danh sách Chữ Hán Kanji -->
+        <section class="table-container mb-4" id="section-kanji" aria-label="Kanji">
+            <div class="section-heading d-flex justify-content-between align-items-center">
+                <h2>⛩️ Chữ Hán Kanji (<span th:text="${hub.kanjiCount}">0</span>)</h2>
+                <a th:href="@{/kanji(topicId=${topic.id})}" class="btn btn-sm btn-secondary">Xem tại Trung tâm Kanji →</a>
+            </div>
+            <div th:if="${kanjiList == null or kanjiList.isEmpty()}" class="empty-state">
+                Chủ đề này chưa có chữ Hán Kanji nào.
+            </div>
+            <div th:unless="${kanjiList == null or kanjiList.isEmpty()}" class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="u-width-50px">STT</th>
+                            <th class="u-width-70px text-center">Chữ Hán</th>
+                            <th>Hán Việt</th>
+                            <th>Âm Onyomi (On)</th>
+                            <th>Âm Kunyomi (Kun)</th>
+                            <th>Nghĩa tiếng Việt</th>
+                            <th class="u-width-100px text-center">Nét vẽ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="k, stat : ${kanjiList}">
+                            <td th:text="${stat.count}">1</td>
+                            <td class="text-center">
+                                <span class="font-size-xl font-weight-bold jp-kanji-char" th:text="${k.character}">漢</span>
+                            </td>
+                            <td>
+                                <strong class="text-primary font-weight-bold" th:text="${k.hanViet}">HÁN</strong>
+                            </td>
+                            <td class="jp-text" th:text="${k.onyomi != null and !k.onyomi.isEmpty() ? k.onyomi : '-'}">KAN</td>
+                            <td class="jp-text" th:text="${k.kunyomi != null and !k.kunyomi.isEmpty() ? k.kunyomi : '-'}">-</td>
+                            <td th:text="${k.meaningVi}">Nghĩa</td>
+                            <td class="text-center">
+                                <a th:href="@{'/kanji/' + ${k.id}}" class="btn btn-sm btn-secondary" title="Xem giải phẫu và nét vẽ KanjiVG">
+                                    Chi tiết 🔍
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 3. Ngữ pháp & Ví dụ minh họa -->
+        <section class="table-container mb-4" id="section-grammar" aria-label="Ngữ pháp">
+            <div class="section-heading d-flex justify-content-between align-items-center">
+                <h2>📘 Ngữ pháp & Mẫu câu (<span th:text="${hub.grammarCount}">0</span>)</h2>
+                <a th:href="@{/grammar(topicId=${topic.id})}" class="btn btn-sm btn-secondary">Xem tại Chuyên trang Ngữ pháp →</a>
+            </div>
+            <div th:if="${grammarList == null or grammarList.isEmpty()}" class="empty-state">
+                Chủ đề này chưa có mẫu ngữ pháp nào.
+            </div>
+            <div th:unless="${grammarList == null or grammarList.isEmpty()}" class="p-3 d-flex flex-column gap-3">
+                <article th:each="g, stat : ${grammarList}" class="grammar-card border rounded p-3 bg-white shadow-sm">
+                    <header class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                        <h3 class="h5 m-0 font-weight-bold text-primary">
+                            <span th:text="${stat.count + '. ' + g.title}">1. Mẫu câu</span>
+                        </h3>
+                        <span class="badge-topic-type" th:text="${g.category != null ? g.category : 'GRAMMAR'}">GRAMMAR</span>
+                    </header>
+
+                    <!-- Cấu trúc công thức -->
+                    <div th:if="${g.formula != null and !g.formula.isEmpty()}" class="p-2 mb-2 bg-light rounded border-left border-primary">
+                        <strong class="font-size-xs text-secondary uppercase">Cấu trúc: </strong>
+                        <span class="font-weight-bold text-dark jp-text" th:text="${g.formula}">Công thức</span>
+                    </div>
+
+                    <!-- Giải thích chi tiết -->
+                    <div th:if="${g.explanation != null and !g.explanation.isEmpty()}" class="mb-2">
+                        <div class="text-secondary font-size-xs uppercase font-weight-bold mb-1">Giải thích:</div>
+                        <p class="m-0 text-dark" th:text="${g.explanation}">Giải thích</p>
+                    </div>
+
+                    <!-- Ghi chú nếu có -->
+                    <div th:if="${g.notes != null and !g.notes.isEmpty()}" class="mb-2 p-2 bg-warning-light rounded font-size-sm">
+                        <strong>💡 Ghi chú: </strong><span th:text="${g.notes}">Ghi chú</span>
+                    </div>
+
+                    <!-- Danh sách ví dụ minh họa -->
+                    <div th:if="${g.examples != null and !g.examples.isEmpty()}" class="mt-3">
+                        <div class="text-secondary font-size-xs uppercase font-weight-bold mb-2">
+                            Ví dụ minh họa (<span th:text="${g.examples.size()}">0</span> câu):
+                        </div>
+                        <div class="d-flex flex-column gap-2">
+                            <div th:each="ex : ${g.examples}" class="p-2 bg-light rounded d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="jp-text font-size-md font-weight-bold">
+                                        <th:block th:replace="~{fragments/furigana :: rubyWord(japaneseText=${ex.japanese}, reading=${ex.reading})}"></th:block>
+                                    </div>
+                                    <div class="text-secondary font-size-sm mt-1" th:text="${ex.meaningVi}">Nghĩa câu ví dụ</div>
+                                </div>
+                                <div class="ml-2 flex-shrink-0">
+                                    <th:block th:replace="~{fragments/speech :: speakerBtnDirect(speechText=${ex.japanese})}"></th:block>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- 4. Động từ & Bảng 5 thể biến đổi -->
+        <section class="table-container mb-4" id="section-verbs" aria-label="Động từ">
+            <div class="section-heading d-flex justify-content-between align-items-center">
+                <h2>⚡ Động từ & Bảng 5 thể biến đổi (<span th:text="${hub.verbCount}">0</span>)</h2>
+                <a th:href="@{/verbs/lab}" class="btn btn-sm btn-secondary">Phòng thí nghiệm Verb Lab →</a>
+            </div>
+            <div th:if="${verbList == null or verbList.isEmpty()}" class="empty-state">
+                Chủ đề này chưa có động từ nào được định nghĩa.
+            </div>
+            <div th:unless="${verbList == null or verbList.isEmpty()}" class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="u-width-50px">STT</th>
+                            <th>Thể Từ điển (Jisho)</th>
+                            <th class="u-width-60px text-center">Nhóm</th>
+                            <th>Thể Masu (ます)</th>
+                            <th>Thể Te (て)</th>
+                            <th>Thể Ta (た)</th>
+                            <th>Thể Nai (ない)</th>
+                            <th>Nghĩa tiếng Việt</th>
+                            <th class="u-width-60px text-center">Phát âm</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="v, stat : ${verbList}">
+                            <td th:text="${stat.count}">1</td>
+                            <td>
+                                <strong class="jp-text font-size-md" th:text="${v.dictionaryForm}">たべる</strong>
+                                <span th:if="${v.kanjiText != null and !v.kanjiText.isEmpty()}" class="text-secondary font-size-xs" th:text="'(' + ${v.kanjiText} + ')'">(食べる)</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge-normal" th:text="'N' + ${v.verbGroup}">N2</span>
+                            </td>
+                            <td class="jp-text" th:text="${v.masuForm != null ? v.masuForm : '-'}">たべます</td>
+                            <td class="jp-text" th:text="${v.teForm != null ? v.teForm : '-'}">たべて</td>
+                            <td class="jp-text" th:text="${v.taForm != null ? v.taForm : '-'}">たべた</td>
+                            <td class="jp-text" th:text="${v.naiForm != null ? v.naiForm : '-'}">たべない</td>
+                            <td th:text="${v.meaningVi}">Ăn</td>
+                            <td class="text-center">
+                                <th:block th:replace="~{fragments/speech :: speakerBtnDirect(speechText=${v.kanjiText != null and !v.kanjiText.isEmpty() ? v.kanjiText : v.dictionaryForm})}"></th:block>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 5. Đề thi & Phòng thi thử liên quan -->
+        <section class="table-container mb-4" id="section-exams" aria-label="Đề thi">
+            <div class="section-heading d-flex justify-content-between align-items-center">
+                <h2>🏆 Đề thi & Phòng thi thử liên quan (<span th:text="${hub.examCount}">0</span>)</h2>
+                <a th:href="@{'/topics/' + ${topic.id} + '/test'}" class="btn btn-sm btn-warning">📝 Kiểm tra cuối bài</a>
+            </div>
+            <div th:if="${examList == null or examList.isEmpty()}" class="empty-state">
+                Chủ đề này chưa có đề thi chính thức nào được xuất bản. Bạn có thể làm bài kiểm tra cuối bài để đánh giá ngay!
+            </div>
+            <div th:unless="${examList == null or examList.isEmpty()}" class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="u-width-50px">STT</th>
+                            <th>Mã đề</th>
+                            <th>Tên đề thi</th>
+                            <th class="u-width-100px text-center">Thể loại</th>
+                            <th class="u-width-100px text-center">Thời gian</th>
+                            <th class="u-width-120px text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="ex, stat : ${examList}">
+                            <td th:text="${stat.count}">1</td>
+                            <td>
+                                <strong class="badge-normal" th:text="${ex.code}">EXAM01</strong>
+                            </td>
+                            <td th:text="${ex.title}">Đề thi ôn tập</td>
+                            <td class="text-center" th:text="${ex.category}">REVIEW</td>
+                            <td class="text-center" th:text="${ex.durationMinutes + ' phút'}">40 phút</td>
+                            <td class="text-center">
+                                <a th:href="@{'/exams/' + ${ex.code} + '/start'}" class="btn btn-sm btn-primary">
+                                    Vào thi 🚀
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <th:block th:replace="~{fragments/speech :: scripts}"></th:block>
+    <th:block th:replace="~{fragments/furigana :: scripts}"></th:block>
+</body>
+</html>
+
